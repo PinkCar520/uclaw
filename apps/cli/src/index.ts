@@ -94,7 +94,7 @@ program
 
       try {
         // 安全闸门：敏感操作需要人工 Y/N 确认
-        const sensitiveMethods = ['git_commit', 'npm_build'];
+        const sensitiveMethods = ['git_commit', 'npm_build', 'git_add'];
         if (sensitiveMethods.includes(data.method)) {
           console.log(`\x1b[33m[SECURITY ALERT]\x1b[0m Incoming sensitive command: \x1b[1m${data.method}\x1b[0m`);
 
@@ -111,6 +111,12 @@ program
           console.log(`\x1b[32m[Security]\x1b[0m User approved. Executing...`);
         }
 
+        // 获取 Git 根目录，确保指令全局有效
+        const getGitRoot = async () => {
+          const { stdout } = await execAsync('git rev-parse --show-toplevel');
+          return stdout.trim();
+        };
+
         switch (data.method) {
           case 'ls':
             result = await fs.readdir(process.cwd());
@@ -119,9 +125,17 @@ program
             const { stdout: status } = await execAsync('git status');
             result = status;
             break;
+          case 'git_add':
+            const rootForAdd = await getGitRoot();
+            const files = data.params?.files || '.';
+            const { stdout: addOut } = await execAsync(`git add ${files}`, { cwd: rootForAdd });
+            result = addOut || `Successfully staged: ${files}`;
+            break;
           case 'git_commit':
+            const rootForCommit = await getGitRoot();
             const msg = (data.params?.message || 'UClaw auto-commit').replace(/"/g, '\\"');
-            const { stdout: commitOut } = await execAsync(`git add . && git commit -m "${msg}"`);
+            // 注意：专业化处理，不再在 commit 里强行 add .，交给用户或 AI 先调用 git_add
+            const { stdout: commitOut } = await execAsync(`git commit -m "${msg}"`, { cwd: rootForCommit });
             result = commitOut;
             break;
           case 'npm_build':
@@ -138,6 +152,7 @@ program
             result = `Unknown method: ${data.method}`;
         }
       } catch (err: any) {
+
         console.error(`\x1b[31m[RPC Error]\x1b[0m`, err.message);
         error = err.message;
       }

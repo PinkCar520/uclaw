@@ -20,7 +20,7 @@ export function TaskPlan({ title, steps, onConfirm, onCancel }: TaskPlanProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mt-4 max-w-2xl text-slate-300 shadow-2xl overflow-hidden relative group">
+    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mt-4 max-w-2xl text-slate-300 overflow-hidden relative group">
       {/* Background Accent */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[64px] rounded-full -mr-16 -mt-16 pointer-events-none" />
       
@@ -71,7 +71,7 @@ export function TaskPlan({ title, steps, onConfirm, onCancel }: TaskPlanProps) {
           </button>
           <button 
             onClick={onConfirm}
-            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-all border border-blue-500 shadow-lg shadow-blue-500/20 flex items-center gap-2"
+            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-all border border-blue-500 flex items-center gap-2"
           >
             <Check className="w-3.5 h-3.5" />
             Confirm (Y)

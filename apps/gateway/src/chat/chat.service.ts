@@ -19,13 +19,33 @@ export class ChatService {
     private configService: ConfigService,
     private zentaoService: ZentaoService,
     private rpcGateway: RpcGateway,
-  ) {}
+  ) { }
 
-  private getModel() {
+  private getModel(modelId?: string) {
+    const modelsRaw = this.configService.get<string>('VLLM_MODEL_NAME') || 'qwen2.5-coder:7b';
+    const models = modelsRaw.split(',').map(m => m.trim());
+    const selectedModel = (modelId && models.includes(modelId)) ? modelId : models[0];
+
     return createOpenAI({
       baseURL: this.configService.get<string>('VLLM_API_BASE'),
       apiKey: this.configService.get<string>('VLLM_API_KEY') || 'ollama',
-    }).chat(this.configService.get<string>('VLLM_MODEL_NAME') || 'qwen2.5-coder:7b');
+    }).chat(selectedModel);
+  }
+
+  /**
+   * 获取当前网关配置的模型列表 (供前端动态展示)
+   */
+  getAvailableModels() {
+    const modelsRaw = this.configService.get<string>('VLLM_MODEL_NAME') || 'qwen2.5-coder:7b';
+    const modelIds = modelsRaw.split(',').map(m => m.trim());
+    
+    return modelIds.map(id => ({
+      id,
+      name: id, // 使用 ID 作为展示名
+      provider: 'Enterprise',
+      icon: 'Sparkles',
+      color: 'text-blue-500', 
+    }));
   }
 
   private getTools() {
@@ -95,14 +115,14 @@ export class ChatService {
   /**
    * 为 Web 提供流式响应
    */
-  async generateChatStream(messages: any[], res: Response, req?: any) {
+  async generateChatStream(messages: any[], res: Response, req?: any, modelId?: string) {
     try {
       const modelMessages = await convertToModelMessages(messages);
       const onlineClis = this.rpcGateway.getOnlineUsers();
       const currentUserId = req?.user?.id || 'Anonymous';
 
       const result = streamText({
-        model: this.getModel(),
+        model: this.getModel(modelId),
         messages: modelMessages,
         toolChoice: 'auto',
         stopWhen: stepCountIs(5),
@@ -126,7 +146,7 @@ export class ChatService {
   async generateChatText(userId: string, content: string): Promise<string> {
     try {
       const onlineClis = this.rpcGateway.getOnlineUsers();
-      
+
       const { text } = await generateText({
         model: this.getModel(),
         messages: [{ role: 'user', content }],

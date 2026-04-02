@@ -1,6 +1,6 @@
 {
   "nav": {
-    "dashboard": "仪表盘",
+    "dashboard": "工作流",
     "chat": "智能对话",
     "mcp_market": "MCP 市场",
     "skill_library": "技能库",
@@ -8,16 +8,17 @@
     "settings": "设置"
   },
   "chat": {
+    "new_chat": "开启新对话",
     "placeholder": "问问 UClaw 任务执行...",
     "empty_title": "我能帮您做什么？",
     "empty_desc": "将您的 <1>CLI 节点</1> 与企业工作流无缝桥接。",
     "status_secured": "企业级加密",
     "status_stable": "v1.1 稳定版",
-    "role_assistant": "UClaw 智能体",
-    "role_user": "当前用户"
+    "role_assistant": "UClaw 助手",
+    "role_user": "开发者"
   },
   "dashboard": {
-    "title": "项目概览",
+    "title": "研发效能大盘",
     "desc": "来自已连接企业节点的实时洞察。",
     "stats": {
       "total_bugs": "总缺陷数",
@@ -25,9 +26,11 @@
       "sys_health": "系统健康度",
       "team_velocity": "团队速率"
     },
-    "throughput": "吞吐量分析",
-    "nodes": "活跃节点",
-    "manage_nodes": "管理所有节点"
+    "throughput": "代码吞吐量分析",
+    "nodes": "活跃 CLI 节点",
+    "manage_nodes": "管理所有节点",
+    "chart_days": "天",
+    "chart_desc": "全仓储每日贡献活跃度"
   },
   "skills": {
     "title": "技能库",
@@ -42,19 +45,26 @@
     "status": {
       "enabled": "已启用",
       "disabled": "已禁用",
-      "configure": "配置"
+      "configure": "配置",
+      "online": "在线",
+      "offline": "离线",
+      "standby": "待命"
     },
     "tools": {
       "zentao": {
+        "name": "禅道 MCP 服务",
         "desc": "连接禅道项目管理系统，支持缺陷自动流转、需求同步及工单管理。"
       },
       "gitlab": {
+        "name": "GitLab 连接器",
         "desc": "深度集成 GitLab API，实现自动化代码评审、分支管理及 MR 追踪。"
       },
       "jenkins": {
+        "name": "Jenkins 大师",
         "desc": "操控 Jenkins 流水线，支持远程构建触发、实时日志拉取及部署状态监控。"
       },
       "local_fs": {
+        "name": "本地文件系统 MCP",
         "desc": "授权 AI 访问受限的本地文件系统，支持日志分析、AST 代码重构及文件处理。"
       }
     }
@@ -69,7 +79,19 @@
     "dev_view": "视图开发中",
     "dev_desc": "该模块正在开发中。",
     "bugs": "缺陷",
-    "commits": "提交"
+    "commits": "提交",
+    "cancel": "取消",
+    "confirm": "确定",
+    "rename": "重命名",
+    "delete": "删除",
+    "search_placeholder": "快速搜索...",
+    "new_conversation": "新对话",
+    "model_select": "模型选择",
+    "model": {
+      "gpt4o": "GPT-4o (推荐)",
+      "claude35": "Claude 3.5 Sonnet",
+      "deepseek": "DeepSeek-V3"
+    }
   },
   "sidebar": {
     "environment": "运行环境",
@@ -78,11 +100,15 @@
     "workspace_context": "工作空间上下文",
     "core_stats": "核心统计",
     "recent_activity": "最近活动",
-    "executed_command": "执行了命令"
+    "executed_command": "执行了命令",
+    "mcp_active": "活跃 MCP 技能",
+    "knowledge_base": "项目上下文",
+    "add_knowledge": "添加知识"
   },
   "node": {
     "title": "节点监控",
     "terminal": "实时终端",
+    "terminate": "终止节点",
     "metrics": {
       "cpu": "CPU 使用率",
       "ram": "内存占用",
@@ -91,7 +117,8 @@
     },
     "processes": "活跃进程",
     "logs": "节点日志",
-    "terminal_placeholder": "等待指令输入..."
+    "terminal_placeholder": "等待指令输入...",
+    "cmd_placeholder": "输入指令..."
   },
   "bug": {
     "status": {
@@ -104,5 +131,18 @@
       "medium": "中等",
       "low": "低"
     }
+  },
+  "settings": {
+    "title": "系统设置",
+    "mcp_desc": "Model Context Protocol 接入管理",
+    "security": "安全与隐私",
+    "encryption": "端到端加密",
+    "sandbox": "本地守护进程沙箱",
+    "residency": "数据驻留 (内网)",
+    "active": "生效中",
+    "enabled": "已开启",
+    "verified": "已验证",
+    "connect_mcp": "接入新 MCP",
+    "powered_by": "私有化高性能大模型驱动"
   }
 }

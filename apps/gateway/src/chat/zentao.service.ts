@@ -31,4 +31,9 @@ export class ZentaoService implements OnModuleInit {
   async resolveBug(bugId: string): Promise<boolean> {
     return this.zentaoTool.resolveBug(bugId);
   }
+
+  async getBugStats() {
+    // 默认获取产品 ID 为 4 的统计（即您刚才创建的 UClaw 产品）
+    return this.zentaoTool.getBugStats(4);
+  }
 }

@@ -174,6 +174,37 @@ export class ZentaoTool {
     }
   }
 
+  /**
+   * 获取 Bug 统计数据
+   */
+  async getBugStats(productId: number = 4): Promise<{ total: number; active: number; resolved: number }> {
+    console.log(`[@uclaw/tools-zentao] Fetching Bug stats for product: ${productId}`);
+    if (this.isMock || !this.client) return { total: 12, active: 8, resolved: 4 };
+
+    try {
+      let activeToken = this.token;
+      if (this.token.includes(':')) {
+        const [account, password] = this.token.split(':');
+        const tokenRes = await this.client.post('/api.php/v1/tokens', { account, password });
+        activeToken = tokenRes.data.token;
+      }
+
+      const response = await this.client.get(`/api.php/v1/products/${productId}/bugs`, {
+        headers: { 'Token': activeToken }
+      });
+
+      const bugs = response.data.bugs || [];
+      return {
+        total: response.data.total || bugs.length,
+        active: bugs.filter((b: any) => b.status === 'active').length,
+        resolved: bugs.filter((b: any) => b.status === 'resolved').length
+      };
+    } catch (err: any) {
+      console.error(`[@uclaw/tools-zentao] Stats Error:`, err.message);
+      return { total: 0, active: 0, resolved: 0 };
+    }
+  }
+
   async searchBugs(query: string): Promise<BugDetail[]> {
     console.log(`[@uclaw/tools-zentao] Searching bugs with query: ${query} (Mode: ${this.isMock ? 'Mock' : 'API'})`);
     

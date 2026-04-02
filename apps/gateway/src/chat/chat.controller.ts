@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, Res, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, Res, Headers } from '@nestjs/common';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { UpChatHandler } from '@uclaw/channel-im';
@@ -8,6 +8,11 @@ export class ChatController {
   private imHandler = new UpChatHandler();
 
   constructor(private readonly chatService: ChatService) {}
+
+  @Get('models')
+  async getModels() {
+    return this.chatService.getAvailableModels();
+  }
 
   @Post()
   async handleChatStream(
@@ -24,7 +29,8 @@ export class ChatController {
     
     // 给 req 注入 requestId 方便 Service 追踪
     (req as any).id = requestId;
-    await this.chatService.generateChatStream(messages, res, req);
+    const modelId = body.modelId || body.model;
+    await this.chatService.generateChatStream(messages, res, req, modelId);
   }
 
   @Post('webhook-im')

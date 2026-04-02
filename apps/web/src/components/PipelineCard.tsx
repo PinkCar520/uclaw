@@ -98,7 +98,7 @@ export function PipelineCard({ id, name, branch, status, steps, startTime }: Pip
           View Logs
         </button>
         {status === 'failed' && (
-          <button className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700 transition-all uppercase tracking-widest shadow-sm">
+          <button className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700 transition-all uppercase tracking-widest">
             Retry Build
           </button>
         )}

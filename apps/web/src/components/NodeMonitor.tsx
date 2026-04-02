@@ -110,7 +110,7 @@ export function NodeMonitor() {
                   className="bg-transparent border-none text-[13px] text-slate-200 w-full focus:outline-none focus:ring-0 placeholder:text-slate-600"
                 />
              </div>
-             <button className="p-2 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 transition-all">
+             <button className="p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-all">
                 <Play className="w-4 h-4 fill-current" />
              </button>
           </div>

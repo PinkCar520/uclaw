@@ -1,24 +1,25 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Workflow",
     "chat": "Chat Hub",
     "mcp_market": "MCP Market",
     "skill_library": "Skill Library",
-    "database": "Knowledge",
+    "database": "Docs",
     "settings": "Settings"
   },
   "chat": {
+    "new_chat": "New Conversation",
     "placeholder": "Ask UClaw to perform a task...",
     "empty_title": "How can I help you?",
     "empty_desc": "Bridge your <1>CLI node</1> with enterprise workflows.",
     "status_secured": "Enterprise Secured",
     "status_stable": "v1.1 Stable",
     "role_assistant": "UClaw Agent",
-    "role_user": "Current User"
+    "role_user": "Developer"
   },
   "dashboard": {
-    "title": "Project Overview",
-    "desc": "Real-time insights from your connected enterprise nodes.",
+    "title": "Engineering Insights",
+    "desc": "Real-time visibility from your connected nodes.",
     "stats": {
       "total_bugs": "Total Bugs",
       "active_prs": "Active PRs",
@@ -26,8 +27,10 @@
       "team_velocity": "Team Velocity"
     },
     "throughput": "Throughput Analysis",
-    "nodes": "Active Nodes",
-    "manage_nodes": "Manage All Nodes"
+    "nodes": "Active CLI Nodes",
+    "manage_nodes": "Manage All Nodes",
+    "chart_days": "Days",
+    "chart_desc": "Daily contribution activity across all repositories"
   },
   "skills": {
     "title": "Skill Library",
@@ -42,19 +45,26 @@
     "status": {
       "enabled": "Enabled",
       "disabled": "Disabled",
-      "configure": "Config"
+      "configure": "Config",
+      "online": "Online",
+      "offline": "Offline",
+      "standby": "Standby"
     },
     "tools": {
       "zentao": {
+        "name": "ZenTao MCP Server",
         "desc": "Connects to ZenTao project management, supporting defect flow, requirement sync, and task tracking."
       },
       "gitlab": {
+        "name": "GitLab Connector",
         "desc": "Deep GitLab API integration for automated code review, branch management, and MR tracking."
       },
       "jenkins": {
+        "name": "Jenkins Master",
         "desc": "Control Jenkins pipelines, support remote build triggering, log fetching, and status monitoring."
       },
       "local_fs": {
+        "name": "Filesystem MCP",
         "desc": "Authorize AI access to restricted local file systems for log analysis, AST refactoring, and file processing."
       }
     }
@@ -69,7 +79,19 @@
     "dev_view": "View under development",
     "dev_desc": "This module is under development.",
     "bugs": "Bugs",
-    "commits": "Commits"
+    "commits": "Commits",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "rename": "Rename",
+    "delete": "Delete",
+    "search_placeholder": "Quick search...",
+    "new_conversation": "New Conversation",
+    "model_select": "Model Selection",
+    "model": {
+      "gpt4o": "GPT-4o (Recommended)",
+      "claude35": "Claude 3.5 Sonnet",
+      "deepseek": "DeepSeek-V3"
+    }
   },
   "sidebar": {
     "environment": "Environment",
@@ -78,11 +100,15 @@
     "workspace_context": "Workspace Context",
     "core_stats": "Core Statistics",
     "recent_activity": "Recent Activity",
-    "executed_command": "executed command"
+    "executed_command": "executed command",
+    "mcp_active": "Active MCP Skills",
+    "knowledge_base": "Project Context",
+    "add_knowledge": "Add Knowledge"
   },
   "node": {
     "title": "Node Monitor",
     "terminal": "Live Terminal",
+    "terminate": "Terminate Node",
     "metrics": {
       "cpu": "CPU Usage",
       "ram": "Memory",
@@ -91,7 +117,8 @@
     },
     "processes": "Active Processes",
     "logs": "Node Logs",
-    "terminal_placeholder": "Awaiting command input..."
+    "terminal_placeholder": "Awaiting command input...",
+    "cmd_placeholder": "Type a command..."
   },
   "bug": {
     "status": {
@@ -104,5 +131,18 @@
       "medium": "Medium",
       "low": "Low"
     }
+  },
+  "settings": {
+    "title": "System Settings",
+    "mcp_desc": "Model Context Protocol Integration",
+    "security": "Security & Privacy",
+    "encryption": "End-to-End Encryption",
+    "sandbox": "Local Daemon Sandbox",
+    "residency": "Data Residency (Intranet)",
+    "active": "Active",
+    "enabled": "Enabled",
+    "verified": "Verified",
+    "connect_mcp": "Connect New MCP",
+    "powered_by": "Powered by Private High-Performance LLM"
   }
 }

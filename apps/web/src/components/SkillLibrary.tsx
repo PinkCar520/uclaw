@@ -51,7 +51,7 @@ export function SkillLibrary() {
 
       {/* Filter Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-6 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-slate-200">
           {categories.map(cat => (
             <button
               key={cat}
@@ -59,7 +59,7 @@ export function SkillLibrary() {
               className={cn(
                 "px-5 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all",
                 activeCategory === cat 
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+                  ? "bg-blue-600 text-white" 
                   : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
               )}
             >
@@ -74,7 +74,7 @@ export function SkillLibrary() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search skills..." 
-            className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 ring-blue-500/5 focus:border-blue-500/50 transition-all shadow-sm"
+            className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 ring-blue-500/5 focus:border-blue-500/50 transition-all"
           />
         </div>
       </div>
@@ -98,7 +98,7 @@ export function SkillLibrary() {
               {/* Card Header */}
               <div className="flex items-start justify-between mb-8">
                 <div className={cn(
-                  "p-4 rounded-[24px] border border-slate-100 shadow-inner",
+                  "p-4 rounded-[24px] border border-slate-100",
                   skill.isEnabled ? "bg-blue-50/50" : "bg-slate-50"
                 )}>
                   <skill.icon className={cn("w-6 h-6", skill.isEnabled ? "text-blue-600" : "text-slate-400")} />

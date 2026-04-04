@@ -7,11 +7,14 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export function UserCenter() {
+export function UserCenter({ onLogout }: { onLogout?: () => void }) {
   const [activeSubTab, setActiveSubTab] = useState('general');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+
+  // Load token from local storage
+  const token = localStorage.getItem('uclaw_auth_token');
 
   // Fetch profile on mount
   useEffect(() => {
@@ -23,8 +26,8 @@ export function UserCenter() {
     try {
       const res = await fetch('/api/user/profile', {
         headers: {
-          'x-user-id': localStorage.getItem('uclaw_user_id') || 'WB-9527',
-          'x-sso-token': localStorage.getItem('uclaw_sso_token') || 'mock-dev-token-xyz567'
+          'Authorization': `Bearer ${token}`,
+          'x-user-id': localStorage.getItem('uclaw_user_id') || ''
         }
       });
       const data = await res.json();
@@ -45,8 +48,8 @@ export function UserCenter() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': localStorage.getItem('uclaw_user_id') || 'WB-9527',
-          'x-sso-token': localStorage.getItem('uclaw_sso_token') || 'mock-dev-token-xyz567'
+          'Authorization': `Bearer ${token}`,
+          'x-user-id': localStorage.getItem('uclaw_user_id') || ''
         },
         body: JSON.stringify(updates)
       });
@@ -60,16 +63,16 @@ export function UserCenter() {
     }
   };
 
-  const addCredential = async (systemType: string, token: string, username: string) => {
+  const addCredential = async (systemType: string, tokenVal: string, username: string) => {
     try {
       await fetch('/api/user/credentials', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': localStorage.getItem('uclaw_user_id') || 'WB-9527',
-          'x-sso-token': localStorage.getItem('uclaw_sso_token') || 'mock-dev-token-xyz567'
+          'Authorization': `Bearer ${token}`,
+          'x-user-id': localStorage.getItem('uclaw_user_id') || ''
         },
-        body: JSON.stringify({ systemType, token, username })
+        body: JSON.stringify({ systemType, token: tokenVal, username })
       });
       fetchProfile();
     } catch (e) {
@@ -136,7 +139,10 @@ export function UserCenter() {
             </div>
 
             <div className="pt-6 mt-6 border-t border-[#E8E4E2]/50">
-               <button className="flex items-center gap-3 px-4 py-3 w-full text-red-500 font-bold hover:bg-red-50 rounded-xl transition-colors">
+               <button 
+                 onClick={onLogout}
+                 className="flex items-center gap-3 px-4 py-3 w-full text-red-500 font-bold hover:bg-red-50 rounded-xl transition-colors"
+                >
                  <LogOut className="w-4 h-4" />
                  Sign Out
                </button>

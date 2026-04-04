@@ -12,6 +12,12 @@ import {
   Trash2,
   Check,
   X,
+  Settings,
+  LogOut,
+  HelpCircle,
+  ChevronRight,
+  Globe,
+  ChevronUp,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +27,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from './ui/dropdown-menu';
 import {
   Dialog,
@@ -234,7 +244,7 @@ export function Sidebar({
   user,
   onLogout,
 }: SidebarProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Favorites first, then by timestamp desc
   const recentChats = [...conversations]
@@ -331,7 +341,7 @@ export function Sidebar({
       <div className="p-4 pb-3 mt-auto">
         <button
           onClick={onOpenSettings}
-          className="w-full flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-white hover:border-[#E8E4E2]/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all text-left group overflow-hidden"
+          className="w-full flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-white hover:border-[#E8E4E2]/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all text-left group overflow-hidden outline-none"
         >
           <img
             src={user?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuA0oS2KtsdNSGQoheV6v31oxAq-NhwZzQ47xg8__EJhv8OqGKGnZL3wep9OPHmM8x2Ik6mpZYLUp_nlIoldi6DXVNzDnTDsq10ls1jkUj-t_evdmGKwkn_t5xfFRgHK6-mmcStkVS-zdI45IF3rmBL3mH9KmAB8N9AvKqU-Dv45N0-NNrOIrD2ZlsGh9MmfkPMjEPcNRAJQVNa20KRYE9eY-Svv7Taq6vVmmqM9HxckuxqA9UWUSYJjawCeP6JhTrR_2ym5Y9kmaeo"}
@@ -342,19 +352,8 @@ export function Sidebar({
             <span className="text-sm font-bold text-[#1C1B1B] truncate">{user?.name || 'Alex Rivera'}</span>
             <span className="text-[10px] text-[#716B67] truncate uppercase tracking-widest font-bold mt-0.5">{user?.department || 'Admin'}</span>
           </div>
+          <ChevronUp className="w-4 h-4 text-[#716B67] shrink-0" />
         </button>
-
-        {onLogout && (
-          <button 
-            onClick={onLogout}
-            className="mt-2 w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors uppercase tracking-widest"
-          >
-            <div className="bg-red-500/10 p-1 rounded-md">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </div>
-            Sign Out
-          </button>
-        )}
       </div>
 
     </aside>

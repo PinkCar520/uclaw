@@ -821,7 +821,7 @@ function AppContent() {
               </div>
             </div>
           ) : activeTab === 'settings' ? (
-            <UserCenter />
+            <UserCenter onLogout={handleLogout} />
           ) : activeTab === 'library' ? (
             <SkillLibrary />
           ) : activeTab === 'knowledge' ? (
@@ -981,6 +981,8 @@ function AppContent() {
           setActiveTab('settings');
           setIsSettingsOpen(false);
         }}
+        onLogout={handleLogout}
+        user={user}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation, Trans } from 'react-i18next';
 
 interface AuthPageProps {
   onLoginSuccess: (token: string, user: any) => void;
@@ -15,6 +16,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   // Form states
   const [email, setEmail] = useState('');
@@ -40,7 +42,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Authentication failed');
+        throw new Error(data.message || t('auth.error_failed'));
       }
 
       onLoginSuccess(data.access_token, data.user);
@@ -85,20 +87,22 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
             <div className="mt-auto">
               <h1 className="text-5xl font-display font-extrabold text-white leading-[1.1] tracking-tight mb-6">
-                Orchestrating <br/> <span className="text-[#EC5B14]">Enterprise AI</span> <br/> Intelligence.
+                <Trans i18nKey="auth.hero_title">
+                  Orchestrating <br/> <span className="text-[#EC5B14]">Enterprise AI</span> <br/> Intelligence.
+                </Trans>
               </h1>
               <p className="text-white/60 text-lg leading-relaxed max-w-sm mb-10 font-medium">
-                The next-generation workspace for high-performance agentic workflows and cross-platform synergy.
+                {t('auth.hero_desc')}
               </p>
 
               <div className="grid grid-cols-2 gap-4">
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
                     <ShieldCheck className="w-5 h-5 text-[#EC5B14] mb-2" />
-                    <p className="text-[11px] font-bold text-white uppercase tracking-widest">Bank-Grade Security</p>
+                    <p className="text-[11px] font-bold text-white uppercase tracking-widest">{t('auth.security')}</p>
                  </div>
                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
                     <Database className="w-5 h-5 text-[#EC5B14] mb-2" />
-                    <p className="text-[11px] font-bold text-white uppercase tracking-widest">Knowledge Matrix</p>
+                    <p className="text-[11px] font-bold text-white uppercase tracking-widest">{t('auth.knowledge')}</p>
                  </div>
               </div>
             </div>
@@ -110,12 +114,12 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
           
           <div className="mb-10 text-center lg:text-left">
             <h2 className="text-3xl font-display font-black text-[#1C1B1B]">
-              {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+              {mode === 'login' ? t('auth.login_title') : t('auth.register_title')}
             </h2>
             <p className="text-[#716B67] font-medium mt-2">
               {mode === 'login' 
-                ? 'Resume your agentic journey with UClaw.' 
-                : 'Join the premier AI workforce orchestration platform.'}
+                ? t('auth.login_desc') 
+                : t('auth.register_desc')}
             </p>
           </div>
 
@@ -128,7 +132,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-1.5"
                 >
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[#716B67] ml-1">Display Name</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#716B67] ml-1">{t('auth.name_label')}</label>
                   <div className="relative group">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#716B67] transition-colors group-focus-within:text-[#EC5B14]" />
                     <input 
@@ -136,7 +140,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                       required
                       value={name}
                       onChange={e => setName(e.target.value)}
-                      placeholder="Jane Doe"
+                      placeholder={t('auth.name_placeholder')}
                       className="w-full h-14 pl-12 pr-4 rounded-2xl bg-[#f6f3f2] border-2 border-transparent focus:bg-white focus:border-[#EC5B14]/20 outline-none transition-all font-bold text-[#1C1B1B]"
                     />
                   </div>
@@ -145,7 +149,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
             </AnimatePresence>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#716B67] ml-1">Email or Work ID</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[#716B67] ml-1">{t('auth.email_label')}</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#716B67] transition-colors group-focus-within:text-[#EC5B14]" />
                 <input 
@@ -153,7 +157,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="alex@uclaw.ai"
+                  placeholder={t('auth.email_placeholder')}
                   className="w-full h-14 pl-12 pr-4 rounded-2xl bg-[#f6f3f2] border-2 border-transparent focus:bg-white focus:border-[#EC5B14]/20 outline-none transition-all font-bold text-[#1C1B1B]"
                 />
               </div>
@@ -161,8 +165,8 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between ml-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#716B67]">Password</label>
-                {mode === 'login' && <button type="button" className="text-[10px] font-bold text-[#EC5B14] hover:underline uppercase tracking-wider">Forgot?</button>}
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#716B67]">{t('auth.password_label')}</label>
+                {mode === 'login' && <button type="button" className="text-[10px] font-bold text-[#EC5B14] hover:underline uppercase tracking-wider">{t('auth.forgot_password')}</button>}
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#716B67] transition-colors group-focus-within:text-[#EC5B14]" />
@@ -171,7 +175,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t('auth.password_placeholder')}
                   className="w-full h-14 pl-12 pr-4 rounded-2xl bg-[#f6f3f2] border-2 border-transparent focus:bg-white focus:border-[#EC5B14]/20 outline-none transition-all font-bold text-[#1C1B1B]"
                 />
               </div>
@@ -194,7 +198,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   <RefreshCw className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    <span>{mode === 'login' ? 'Sign In to uClaw' : 'Create Free Account'}</span>
+                    <span>{mode === 'login' ? t('auth.sign_in_button') : t('auth.create_account_button')}</span>
                     <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -205,28 +209,28 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
           <div className="mt-8">
             <div className="relative flex items-center py-5">
               <div className="flex-grow border-t border-[#E8E4E2]"></div>
-              <span className="flex-shrink mx-4 text-[10px] font-bold text-[#716B67] uppercase tracking-widest">Or continue with</span>
+              <span className="flex-shrink mx-4 text-[10px] font-bold text-[#716B67] uppercase tracking-widest">{t('auth.continue_with')}</span>
               <div className="flex-grow border-t border-[#E8E4E2]"></div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                <button className="flex items-center justify-center gap-3 h-12 bg-white border border-[#E8E4E2] rounded-xl hover:bg-[#F6F3F2] transition-colors text-sm font-bold text-[#1C1B1B]">
-                 <Globe className="w-4 h-4 text-[#EC5B14]" /> SSO Portal
+                 <Globe className="w-4 h-4 text-[#EC5B14]" /> {t('auth.sso_portal')}
                </button>
                <button className="flex items-center justify-center gap-3 h-12 bg-white border border-[#E8E4E2] rounded-xl hover:bg-[#F6F3F2] transition-colors text-sm font-bold text-[#1C1B1B]">
-                 <Fingerprint className="w-4 h-4 text-[#EC5B14]" /> Bio-Logic
+                 <Fingerprint className="w-4 h-4 text-[#EC5B14]" /> {t('auth.bio_logic')}
                </button>
             </div>
           </div>
 
           <div className="mt-auto pt-8 text-center">
             <p className="text-sm font-medium text-[#716B67]">
-              {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{' '}
+              {mode === 'login' ? t('auth.no_account') : t('auth.have_account')}{' '}
               <button 
                 onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
                 className="text-[#EC5B14] font-bold hover:underline"
               >
-                {mode === 'login' ? 'Sign up' : 'Sign in'}
+                {mode === 'login' ? t('auth.sign_up') : t('auth.sign_in')}
               </button>
             </p>
           </div>

@@ -407,7 +407,7 @@ function AppContent() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const copyToClipboard = (m: any) => {
     const text = Array.isArray(m.parts)
@@ -418,18 +418,27 @@ function AppContent() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // 将 File 对象转为 base64 data URL，确保可序列化到 localStorage
-  const fileToAttachment = (file: File): Promise<{ name: string; contentType: string; url: string }> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({
-        name: file.name,
-        contentType: file.type || 'application/octet-stream',
-        url: reader.result as string,
-      });
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // 将文件直传至后端并获取持久化 URL，避免 Base64 导致 IndexedDB 爆满
+  const uploadFile = async (file: File): Promise<{ name: string; contentType: string; url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    // Note: Assuming /api/upload is proxied correctly in vite.config.ts or via absolute path
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     });
+    if (!res.ok) {
+      throw new Error(`Failed to upload file: ${res.statusText}`);
+    }
+    const data = await res.json();
+    return {
+      name: file.name,
+      contentType: file.type || 'application/octet-stream',
+      url: data.url,
+    };
   };
 
   const onFormSubmit = async (e?: any) => {
@@ -440,9 +449,9 @@ function AppContent() {
     const filesToUpload = [...selectedFiles];
     setSelectedFiles([]);
     try {
-      // 将文件转为 base64 附件，确保渲染和 localStorage 持久化都正常
+      // 直传文件并获取持久化 URL
       const attachments = filesToUpload.length > 0
-        ? await Promise.all(filesToUpload.map(fileToAttachment))
+        ? await Promise.all(filesToUpload.map(uploadFile))
         : undefined;
       await sendMessage(
         { content: val, role: 'user', experimental_attachments: attachments } as any,
@@ -658,26 +667,19 @@ function AppContent() {
                         </motion.div>
                       ))
                     )}
-                    {/* Thinking Indicator */}
-                    {status === 'submitting' && (
+                    {/* Thinking Indicator - Using uClaw Brand Logo (Claude Style) */}
+                    {isLoading && (messages[messages.length - 1]?.role === 'user' || (messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content)) && (
                       <motion.div 
                         key="thinking-indicator"
                         initial={{ opacity: 0, y: 10 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         exit={{ opacity: 0, y: -5 }}
-                        className="flex flex-col items-start w-full mb-8 px-4"
+                        className="flex flex-col items-start w-full mb-8 px-5"
                       >
-                        <div className="flex items-center gap-3 px-5 py-3">
-                          <div className="w-9 h-9 rounded-[12px] bg-[#EC5B14] flex items-center justify-center shadow-sm animate-bounce-subtle">
-                            <Sparkles className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-[#716B67] italic">{t('chat.thinking')}</span>
-                            <div className="flex gap-1 items-center h-4">
-                              <span className="w-1 h-1 bg-[#EC5B14]/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                              <span className="w-1 h-1 bg-[#EC5B14]/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                              <span className="w-1 h-1 bg-[#EC5B14]/50 rounded-full animate-bounce"></span>
-                            </div>
+                        <div className="flex items-center gap-3 py-3">
+                          {/* Brand Logo Component with Bounce Animation */}
+                          <div className="w-8 h-8 rounded-[10px] bg-[#EC5B14] flex items-center justify-center shadow-lg animate-bounce-subtle">
+                            <Sparkles className="w-4 h-4 text-white" />
                           </div>
                         </div>
                       </motion.div>

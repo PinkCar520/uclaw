@@ -22,6 +22,10 @@ export default defineConfig({
         headers: {
           'x-sso-token': 'mock-dev-token-xyz567',
         }
+      },
+      '/public': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
       }
     }
   }

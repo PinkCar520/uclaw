@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
+import { UploadModule } from './upload/upload.module';
 
 /**
  * AppModule
@@ -17,6 +18,7 @@ import { UserModule } from './user/user.module';
     AuthModule,   // 内部包含 UserService
     ChatModule,
     UserModule,   // 对外暴露用户中心接口
+    UploadModule, // 文件上传模块
   ],
   controllers: [],
   providers: [],

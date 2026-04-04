@@ -13,6 +13,7 @@ services:
       - .env
     volumes:
       - ./agent/skills:/app/agent/skills
+      - uclaw_gateway_uploads:/app/public/uploads
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/uclaw?schema=public
@@ -122,3 +123,4 @@ volumes:
   uclaw_redis_data:
   uclaw_zentao_data:
   uclaw_zentao_mysql:
+  uclaw_gateway_uploads:

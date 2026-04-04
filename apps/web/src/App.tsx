@@ -270,22 +270,65 @@ function AppContent() {
   }, [currentChatId, activeTab, conversations, t]);
 
   // 3. 消息更新回调 (由 ChatSession 触发)
+  const syncTimeoutRef = useRef<Record<string, any>>({});
+  const syncRetryCount = useRef<Record<string, number>>({});
+
+  const syncChatToBackend = (chatId: string, title: string, messages: any[]) => {
+    if (!token) return;
+    if (syncTimeoutRef.current[chatId]) {
+      clearTimeout(syncTimeoutRef.current[chatId]);
+    }
+
+    syncTimeoutRef.current[chatId] = setTimeout(async () => {
+      const attemptSync = async (retries = 3, delay = 2000) => {
+        try {
+          const res = await fetch(`/api/session/${chatId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              title,
+              channel: 'web',
+              history: messages,
+            })
+          });
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          syncRetryCount.current[chatId] = 0; // reset on success
+        } catch(e) {
+          console.warn(`Sync push failed for ${chatId}, retries left: ${retries}`, e);
+          if (retries > 0) {
+            setTimeout(() => attemptSync(retries - 1, delay * 2), delay);
+          } else {
+            console.error(`Final sync push failed for ${chatId}. Local DB will maintain state until next session pull.`);
+          }
+        }
+      };
+
+      attemptSync();
+    }, 2000); // 2s debounce
+  };
+
   const onMessagesChange = (id: string, messages: any[]) => {
     setConversations(prev => {
       const idx = prev.findIndex(c => c.id === id);
       const existing = prev[idx];
-      
+
       const firstMsg = messages.find((m: any) => m.role === 'user')?.content || 'New Conversation';
       const defaultTitle = firstMsg.slice(0, 25) + (firstMsg.length > 25 ? '...' : '');
       const title = existing ? existing.title : defaultTitle;
-      
-      const updated = { 
-        ...existing, 
-        id, 
-        title, 
-        messages, 
-        timestamp: Date.now() 
+
+      const updated = {
+        ...existing,
+        id,
+        title,
+        messages,
+        timestamp: Date.now()
       };
+
+      // Trigger debounced backend sync
+      syncChatToBackend(id, title, messages);
 
       if (idx > -1) {
         const newList = [...prev];
@@ -296,7 +339,6 @@ function AppContent() {
       }
     });
   };
-
   const onChatCreated = (sessionId: string, initialMsgs: any[]) => {
     const newChatId = `chat_${Date.now()}`;
     
@@ -342,11 +384,32 @@ function AppContent() {
   };
 
   const handleRenameChat = (id: string, newTitle: string) => {
-    setConversations(prev => prev.map(c => c.id === id ? { ...c, title: newTitle } : c));
+    setConversations(prev => prev.map(c => {
+      if (c.id === id) {
+        syncChatToBackend(id, newTitle, c.messages);
+        return { ...c, title: newTitle };
+      }
+      return c;
+    }));
   };
 
   const handleDeleteChat = (id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
+    if (token) {
+      // Execute delete immediately without debounce, with simple retry
+      const attemptDelete = async (retries = 2) => {
+        try {
+          await fetch(`/api/session/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        } catch (e) {
+          if (retries > 0) setTimeout(() => attemptDelete(retries - 1), 2000);
+          else console.error(`Failed to delete session ${id} from server.`);
+        }
+      };
+      attemptDelete();
+    }
     if (currentChatId === id) {
       handleNewChat();
     }

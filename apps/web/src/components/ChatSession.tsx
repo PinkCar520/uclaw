@@ -53,22 +53,53 @@ export function ChatSession({
   isVisible,
   t
 }: ChatSessionProps) {
-  const { messages, sendMessage, status, reload, setMessages, stop } = useChat({
-    id: sessionId, // 始终用 sessionId，chatId 变化时不重建实例（否则流式输出会被清空）
+  const initializedRef = useRef(false);
+  const chatIdRef = useRef(chatId);
+  const titleGeneratedRef = useRef(false);
+
+  // 同步 ref，确保异步回调中总能拿到最新值
+  useEffect(() => {
+    chatIdRef.current = chatId;
+  }, [chatId]);
+
+  useEffect(() => {
+    if (!initializedRef.current && initialMessages.length > 0) {
+      initializedRef.current = true;
+      setMessages(initialMessages);
+      // 如果加载的是历史记录，标记为已生成标题，防止重复总结
+      titleGeneratedRef.current = true;
+    }
+  }, [initialMessages]);
+
+
+
+  const [localInput, setLocalInput] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewAttachment, setPreviewAttachment] = useState<{ name: string; contentType: string; url: string } | null>(null);
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const { messages, sendMessage, status, reload, setMessages, stop } = (useChat as any)({
+    id: sessionId,
+    api: '/api/chat',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: {
+      modelId: selectedModelId,
+      search: isSearchMode,
+      knowledge: isKnowledgeMode
+    },
     onFinish: async (message: any) => {
-      // 这里的 messages 是“之前的”列表，message 是“新的回答”
       const updatedMessages = [...messages, message];
-      
-      // 使用实时的 Ref 来判断
       const currentChatId = chatIdRef.current;
       
       if (currentChatId) {
         onMessagesChange(currentChatId, updatedMessages);
-        
-        // 智能标题摘要逻辑：如果是第一轮且尚未生成标题
         if (updatedMessages.length >= 2 && !titleGeneratedRef.current && token) {
-          titleGeneratedRef.current = true; // 立即标记，防止重入
-          
+          titleGeneratedRef.current = true;
           try {
             const res = await fetch('/api/chat/generate-title', {
               method: 'POST',
@@ -91,38 +122,9 @@ export function ChatSession({
         }
       }
     }
-  }) as any;
-
-  // 只在首次挂载时设置历史消息，流式输出期间不再触发（防止覆盖正在输出的内容）
-  const initializedRef = useRef(false);
-  const chatIdRef = useRef(chatId);
-  const titleGeneratedRef = useRef(false);
-
-  // 同步 ref，确保异步回调中总能拿到最新值
-  useEffect(() => {
-    chatIdRef.current = chatId;
-  }, [chatId]);
-
-  useEffect(() => {
-    if (!initializedRef.current && initialMessages.length > 0) {
-      initializedRef.current = true;
-      setMessages(initialMessages);
-      // 如果加载的是历史记录，标记为已生成标题，防止重复总结
-      titleGeneratedRef.current = true;
-    }
-  }, [initialMessages]);
+  });
 
   const isLoading = status === 'streaming' || status === 'submitting';
-
-  const [localInput, setLocalInput] = useState('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [previewAttachment, setPreviewAttachment] = useState<{ name: string; contentType: string; url: string } | null>(null);
-  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -212,14 +214,7 @@ export function ChatSession({
       }
 
       await sendMessage(
-        { content: val, role: 'user', experimental_attachments: attachments } as any,
-        { 
-          body: { 
-            modelId: selectedModelId,
-            search: isSearchMode,
-            knowledge: isKnowledgeMode
-          } 
-        }
+        { content: val, role: 'user', experimental_attachments: attachments } as any
       );
     } catch (err) {
       console.error(err);
@@ -227,9 +222,19 @@ export function ChatSession({
       setSelectedFiles(filesToUpload);
     }
   };
-  const TypingCursor = () => (
-    <span className="inline-block w-[1.5px] h-[14px] bg-[#716B67] ml-1 translate-y-[2px] animate-cursor-blink" />
-  );
+  const BrailleSpinner = () => {
+    const [pattern, setPattern] = useState("⠋");
+    useEffect(() => {
+      const patterns = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+      let i = 0;
+      const interval = setInterval(() => {
+        setPattern(patterns[i]);
+        i = (i + 1) % patterns.length;
+      }, 80);
+      return () => clearInterval(interval);
+    }, []);
+    return <span className="font-mono text-[#716B67] mr-1">{pattern}</span>;
+  };
 
   const renderToolResult = (part: any) => {
     if (part.type === 'tool-getBugInfo' || part.toolName === 'getBugInfo') {
@@ -392,27 +397,40 @@ export function ChatSession({
                           )}
 
                           {!hasContent && isAssistant && isLoading ? (
-                            <div className="flex items-center gap-2 py-2">
-                              <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-[11px] font-bold text-[#EC5B14] uppercase tracking-widest">
-                                {t('chat.thinking')}
+                            <div className="flex items-center py-2">
+                              <BrailleSpinner />
+                              <motion.span animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-[12px] font-medium text-[#716B67]">
+                                Thinking...
                               </motion.span>
-                              <TypingCursor />
                             </div>
                           ) : Array.isArray(m.parts) ? (
-                            m.parts.map((part: any, i: number) => (
-                              <div key={i} className="prose prose-slate prose-sm max-w-none">
-                                {part.type === 'text' && (
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {isStreaming && i === m.parts.length - 1 ? part.text : part.text}
-                                  </ReactMarkdown>
-                                )}
-                                {renderToolResult(part)}
-                              </div>
-                            ))
+                            <>
+                              {m.parts.map((part: any, i: number) => (
+                                <div key={i} className="prose prose-slate prose-sm max-w-none">
+                                  {part.type === 'text' && (
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {part.text}
+                                    </ReactMarkdown>
+                                  )}
+                                  {renderToolResult(part)}
+                                </div>
+                              ))}
+                              {isStreaming && (
+                                <div className="flex items-center mt-2 opacity-60">
+                                  <BrailleSpinner />
+                                  <span className="text-[11px] text-[#716B67] font-medium tracking-wide">Thinking...</span>
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <div className="prose prose-slate prose-sm max-w-none relative">
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                              {isStreaming && <TypingCursor />}
+                              {isStreaming && (
+                                <div className="flex items-center mt-2 opacity-60">
+                                  <BrailleSpinner />
+                                  <span className="text-[11px] text-[#716B67] font-medium tracking-wide">Thinking...</span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -427,18 +445,18 @@ export function ChatSession({
                   );
                 })}
                 
-               {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的“先行占位” */}
+              {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的“先行占位” */}
               {isLoading && messages[messages.length - 1]?.role === 'user' && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex w-full gap-4 items-start mb-8">
                   <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col gap-2 py-3">
-                    <div className="flex items-center gap-2">
-                      <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-[11px] font-bold text-[#EC5B14] uppercase tracking-widest">
-                        {t('chat.thinking')}
+                    <div className="flex items-center">
+                      <BrailleSpinner />
+                      <motion.span animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-[12px] font-medium text-[#716B67]">
+                        Thinking...
                       </motion.span>
-                      <TypingCursor />
                     </div>
                   </div>
                 </motion.div>

@@ -227,6 +227,9 @@ export function ChatSession({
       setSelectedFiles(filesToUpload);
     }
   };
+  const TypingCursor = () => (
+    <span className="inline-block w-[1.5px] h-[14px] bg-[#716B67] ml-1 translate-y-[2px] animate-cursor-blink" />
+  );
 
   const renderToolResult = (part: any) => {
     if (part.type === 'tool-getBugInfo' || part.toolName === 'getBugInfo') {
@@ -346,86 +349,103 @@ export function ChatSession({
                   </div>
                 </div>
               ) : (
-                messages.map((m: any) => (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id} className={cn("flex flex-col group", m.role === 'user' ? "items-end" : "items-start w-full")}>
-                    <div className={cn("flex w-full", m.role === 'user' ? "justify-end" : "justify-start")}>
-                      <div className={cn(
-                        "py-3 px-5 rounded-[20px] text-[15px] leading-relaxed",
-                        m.role === 'user'
-                          ? "bg-[#eeece9] text-[#1C1B1B] max-w-[85%]"
-                          : "bg-transparent text-[#1C1B1B] w-full"
-                      )}>
-                        {(m.experimental_attachments || m.attachments) && (m.experimental_attachments || m.attachments).length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-[#E8E4E2]/40">
-                            {(m.experimental_attachments || m.attachments).map((at: any, idx: number) => {
-                              const isImage = at.contentType?.startsWith('image/') || at.type?.startsWith('image/');
-                              const displayUrl = at.url || (at.data ? `data:${at.contentType || at.type};base64,${at.data}` : '');
-                              const isActive = previewAttachment?.name === at.name && previewAttachment?.url === displayUrl;
-                              return (
-                                <button
-                                  key={idx}
-                                  onClick={() => setPreviewAttachment(isActive ? null : { name: at.name, contentType: at.contentType || at.type || '', url: displayUrl })}
-                                  className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border max-w-[200px] transition-all", isActive ? 'bg-[#EC5B14]/10 border-[#EC5B14]/40 text-[#EC5B14]' : 'bg-[#F6F3F2] border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:bg-[#EC5B14]/5')}
-                                >
-                                  {isImage && displayUrl ? <div className="w-6 h-6 rounded-md bg-white border border-[#E8E4E2] overflow-hidden flex items-center justify-center shrink-0"><img src={displayUrl} alt={at.name} className="w-full h-full object-cover" /></div> : <FileText className="w-4 h-4 shrink-0" />}
-                                  <span className="text-[11px] font-bold truncate" title={at.name}>{at.name}</span>
-                                </button>
-                              );
-                            })}
+                <>
+                  {messages.map((m: any, idx: number) => {
+                  const isLast = idx === messages.length - 1;
+                  const isAssistant = m.role === 'assistant';
+                  const isUser = m.role === 'user';
+                  const isStreaming = isLast && isLoading && isAssistant;
+                  const hasContent = m.content || (Array.isArray(m.parts) && m.parts.some((p: any) => p.text));
+
+                  return (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id || idx} className={cn("flex flex-col group", isUser ? "items-end" : "items-start w-full")}>
+                      <div className={cn("flex w-full gap-4", isUser ? "justify-end" : "justify-start")}>
+                        {isAssistant && (
+                          <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
+                            <Sparkles className="w-4 h-4" />
                           </div>
                         )}
-                        {Array.isArray(m.parts) ? m.parts.map((part: any, i: number) => (
-                          <div key={i} className="prose prose-slate prose-sm max-w-none">
-                            {part.type === 'text' && <ReactMarkdown remarkPlugins={[remarkGfm]}>{part.text}</ReactMarkdown>}
-                            {renderToolResult(part)}
-                          </div>
-                        )) : (
-                          <div className="prose prose-slate prose-sm max-w-none"><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div>
-                        )}
+                        <div className={cn(
+                          "py-3 rounded-[20px] text-[15px] leading-relaxed",
+                          isUser
+                            ? "bg-[#eeece9] text-[#1C1B1B] max-w-[85%] px-5"
+                            : "bg-transparent text-[#1C1B1B] flex-1 min-w-0"
+                        )}>
+                          {(m.experimental_attachments || m.attachments) && (m.experimental_attachments || m.attachments).length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-[#E8E4E2]/40">
+                              {(m.experimental_attachments || m.attachments).map((at: any, aidx: number) => {
+                                const isImage = at.contentType?.startsWith('image/') || at.type?.startsWith('image/');
+                                const displayUrl = at.url || (at.data ? `data:${at.contentType || at.type};base64,${at.data}` : '');
+                                const isActive = previewAttachment?.name === at.name && previewAttachment?.url === displayUrl;
+                                return (
+                                  <button
+                                    key={aidx}
+                                    onClick={() => setPreviewAttachment(isActive ? null : { name: at.name, contentType: at.contentType || at.type || '', url: displayUrl })}
+                                    className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border max-w-[200px] transition-all", isActive ? 'bg-[#EC5B14]/10 border-[#EC5B14]/40 text-[#EC5B14]' : 'bg-[#F6F3F2] border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:bg-[#EC5B14]/5')}
+                                  >
+                                    {isImage && displayUrl ? <div className="w-6 h-6 rounded-md bg-white border border-[#E8E4E2] overflow-hidden flex items-center justify-center shrink-0"><img src={displayUrl} alt={at.name} className="w-full h-full object-cover" /></div> : <FileText className="w-4 h-4 shrink-0" />}
+                                    <span className="text-[11px] font-bold truncate" title={at.name}>{at.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {!hasContent && isAssistant && isLoading ? (
+                            <div className="flex items-center gap-2 py-2">
+                              <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-[11px] font-bold text-[#EC5B14] uppercase tracking-widest">
+                                {t('chat.thinking')}
+                              </motion.span>
+                              <TypingCursor />
+                            </div>
+                          ) : Array.isArray(m.parts) ? (
+                            m.parts.map((part: any, i: number) => (
+                              <div key={i} className="prose prose-slate prose-sm max-w-none">
+                                {part.type === 'text' && (
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {isStreaming && i === m.parts.length - 1 ? part.text : part.text}
+                                  </ReactMarkdown>
+                                )}
+                                {renderToolResult(part)}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="prose prose-slate prose-sm max-w-none relative">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                              {isStreaming && <TypingCursor />}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className={cn("flex items-center gap-3 px-12 mt-2", m.role === 'user' ? "flex-row-reverse" : "flex-row")}>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => copyToClipboard(m)} className="p-1 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">{copiedId === m.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}</button>
-                        {m.role === 'assistant' && <button onClick={() => reload?.()} className="p-1 hover:bg-[#F6F3F2] rounded-md text-[#716B67]"><RotateCcw className="w-3 h-3" /></button>}
+                      <div className={cn("flex items-center gap-3 mt-2", isUser ? "px-5 flex-row-reverse" : "px-12 flex-row")}>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => copyToClipboard(m)} className="p-1 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">{copiedId === m.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}</button>
+                          {isAssistant && <button onClick={() => reload?.()} className="p-1 hover:bg-[#F6F3F2] rounded-md text-[#716B67]"><RotateCcw className="w-3 h-3" /></button>}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-              {isLoading && (messages[messages.length - 1]?.role === 'user' || (messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content)) && (
-                <motion.div 
-                  key="thinking-indicator" 
-                  initial={{ opacity: 0, y: 10, scale: 0.8 }} 
-                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                  exit={{ opacity: 0, y: -5, scale: 0.8 }} 
-                  className="flex flex-col items-start w-full mb-8 px-5"
-                >
-                  <div className="flex items-center gap-3 py-3">
-                    <motion.div 
-                      animate={{ 
-                        scale: [1, 1.15, 1],
-                        rotate: [0, 5, -5, 0]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                      className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white"
-                    >
-                      <Sparkles className="w-4 h-4" />
                     </motion.div>
-                    <motion.span 
-                      animate={{ opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                      className="text-[11px] font-bold text-[#EC5B14] uppercase tracking-widest ml-1"
-                    >
-                      {t('chat.thinking')}
-                    </motion.span>
+                  );
+                })}
+                
+               {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的“先行占位” */}
+              {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex w-full gap-4 items-start mb-8">
+                  <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col gap-2 py-3">
+                    <div className="flex items-center gap-2">
+                      <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-[11px] font-bold text-[#EC5B14] uppercase tracking-widest">
+                        {t('chat.thinking')}
+                      </motion.span>
+                      <TypingCursor />
+                    </div>
                   </div>
                 </motion.div>
               )}
+            </>
+          )}
+
             </AnimatePresence>
           </div>
         </div>

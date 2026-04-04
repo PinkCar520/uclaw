@@ -52,7 +52,13 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
 
+  --animate-cursor-blink: cursor-blink 1s step-start infinite;
+  
   /* Font mapping */
   --font-sans: "Inter", sans-serif;
   --font-display: "Manrope", sans-serif;

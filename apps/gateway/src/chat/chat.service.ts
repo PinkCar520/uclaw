@@ -142,6 +142,13 @@ export class ChatService {
   async generateChatStream(messages: any[], res: Response, req?: any, modelId?: string) {
     try {
       const modelMessages = await convertToModelMessages(messages);
+      
+      // Log received attachments for debugging/verification
+      const attachmentCount = messages.reduce((count, m) => count + (m.experimental_attachments?.length || 0), 0);
+      if (attachmentCount > 0) {
+        console.log(`[Gateway] Received ${attachmentCount} total attachments across history.`);
+      }
+      
       const onlineClis = this.rpcGateway.getOnlineUsers();
       const currentUserId = req?.user?.id || 'Anonymous';
 

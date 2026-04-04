@@ -81,6 +81,7 @@ export class ChatController {
   ) {
     const requestId = Math.random().toString(36).substring(7);
     const messages = body.messages || (body.text ? [{ role: 'user', content: body.text }] : []);
+    
     // 提取最后一条用户消息文本，用于意图识别
     const userMessage: string =
       body.text ||

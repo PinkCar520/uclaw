@@ -40,6 +40,7 @@ interface Conversation {
   title: string;
   messages: any[];
   timestamp: number;
+  favorited?: boolean;
 }
 
 function AppContent() {
@@ -60,6 +61,7 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<{ name: string; contentType: string; url: string } | null>(null);
 
   // 对话持久化逻辑
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -127,9 +129,18 @@ function AppContent() {
       const defaultTitle = firstMsg.slice(0, 25) + (firstMsg.length > 25 ? '...' : '');
       const title = existing ? existing.title : defaultTitle;
 
-      const updated = { id, title, messages, timestamp: Date.now() };
+      // 只有当消息数量增加时才更新时间戳，点击切换对话不应改变顺序
+      const shouldUpdateTimestamp = !existing || messages.length > (existing.messages?.length || 0);
+      const timestamp = shouldUpdateTimestamp ? Date.now() : (existing?.timestamp || Date.now());
+
+      const updated = { id, title, messages, timestamp: timestamp, favorited: existing?.favorited };
+      
       let newList;
       if (idx > -1) {
+        // 如果内容没变且不需要更新时间戳，直接返回以避免不必要的 re-render
+        if (!shouldUpdateTimestamp && existing.title === title && existing.messages === messages && existing.favorited === updated.favorited) {
+          return prev;
+        }
         newList = [...prev];
         newList[idx] = updated;
       } else {
@@ -164,6 +175,14 @@ function AppContent() {
     if (currentChatId === id) {
       handleNewChat();
     }
+  };
+
+  const handleFavoriteChat = (id: string, favorited: boolean) => {
+    setConversations(prev => {
+      const newList = prev.map(c => c.id === id ? { ...c, favorited } : c);
+      localStorage.setItem('uclaw_chats', JSON.stringify(newList));
+      return newList;
+    });
   };
 
   const loadConversation = (id: string) => {
@@ -303,6 +322,20 @@ const copyToClipboard = (m: any) => {
   setTimeout(() => setCopiedId(null), 2000);
 };
 
+// 将 File 对象转为 base64 data URL，确保可序列化到 localStorage
+const fileToAttachment = (file: File): Promise<{ name: string; contentType: string; url: string }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      name: file.name,
+      contentType: file.type || 'application/octet-stream',
+      url: reader.result as string,
+    });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 const onFormSubmit = async (e?: any) => {
   if (e) e.preventDefault();
   if ((!localInput.trim() && selectedFiles.length === 0) || isLoading) return;
@@ -311,16 +344,14 @@ const onFormSubmit = async (e?: any) => {
   const filesToUpload = [...selectedFiles];
   setSelectedFiles([]);
   try {
-    const attachments = filesToUpload.map(f => ({
-      name: f.name,
-      contentType: f.type,
-      url: URL.createObjectURL(f),
-    }));
-    
-    await sendMessage({ text: val }, { 
-      experimental_attachments: attachments,
-      body: { modelId: selectedModelId } 
-    });
+    // 将文件转为 base64 附件，确保渲染和 localStorage 持久化都正常
+    const attachments = filesToUpload.length > 0
+      ? await Promise.all(filesToUpload.map(fileToAttachment))
+      : undefined;
+    await sendMessage(
+      { content: val, role: 'user', experimental_attachments: attachments } as any,
+      { body: { modelId: selectedModelId } }
+    );
   } catch (err) {
     console.error(err);
     setLocalInput(val);
@@ -351,8 +382,8 @@ const renderToolResult = (part: any) => {
       <TaskPlan
         key={part.toolCallId}
         {...plan}
-        onConfirm={() => sendMessage({ text: 'Y' })}
-        onCancel={() => sendMessage({ text: 'N' })}
+        onConfirm={() => sendMessage({ content: 'Y', role: 'user' })}
+        onCancel={() => sendMessage({ content: 'N', role: 'user' })}
       />
     );
   }
@@ -384,6 +415,12 @@ return (
       onMainTabChange={setActiveTab} 
       onOpenSettings={() => setIsSettingsOpen(true)}
       onNewChat={handleNewChat}
+      conversations={conversations}
+      currentChatId={currentChatId}
+      onLoadConversation={loadConversation}
+      onRenameConversation={handleRenameChat}
+      onDeleteConversation={handleDeleteChat}
+      onFavoriteConversation={handleFavoriteChat}
     />
 
     {/* 2. 主区域 (Fluid Workspace) */}
@@ -445,40 +482,44 @@ return (
                   ) : (
                     messages.map((m: any) => (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id} className={cn("flex flex-col group", m.role === 'user' ? "items-end" : "items-start w-full")}>
-                        <div className={cn("flex gap-3", m.role === 'user' ? "flex-row-reverse max-w-[85%]" : "w-full")}>
-                          
-                          {/* Avatar */}
-                          <div className="shrink-0 pt-1">
-                            {m.role === 'user' ? (
-                               <div className="w-8 h-8 rounded-full border border-[#E8E4E2] overflow-hidden"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=WangEr" alt="U" /></div>
-                            ) : (
-                               <div className="w-8 h-8 rounded-[8px] bg-[#EC5B14] flex items-center justify-center text-white shadow-sm"><Sparkles className="w-4 h-4" /></div>
-                            )}
-                          </div>
-
+                        <div className={cn("flex", m.role === 'user' ? "justify-end max-w-full" : "w-full")}>
                           <div className={cn(
                             "py-3 px-5 rounded-[16px] text-[14px]",
                             m.role === 'user' 
-                              ? "bg-white border border-[#E8E4E2]/60 text-[#1C1B1B] shadow-[0_4px_20px_rgba(0,0,0,0.02)]" 
-                              : "bg-transparent text-[#1C1B1B]"
+                              ? "bg-white border border-[#E8E4E2]/60 text-[#1C1B1B] shadow-[0_4px_20px_rgba(0,0,0,0.02)] max-w-[85%]" 
+                              : "bg-transparent text-[#1C1B1B] w-full"
                           )}>
-                            {/* Visual Attachment Indicators */}
-                            {m.experimental_attachments && m.experimental_attachments.length > 0 && (
+                            {/* Visual Attachment Indicators — clickable to preview */}
+                            {(m.experimental_attachments || m.attachments) && (m.experimental_attachments || m.attachments).length > 0 && (
                               <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-[#E8E4E2]/40">
-                                {m.experimental_attachments.map((at: any, idx: number) => (
-                                  <div key={idx} className="flex items-center gap-2 bg-[#F6F3F2] px-3 py-1.5 rounded-xl border border-[#E8E4E2]/60 max-w-[200px]">
-                                    {at.contentType?.startsWith('image/') ? (
-                                      <div className="w-6 h-6 rounded-md bg-white border border-[#E8E4E2] overflow-hidden flex items-center justify-center shrink-0">
-                                        <img src={at.url} alt={at.name} className="w-full h-full object-cover" />
-                                      </div>
-                                    ) : (
-                                      <FileText className="w-4 h-4 text-[#716B67] shrink-0" />
-                                    )}
-                                    <span className="text-[11px] font-bold text-[#1C1B1B] truncate" title={at.name}>
-                                      {at.name}
-                                    </span>
-                                  </div>
-                                ))}
+                                {(m.experimental_attachments || m.attachments).map((at: any, idx: number) => {
+                                  const isImage = at.contentType?.startsWith('image/') || at.type?.startsWith('image/');
+                                  const displayUrl = at.url || (at.data ? `data:${at.contentType || at.type};base64,${at.data}` : '');
+                                  const isActive = previewAttachment?.name === at.name && previewAttachment?.url === displayUrl;
+                                  
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setPreviewAttachment(isActive ? null : { name: at.name, contentType: at.contentType || at.type || '', url: displayUrl })}
+                                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border max-w-[200px] transition-all ${
+                                        isActive
+                                          ? 'bg-[#EC5B14]/10 border-[#EC5B14]/40 text-[#EC5B14]'
+                                          : 'bg-[#F6F3F2] border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:bg-[#EC5B14]/5'
+                                      }`}
+                                    >
+                                      {isImage && displayUrl ? (
+                                        <div className="w-6 h-6 rounded-md bg-white border border-[#E8E4E2] overflow-hidden flex items-center justify-center shrink-0">
+                                          <img src={displayUrl} alt={at.name} className="w-full h-full object-cover" />
+                                        </div>
+                                      ) : (
+                                        <FileText className="w-4 h-4 shrink-0" />
+                                      )}
+                                      <span className="text-[11px] font-bold truncate" title={at.name}>
+                                        {at.name}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
                               </div>
                             )}
 
@@ -562,7 +603,51 @@ return (
                     className="w-full bg-transparent border-none text-[#1C1B1B] focus:ring-0 text-sm py-4 px-4 resize-none min-h-[56px] max-h-[200px] placeholder:text-[#716B67]/70 focus:outline-none"
                   />
                   <div className="flex items-center justify-between px-4 pb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {/* Model Selector */}
+                        <DropdownMenu open={isModelDropdownOpen} onOpenChange={setIsModelDropdownOpen}>
+                           <DropdownMenuTrigger asChild>
+                             <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[#716B67] hover:bg-[#F6F3F2] hover:text-[#EC5B14] transition-all border border-transparent hover:border-[#E8E4E2]/40">
+                               <activeModel.icon className={cn("w-4 h-4", activeModel.color)} />
+                               <span className="text-[11px] font-bold tracking-tight">{activeModel.name}</span>
+                               <ChevronDown className={cn("w-3 h-3 transition-transform", isModelDropdownOpen ? "rotate-180" : "")} />
+                             </button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="start" className="w-60 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-2xl p-1.5 backdrop-blur-xl bg-white/90">
+                             <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black uppercase text-[#716B67] tracking-widest">Available Models</DropdownMenuLabel>
+                             <DropdownMenuSeparator className="bg-[#E8E4E2]/40" />
+                             <div className="max-h-[300px] overflow-y-auto no-scrollbar">
+                               {models.map((m) => (
+                                 <DropdownMenuItem 
+                                   key={m.id} 
+                                   onClick={() => setSelectedModelId(m.id)}
+                                   className={cn(
+                                     "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all mb-0.5",
+                                     selectedModelId === m.id ? "bg-[#EC5B14]/5" : "hover:bg-[#F6F3F2]"
+                                   )}
+                                 >
+                                   <div className="flex items-center gap-3">
+                                     <div className={cn("p-2 rounded-lg bg-white shadow-sm border border-[#E8E4E2]/40", m.color)}>
+                                       <m.icon className="w-4 h-4" />
+                                     </div>
+                                     <div className="flex flex-col">
+                                       <span className="text-[13px] font-bold text-[#1C1B1B]">{m.name}</span>
+                                       <span className="text-[10px] text-[#716B67] font-medium">{m.provider}</span>
+                                     </div>
+                                   </div>
+                                   {selectedModelId === m.id && (
+                                     <div className="bg-[#EC5B14] rounded-full p-0.5 shadow-[0_2px_8px_rgba(236,91,20,0.3)]">
+                                       <Check className="w-2.5 h-2.5 text-white" />
+                                     </div>
+                                   )}
+                                 </DropdownMenuItem>
+                               ))}
+                             </div>
+                           </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <div className="w-px h-4 bg-[#E8E4E2]/60 mx-1" />
+
                         <input 
                           type="file" 
                           ref={fileInputRef} 
@@ -611,7 +696,7 @@ return (
                       </div>
                     <button 
                       onClick={() => isLoading ? stop() : onFormSubmit()} 
-                      disabled={!isLoading && !localInput.trim()} 
+                      disabled={!isLoading && !localInput.trim() && selectedFiles.length === 0} 
                       className={cn(
                         "text-white w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 disabled:shadow-none shadow-lg",
                         isLoading 
@@ -628,9 +713,58 @@ return (
           </div>
         ) : activeTab === 'settings' ? (<SettingsView />) : activeTab === 'library' ? (<SkillLibrary />) : activeTab === 'knowledge' ? (<KnowledgeBase />) : activeTab === 'console' ? (<Dashboard />) : (<UIGallery />)}
         
-        {/* Sidebar right Integrations Panel (only in Chat view) */}
+        {/* Sidebar right: File Preview Panel OR Integrations Panel */}
         {(activeTab === 'chat' || !activeTab) && (
-          <aside className="w-[320px] bg-[#FCF9F8] border-l border-[#E8E4E2]/50 p-6 flex flex-col gap-8 overflow-y-auto hidden lg:flex">
+          <aside className={`bg-[#FCF9F8] border-l border-[#E8E4E2]/50 flex flex-col overflow-hidden hidden lg:flex transition-all duration-300 ${previewAttachment ? 'w-[560px]' : 'w-[320px]'}`}>
+
+          {previewAttachment ? (
+            /* ── File Preview Panel ── */
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4E2]/50 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="w-4 h-4 text-[#EC5B14] shrink-0" />
+                  <span className="text-xs font-bold text-[#1C1B1B] truncate" title={previewAttachment.name}>{previewAttachment.name}</span>
+                </div>
+                <button
+                  onClick={() => setPreviewAttachment(null)}
+                  className="p-1.5 rounded-lg hover:bg-[#F6F3F2] text-[#716B67] hover:text-[#1C1B1B] transition-colors shrink-0"
+                >
+                  <CloseIcon className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto">
+                {previewAttachment.contentType.startsWith('image/') ? (
+                  <div className="p-4 flex items-center justify-center">
+                    <img src={previewAttachment.url} alt={previewAttachment.name} className="max-w-full rounded-xl border border-[#E8E4E2]/60" />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <div className="prose prose-slate prose-xs max-w-none text-[13px]">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {(() => {
+                          try {
+                            if (previewAttachment.url.startsWith('data:')) {
+                              const b64 = previewAttachment.url.split(',')[1];
+                              // 使用 TextDecoder 正确解码 UTF-8（支持中文等多字节内容）
+                              const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+                              return new TextDecoder('utf-8').decode(bytes);
+                            }
+                            return previewAttachment.url;
+                          } catch {
+                            return '无法解码文件内容';
+                          }
+                        })()}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* ── Integrations Panel ── */
+            <div className="p-6 flex flex-col gap-8 overflow-y-auto flex-1">
             
             {/* Active Integrations */}
             <div>
@@ -714,6 +848,8 @@ return (
               </div>
             </div>
 
+            </div>
+          )}
           </aside>
         )}
       </div>

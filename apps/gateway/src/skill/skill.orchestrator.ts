@@ -230,12 +230,54 @@ ${catalogXml}`;
       }
 
       // 兼容某些版本的 AI SDK (如 6.0.x)，确保 User/Assistant 消息具有 parts 属性
+      // 同时把 experimental_attachments 注入为 LLM 可读的 content parts
       const sanitizedMessages = messages.map(m => {
-        if (!m.parts && typeof m.content === 'string') {
-          return { ...m, parts: [{ type: 'text', text: m.content }] };
+        // Log attachments if present
+        if (m.experimental_attachments?.length > 0) {
+          this.logger.log(`[Orchestrator] Message from ${m.role} contains ${m.experimental_attachments.length} attachments.`);
         }
-        return m;
+
+        let parts: any[] = [];
+
+        // Build base text part
+        if (Array.isArray(m.parts)) {
+          parts = [...m.parts];
+        } else if (typeof m.content === 'string') {
+          parts = [{ type: 'text', text: m.content }];
+        }
+
+        // Inject attachment content into parts so LLM can read files
+        if (m.role === 'user' && Array.isArray(m.experimental_attachments) && m.experimental_attachments.length > 0) {
+          for (const attachment of m.experimental_attachments) {
+            const contentType: string = attachment.contentType || attachment.type || '';
+            const url: string = attachment.url || '';
+            const name: string = attachment.name || 'attachment';
+
+            if (contentType.startsWith('image/')) {
+              // Image: inject as image part
+              parts.push({ type: 'image', image: url, mimeType: contentType });
+            } else if (url.startsWith('data:')) {
+              // Text / document: decode base64 and inject as text
+              try {
+                const base64Data = url.split(',')[1];
+                if (base64Data) {
+                  const decoded = Buffer.from(base64Data, 'base64').toString('utf-8');
+                  parts.push({
+                    type: 'text',
+                    text: `\n\n---\n📎 **文件附件: ${name}**\n\`\`\`\n${decoded}\n\`\`\`\n---`,
+                  });
+                  this.logger.log(`[Orchestrator] Injected file content: "${name}" (${decoded.length} chars)`);
+                }
+              } catch (err) {
+                this.logger.warn(`[Orchestrator] Failed to decode attachment "${name}": ${err}`);
+              }
+            }
+          }
+        }
+
+        return { ...m, parts };
       });
+
 
       const modelMessages = await convertToModelMessages(sanitizedMessages);
       this.logger.debug(`modelMessages converted: ${modelMessages?.length}`);

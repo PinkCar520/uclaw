@@ -137,5 +137,18 @@ export class ChatController {
     console.log(`[Gateway] Agent Reply to UpChat (${message.senderId}): ${replyText}`);
     // 真实生产环境：this.imHandler.sendReply(message.chatId, { text: replyText });
   }
+
+  /**
+   * POST /api/chat/generate-title
+   * 为对话生成摘要标题
+   */
+  @Post('generate-title')
+  async generateTitle(@Body() body: any) {
+    const { message, modelId } = body;
+    if (!message) return { success: false, error: 'Message is required' };
+    
+    const title = await this.skillOrchestrator.generateTitle(message, modelId);
+    return { success: true, title };
+  }
 }
 

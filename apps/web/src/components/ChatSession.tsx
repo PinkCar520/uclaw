@@ -27,6 +27,7 @@ interface ChatSessionProps {
   chatId: string | null; // Persisted chat ID (URL slug)
   onChatCreated: (id: string, messages: any[]) => void;
   onMessagesChange: (id: string, messages: any[]) => void;
+  onRenameConversation?: (id: string, title: string) => void;
   initialMessages?: any[];
   models: any[];
   selectedModelId: string;
@@ -42,6 +43,7 @@ export function ChatSession({
   chatId,
   onChatCreated,
   onMessagesChange,
+  onRenameConversation,
   initialMessages = [],
   models,
   selectedModelId,
@@ -52,21 +54,49 @@ export function ChatSession({
   t
 }: ChatSessionProps) {
   const { messages, sendMessage, status, reload, setMessages, stop } = useChat({
-    id: chatId || sessionId,
-    onFinish: (message) => {
-      // Sync on finish just to be sure
+    id: sessionId, // 始终用 sessionId，chatId 变化时不重建实例（否则流式输出会被清空）
+    onFinish: async (message: any) => {
+      // 这里的 messages 是“之前的”列表，message 是“新的回答”
+      const updatedMessages = [...messages, message];
+      
       if (chatId) {
-        onMessagesChange(chatId, [...messages, message]);
+        onMessagesChange(chatId, updatedMessages);
+        
+        // 智能标题摘要逻辑：如果是第一轮回答完毕 (通常消息列表长度为 2: user + assistant)
+        if (updatedMessages.length === 2 && token) {
+          try {
+            const res = await fetch('/api/chat/generate-title', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+              },
+              body: JSON.stringify({ 
+                message: updatedMessages[0].content, // 使用用户的第一条消息
+                modelId: selectedModelId 
+              })
+            });
+            const data = await res.json();
+            if (data.success && data.title) {
+              // 完成后静默重命名会话
+              onRenameConversation?.(chatId, data.title);
+            }
+          } catch (err) {
+             console.warn('Auto title summary failed:', err);
+          }
+        }
       }
     }
   }) as any;
 
-  // Initialize messages if provided
+  // 只在首次挂载时设置历史消息，流式输出期间不再触发（防止覆盖正在输出的内容）
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (initialMessages.length > 0) {
+    if (!initializedRef.current && initialMessages.length > 0) {
+      initializedRef.current = true;
       setMessages(initialMessages);
     }
-  }, [initialMessages, setMessages]);
+  }, [initialMessages]);
 
   const isLoading = status === 'streaming' || status === 'submitting';
 
@@ -163,6 +193,10 @@ export function ChatSession({
     try {
       const attachments = filesToUpload.length > 0 ? await Promise.all(filesToUpload.map(uploadFile)) : undefined;
       const isFirstMessage = messages.length === 0 && !chatId;
+      if (isFirstMessage) {
+        onChatCreated(sessionId, [{ content: val, role: 'user', experimental_attachments: attachments }]);
+      }
+
       await sendMessage(
         { content: val, role: 'user', experimental_attachments: attachments } as any,
         { 
@@ -173,9 +207,6 @@ export function ChatSession({
           } 
         }
       );
-      if (isFirstMessage) {
-        onChatCreated(sessionId, [{ content: val, role: 'user', experimental_attachments: attachments }]);
-      }
     } catch (err) {
       console.error(err);
       setLocalInput(val);

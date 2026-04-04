@@ -246,14 +246,8 @@ export function Sidebar({
 }: SidebarProps) {
   const { t, i18n } = useTranslation();
 
-  // Favorites first, then by timestamp desc
-  const recentChats = [...conversations]
-    .sort((a, b) => {
-      if (a.favorited && !b.favorited) return -1;
-      if (!a.favorited && b.favorited) return 1;
-      return b.timestamp - a.timestamp;
-    })
-    .slice(0, 12);
+  // 移除内部强制排序，严格遵循 App.tsx 传入的原始数组顺序（Index 排序）
+  const recentChats = conversations.slice(0, 12);
 
   const navItems = [
     { id: 'library', icon: FolderOpen, label: t('sidebar.library') },

@@ -51,9 +51,18 @@ function AppContent() {
   const { id: routeChatId } = useParams();
   const { pathname } = useLocation();
 
+  const firstSessionId = useRef('session_' + Date.now());
   const [activeSessions, setActiveSessions] = useState<{ sessionId: string, chatId: string | null, initialMessages: any[] }[]>([
-    { sessionId: 'session_' + Date.now(), chatId: null, initialMessages: [] }
+    { sessionId: firstSessionId.current, chatId: null, initialMessages: [] }
   ]);
+  // 用 sessionId 精确追踪当前可见 session，避免多个 null-chatId session 冲突
+  const [activeSessionId, setActiveSessionId] = useState<string>(firstSessionId.current);
+  const activeSessionIdRef = useRef(activeSessionId);
+  
+  // 同步 ref，用于在异步回调中获取最新状态
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
 
   const [activeTab, setActiveTab] = useState('chat');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -184,10 +193,16 @@ function AppContent() {
         const chat = initialData.find((c: any) => c.id === chatIdFromUrl);
         if (chat) {
           setCurrentChatId(chat.id);
-          // 确保它在活跃会话中
+          // 确保它在活跃会话中，并将其设为可见
           setActiveSessions(prev => {
-            if (prev.some(s => s.chatId === chat.id)) return prev;
-            return [...prev, { sessionId: 'session_' + Date.now(), chatId: chat.id, initialMessages: chat.messages }];
+            const existing = prev.find(s => s.chatId === chat.id);
+            if (existing) {
+              setActiveSessionId(existing.sessionId);
+              return prev;
+            }
+            const newSession = { sessionId: 'session_' + Date.now(), chatId: chat.id, initialMessages: chat.messages };
+            setActiveSessionId(newSession.sessionId);
+            return [...prev, newSession];
           });
         }
       }
@@ -203,25 +218,32 @@ function AppContent() {
     }
   }, [conversations]);
 
-  // 2. 监听 URL 变化，同步当前活跃 ID
+  // 2. 监听 URL 变化，同步当前活跃 ID 和可见 Session
   useEffect(() => {
     const match = pathname.match(/\/chat\/(.+)/);
     const chatIdFromUrl = match ? match[1] : null;
 
     if (chatIdFromUrl && chatIdFromUrl !== currentChatId) {
       setCurrentChatId(chatIdFromUrl);
-      // 检查是否已经在活跃会话中，不在则加入
+      // 检查是否已经在活跃会话中，找到则激活，否则新建
       const chat = conversations.find(c => c.id === chatIdFromUrl);
       setActiveSessions(prev => {
-        if (prev.some(s => s.chatId === chatIdFromUrl)) return prev;
-        return [...prev, { 
+        const existing = prev.find(s => s.chatId === chatIdFromUrl);
+        if (existing) {
+          setActiveSessionId(existing.sessionId);
+          return prev;
+        }
+        const newSession = { 
           sessionId: 'session_' + Date.now(), 
           chatId: chatIdFromUrl, 
           initialMessages: chat?.messages || [] 
-        }];
+        };
+        setActiveSessionId(newSession.sessionId);
+        return [...prev, newSession];
       });
-    } else if (!chatIdFromUrl && pathname === '/' && currentChatId !== null) {
+    } else if (!chatIdFromUrl && pathname === '/') {
       setCurrentChatId(null);
+      // 保持 activeSessionId 指向当前的 null-chatId session（无需改变）
     }
   }, [pathname, conversations]);
 
@@ -279,15 +301,15 @@ function AppContent() {
     const newChatId = `chat_${Date.now()}`;
     
     // 更新会话池，关联永久 ID
+    // 只更新 chatId，不覆盖 initialMessages（ChatSession 正在流式输出，覆盖会导致消息消失）
     setActiveSessions(prev => prev.map(s => 
-      s.sessionId === sessionId ? { ...s, chatId: newChatId, initialMessages: initialMsgs } : s
+      s.sessionId === sessionId ? { ...s, chatId: newChatId } : s
     ));
     
     setCurrentChatId(newChatId);
     
-    // 初始化 conversations 以便侧边栏显示
-    const firstMsg = initialMsgs[0]?.content || 'New Conversation';
-    const title = firstMsg.slice(0, 25) + (firstMsg.length > 25 ? '...' : '');
+    // 初始化 conversations 以便侧边栏显示（初始统一使用固定占位标题，提高响应速度）
+    const title = t('sidebar.new_chat');
     
     const newConv: Conversation = {
       id: newChatId,
@@ -297,7 +319,13 @@ function AppContent() {
     };
     
     setConversations(prev => [newConv, ...prev]);
-    navigate(`/chat/${newChatId}`, { replace: true });
+
+    // 关键修复：使用 Ref 获取当前“这一秒”真正的活跃会话 ID
+    // 防止因为闭包导致判断了发送消息时的旧 ID
+    if (activeSessionIdRef.current === sessionId) {
+      setCurrentChatId(newChatId);
+      navigate(`/chat/${newChatId}`, { replace: true });
+    }
   };
 
   const handleNewChat = () => {
@@ -306,6 +334,8 @@ function AppContent() {
       ...prev, 
       { sessionId: newSessionId, chatId: null, initialMessages: [] }
     ]);
+    // ← 关键：切换可见 session 到新的空白 session，旧 session 在后台继续运行
+    setActiveSessionId(newSessionId);
     setCurrentChatId(null);
     setActiveTab('chat');
     navigate('/');
@@ -420,10 +450,11 @@ function AppContent() {
                   key={session.sessionId}
                   id={session.sessionId}
                   chatId={session.chatId}
-                  isVisible={(currentChatId === session.chatId)}
+                  isVisible={activeSessionId === session.sessionId}
                   initialMessages={session.initialMessages}
                   onChatCreated={onChatCreated}
                   onMessagesChange={onMessagesChange}
+                  onRenameConversation={handleRenameChat}
                   models={models}
                   selectedModelId={selectedModelId}
                   setSelectedModelId={setSelectedModelId}

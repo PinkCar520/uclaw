@@ -343,4 +343,21 @@ ${catalogXml}`;
       return `抱歉，处理您的请求时发生了错误: ${err.message}`;
     }
   }
+
+  /**
+   * 为会话生成简短摘要标题 (LLM 自动总结)
+   */
+  async generateTitle(userContent: string, modelId?: string): Promise<string> {
+    try {
+      const { text } = await generateText({
+        model: this.getModel(modelId),
+        system: '你是一个标题生成助手。请根据用户提供的第一条对话内容，总结一个 5 字以内的中文标题，不要包含标点符号。直接返回标题文字。请尽量精准且干脆。',
+        messages: [{ role: 'user', content: userContent }],
+      });
+      return text.trim().replace(/[。？！，、]/g, '');
+    } catch (err: any) {
+      this.logger.error(`Generate title error: ${err?.message || String(err)}`);
+      return userContent.slice(0, 15);
+    }
+  }
 }

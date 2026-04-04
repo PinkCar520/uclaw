@@ -225,6 +225,28 @@ function AppContent() {
     }
   }, [pathname, conversations]);
 
+  // 2b. 同步浏览器标题
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      if (currentChatId) {
+        const chat = conversations.find(c => c.id === currentChatId);
+        document.title = chat ? `uClaw - ${chat.title}` : 'uClaw - AI Assistant';
+      } else {
+        document.title = `uClaw - ${t('sidebar.new_chat')}`;
+      }
+    } else {
+      const tabNames: Record<string, string> = {
+        'library': t('sidebar.library'),
+        'workflows': t('sidebar.workflows'),
+        'knowledge': t('sidebar.knowledge'),
+        'console': t('sidebar.console'),
+        'settings': t('settings.title'),
+      };
+      const name = tabNames[activeTab] || activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+      document.title = `uClaw - ${name}`;
+    }
+  }, [currentChatId, activeTab, conversations, t]);
+
   // 3. 消息更新回调 (由 ChatSession 触发)
   const onMessagesChange = (id: string, messages: any[]) => {
     setConversations(prev => {

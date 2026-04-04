@@ -3,7 +3,7 @@ import { useChat } from '@ai-sdk/react';
 import {
   ArrowDown, Sparkles, Copy, RotateCcw, Check,
   Plus, FileText, X as CloseIcon, Image as ImageIcon,
-  ChevronDown, Paperclip, ArrowRight, Terminal, Cpu, Database, BadgeCheck
+  ChevronDown, Paperclip, ArrowRight, Terminal, Cpu, Database, BadgeCheck, Globe, Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -76,6 +76,8 @@ export function ChatSession({
   const [previewAttachment, setPreviewAttachment] = useState<{ name: string; contentType: string; url: string } | null>(null);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -163,7 +165,13 @@ export function ChatSession({
       const isFirstMessage = messages.length === 0 && !chatId;
       await sendMessage(
         { content: val, role: 'user', experimental_attachments: attachments } as any,
-        { body: { modelId: selectedModelId } }
+        { 
+          body: { 
+            modelId: selectedModelId,
+            search: isSearchMode,
+            knowledge: isKnowledgeMode
+          } 
+        }
       );
       if (isFirstMessage) {
         onChatCreated(sessionId, [{ content: val, role: 'user', experimental_attachments: attachments }]);
@@ -396,6 +404,30 @@ export function ChatSession({
                   </DropdownMenu>
                   <div className="w-px h-4 bg-[#E8E4E2]/60 mx-1" />
                   <button onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.onchange = (e: any) => { if (e.target.files) setSelectedFiles(prev => [...prev, ...Array.from(e.target.files as FileList)]); }; input.click(); }} className="p-2 rounded-lg text-[#716B67] hover:bg-[#eeece9] hover:text-[#1C1B1B] transition-all"><Paperclip className="w-4 h-4" /></button>
+                  
+                  <button
+                    onClick={() => setIsSearchMode(!isSearchMode)}
+                    className={cn(
+                      "p-2 rounded-lg transition-all transform active:scale-95",
+                      isSearchMode
+                        ? "text-[#EC5B14] bg-[#EC5B14]/5"
+                        : "text-[#716B67] hover:bg-[#F6F3F2] hover:text-[#EC5B14]"
+                    )}
+                  >
+                    <Globe className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsKnowledgeMode(!isKnowledgeMode)}
+                    className={cn(
+                      "p-2 rounded-lg transition-all transform active:scale-95",
+                      isKnowledgeMode
+                        ? "text-[#EC5B14] bg-[#EC5B14]/5"
+                        : "text-[#716B67] hover:bg-[#F6F3F2] hover:text-[#EC5B14]"
+                    )}
+                  >
+                    <Database className="w-5 h-5" />
+                  </button>
                 </div>
                 <button onClick={() => isLoading ? stop() : onFormSubmit()} className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all", isLoading ? "bg-[#1C1B1B] text-white" : ((!localInput.trim() && selectedFiles.length === 0) ? "bg-[#eeece9] text-[#716B67]/40 cursor-not-allowed" : "bg-[#EC5B14] text-white shadow-lg hover:scale-105 active:scale-95"))}>
                   {isLoading ? <Square className="w-4 h-4 fill-current" /> : <ArrowRight className="w-5 h-5" />}
@@ -482,13 +514,5 @@ export function ChatSession({
         )}
       </aside>
     </div>
-  );
-}
-
-function Square(props: any) {
-  return (
-    <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-    </svg>
   );
 }

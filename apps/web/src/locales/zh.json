@@ -15,7 +15,35 @@
     "status_secured": "企业级加密",
     "status_stable": "v1.1 稳定版",
     "role_assistant": "UClaw 助手",
-    "role_user": "开发者"
+    "role_user": "开发者",
+    "empty_state": {
+      "title": "部署效率已优化",
+      "desc": "基于当前的 GitLab PR 模式和 Jenkins 流水线历史数据，我已为您识别出预发环境中的性能瓶颈。",
+      "improvement_label": "预计提升",
+      "improvement_value": "周期缩短 15%",
+      "success_label": "成功概率",
+      "success_value": "94%"
+    },
+    "integrations": {
+      "active_title": "活跃集成",
+      "manage": "管理",
+      "pending_mrs": "待处理 MR",
+      "pipeline_running": "正在运行的流水线",
+      "active_tasks": "活跃任务"
+    },
+    "meta": {
+      "title": "对话元数据",
+      "model": "模型",
+      "tokens": "Token 使用量",
+      "review_mode": "合规审查模式",
+      "strict": "严格模式"
+    },
+    "weekly_insight": {
+      "title": "每周洞察",
+      "content": "加州新劳动法案将于 2025 年 1 月 1 日生效。",
+      "cta": "查看更新"
+    },
+    "available_models": "可用模型"
   },
   "dashboard": {
     "title": "研发效能大盘",
@@ -151,6 +179,63 @@
     "sign_out": "退出登录",
     "select_language": "选择语言"
   },
+  "library": {
+    "v3": "v3",
+    "title": "插件与 MCP 库",
+    "subtitle": "通过精选的模型上下文协议 (MCP) 连接器和专为您的企业生态系统定制的代理技能，扩展 uClaw 的智能。",
+    "stats": {
+      "total_skills": "共 {{count}} 个技能",
+      "new_this_week": "本周新增 {{count}} 个"
+    },
+    "filters": {
+      "all": "所有扩展",
+      "pm": "项目管理",
+      "cicd": "CI/CD 工具",
+      "vc": "版本控制",
+      "communication": "团队通讯",
+      "data_science": "数据科学"
+    },
+    "common": {
+      "install": "安装",
+      "mcp_connector": "MCP 连接器",
+      "skillset": "技能集",
+      "automation": "自动化",
+      "devops": "运维",
+      "productivity": "生产力"
+    },
+    "featured": {
+      "badge": "uClaw 官方推荐",
+      "title": "企业知识图谱",
+      "desc": "将您的整个 Confluence、Notion 和 Jira 工作区编入统一的 RAG 流水线，实现即时检索。",
+      "button": "启用全集"
+    },
+    "cards": {
+      "zentao": {
+        "title": "禅道 PM 集成",
+        "desc": "将 uClaw 任务直接同步至禅道项目。通过自然语言自动化迭代计划和缺陷跟踪。"
+      },
+      "jenkins": {
+        "title": "Jenkins CI/CD",
+        "desc": "在聊天会话中直接监控流水线、触发构建并分析构建日志。"
+      },
+      "gitlab": {
+        "title": "GitLab 仓库",
+        "desc": "高级仓库分析。利用 AI 驱动的洞察进行代码审查并管理合并请求 (MR)。"
+      },
+      "slack": {
+        "title": "Slack 机器人集成",
+        "desc": "将 uClaw 连接至您的 Slack 工作区。向团队通知 AI 里程碑并从频道查询 uClaw。"
+      },
+      "docker": {
+        "title": "Docker 控制",
+        "desc": "与本地或远程 Docker 引擎交互。通过语音或文字启动、停止并检查容器。"
+      },
+      "google": {
+        "title": "Google Workspace",
+        "desc": "在工作流中直接起草邮件、安排日历事件并组织 Drive 文件夹。"
+      }
+    }
+  },
   "auth": {
     "hero_title": "编排 <1/> <2>企业级 AI</2> <3/> 智能。",
     "hero_desc": "下一代高性能代理工作流程与跨平台协作空间。",
@@ -177,5 +262,67 @@
     "sign_up": "立即注册",
     "sign_in": "立即登录",
     "error_failed": "认证失败"
+  },
+  "user_center": {
+    "member_center": "个人中心",
+    "welcome": "欢迎回来，",
+    "welcome_desc": "管理您的企业身份、AI 模型偏好及生产力集成。",
+    "tabs": {
+      "general": "通用设置",
+      "profile": "身份档案",
+      "integrations": "集成与密钥",
+      "billing": "用量与配额"
+    },
+    "general": {
+      "title": "平台偏好",
+      "default_model": "默认 AI 模型",
+      "appearance": "应用外观",
+      "appearance_light": "浅色",
+      "appearance_dark": "深色",
+      "language": "首选语言",
+      "lang_zh": "简体中文",
+      "lang_en": "英语 (国际)",
+      "sync_enabled": "自动同步已开启",
+      "sync_desc": "您的偏好设置将在 CLI、Web 和 IM 机器人之间自动同步。",
+      "save_changes": "保存设置",
+      "applying": "正在应用...",
+      "saved": "设置已保存！"
+    },
+    "identity": {
+      "title": "个人信息",
+      "work_id": "工号",
+      "email": "邮箱",
+      "department": "所属部门",
+      "edit_avatar": "修改头像"
+    },
+    "integrations": {
+      "title": "活跃连接器",
+      "add": "添加集成",
+      "empty": "尚未连接任何系统",
+      "empty_desc": "连接 ZenTao 或 GitLab 以开启 AI 任务编排",
+      "active": "已激活",
+      "settings": "配置"
+    },
+    "usage": {
+      "storage": "存储用量",
+      "tokens": "Token 消耗",
+      "plan": "套餐详情",
+      "upgrade": "升级套餐",
+      "unit_gb": "GB",
+      "unit_k": "k",
+      "pro_plan": "专业企业版"
+    },
+    "common": {
+      "syncing": "正在同步用户资产...",
+      "id_label": "ID: ",
+      "user_label": "用户: ",
+      "prompt_zentao": "请输入您的禅道 API Token:"
+    },
+    "models": {
+      "deepseek_v3": "DeepSeek V3 (默认)",
+      "qwen_turbo": "通义千问 Turbo",
+      "gpt4o_mini": "GPT-4o Mini"
+    },
+    "logout": "退出登录"
   }
 }

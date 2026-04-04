@@ -150,6 +150,63 @@
     "sign_out": "Sign Out",
     "select_language": "Select Language"
   },
+  "library": {
+    "v3": "v3",
+    "title": "Skill & MCP Library",
+    "subtitle": "Extend uClaw's intelligence with curated Model Context Protocol connectors and specialized agent skills for your enterprise ecosystem.",
+    "stats": {
+      "total_skills": "{{count}} Total Skills",
+      "new_this_week": "{{count}} New This Week"
+    },
+    "filters": {
+      "all": "All Extensions",
+      "pm": "Project Management",
+      "cicd": "CI/CD Tools",
+      "vc": "Version Control",
+      "communication": "Communication",
+      "data_science": "Data Science"
+    },
+    "common": {
+      "install": "Install",
+      "mcp_connector": "MCP Connector",
+      "skillset": "Skillset",
+      "automation": "Automation",
+      "devops": "DevOps",
+      "productivity": "Productivity"
+    },
+    "featured": {
+      "badge": "Featured by uClaw",
+      "title": "Enterprise Knowledge Graph",
+      "desc": "Index your entire Confluence, Notion, and Jira workspace into a unified RAG pipeline for instant retrieval.",
+      "button": "Enable Full Suite"
+    },
+    "cards": {
+      "zentao": {
+        "title": "ZenTao PM Integration",
+        "desc": "Sync uClaw tasks directly with ZenTao projects. Automate sprint planning and bug tracking via natural language."
+      },
+      "jenkins": {
+        "title": "Jenkins CI/CD",
+        "desc": "Monitor pipelines, trigger builds, and analyze build logs directly within your chat session."
+      },
+      "gitlab": {
+        "title": "GitLab Repo",
+        "desc": "Advanced repository analysis. Perform code reviews and manage Merge Requests with AI-driven insights."
+      },
+      "slack": {
+        "title": "Slack Bot Integration",
+        "desc": "Bridge uClaw to your Slack workspace. Notify teams of AI milestones and query uClaw from channels."
+      },
+      "docker": {
+        "title": "Docker Control",
+        "desc": "Interface with local or remote Docker engines. Start, stop, and inspect containers via voice or text."
+      },
+      "google": {
+        "title": "Google Workspace",
+        "desc": "Draft emails, schedule calendar events, and organize Drive folders within your workflow."
+      }
+    }
+  },
   "auth": {
     "hero_title": "Orchestrating <1/> <2>Enterprise AI</2> <3/> Intelligence.",
     "hero_desc": "The next-generation workspace for high-performance agentic workflows and cross-platform synergy.",
@@ -176,5 +233,53 @@
     "sign_up": "Sign up",
     "sign_in": "Sign in",
     "error_failed": "Authentication failed"
+  },
+  "user_center": {
+    "member_center": "Member Center",
+    "welcome": "Welcome back, ",
+    "welcome_desc": "Manage your enterprise identity, AI model preferences, and productivity integrations.",
+    "tabs": {
+      "general": "General Settings",
+      "profile": "Identity Profile",
+      "integrations": "Connectors & Keys",
+      "billing": "Usage & Quota"
+    },
+    "general": {
+      "title": "Platform Preferences",
+      "default_model": "Default AI Model",
+      "appearance": "App Appearance",
+      "appearance_light": "Light",
+      "appearance_dark": "Dark",
+      "language": "Primary Language",
+      "lang_zh": "Chinese (Simplified)",
+      "lang_en": "English (International)",
+      "sync_enabled": "Auto-Sync Enabled",
+      "sync_desc": "Your preferences are automatically synced across CLI, Web, and IM bots.",
+      "save_changes": "Save Hub Changes",
+      "applying": "Applying...",
+      "saved": "Settings Saved!"
+    },
+    "identity": {
+      "title": "Identity Information",
+      "work_id": "Work ID",
+      "email": "Email",
+      "department": "Department",
+      "edit_avatar": "Edit Avatar"
+    },
+    "integrations": {
+      "title": "Active Connectors",
+      "add": "Add Integration",
+      "empty": "No systems connected yet",
+      "empty_desc": "Connect ZenTao or GitLab to enable AI task orchestration",
+      "active": "ACTIVE",
+      "settings": "Settings"
+    },
+    "usage": {
+      "storage": "Storage Used",
+      "tokens": "Tokens Consumed",
+      "plan": "Plan Details",
+      "upgrade": "Upgrade Plan"
+    },
+    "logout": "Sign Out"
   }
 }

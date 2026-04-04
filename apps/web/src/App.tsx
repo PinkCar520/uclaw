@@ -573,18 +573,18 @@ function AppContent() {
                             <Sparkles className="w-6 h-6" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold font-display text-[#1C1B1B] mb-2 cursor-default">Deployment Efficiency Optimized</h3>
+                            <h3 className="text-xl font-bold font-display text-[#1C1B1B] mb-2 cursor-default">{t('chat.empty_state.title')}</h3>
                             <p className="text-[#716B67] text-sm leading-relaxed max-w-xl">
-                              Based on current GitLab PR patterns and Jenkins pipeline history, I've identified a bottleneck in the staging environment.
+                              {t('chat.empty_state.desc')}
                             </p>
                             <div className="flex gap-4 mt-6">
                               <div className="bg-white px-5 py-4 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.02)] min-w-[140px]">
-                                <p className="text-[11px] text-[#716B67] font-semibold mb-1">Projected Improvement</p>
-                                <p className="text-2xl font-bold font-display text-[#EC5B14]">15% Faster Cycle</p>
+                                <p className="text-[11px] text-[#716B67] font-semibold mb-1">{t('chat.empty_state.improvement_label')}</p>
+                                <p className="text-2xl font-bold font-display text-[#EC5B14]">{t('chat.empty_state.improvement_value')}</p>
                               </div>
                               <div className="bg-white px-5 py-4 rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.02)] min-w-[140px]">
-                                <p className="text-[11px] text-[#716B67] font-semibold mb-1">Success Probability</p>
-                                <p className="text-2xl font-bold font-display text-[#0066CC]">94%</p>
+                                <p className="text-[11px] text-[#716B67] font-semibold mb-1">{t('chat.empty_state.success_label')}</p>
+                                <p className="text-2xl font-bold font-display text-[#0066CC]">{t('chat.empty_state.success_value')}</p>
                               </div>
                             </div>
                           </div>
@@ -709,7 +709,7 @@ function AppContent() {
                           if (!isLoading) onFormSubmit();
                         }
                       }}
-                      placeholder="Type your instruction..."
+                      placeholder={t('chat.placeholder')}
                       className="w-full bg-transparent border-none text-[#1C1B1B] focus:ring-0 text-sm py-4 px-4 resize-none min-h-[56px] max-h-[200px] placeholder:text-[#716B67]/70 focus:outline-none"
                     />
                     <div className="flex items-center justify-between px-4 pb-2">
@@ -724,7 +724,7 @@ function AppContent() {
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" className="w-60 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-2xl p-1.5 backdrop-blur-xl bg-white/90">
-                            <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black uppercase text-[#716B67] tracking-widest">Available Models</DropdownMenuLabel>
+                            <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black uppercase text-[#716B67] tracking-widest">{t('chat.available_models')}</DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-[#E8E4E2]/40" />
                             <div className="max-h-[300px] overflow-y-auto no-scrollbar">
                               {models.map((m) => {
@@ -888,8 +888,8 @@ function AppContent() {
                   {/* Active Integrations */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-sm text-[#1C1B1B]">Active Integrations</h4>
-                      <button className="text-[11px] font-bold text-[#EC5B14] hover:underline">Manage</button>
+                      <h4 className="font-bold text-sm text-[#1C1B1B]">{t('chat.integrations.active_title')}</h4>
+                      <button className="text-[11px] font-bold text-[#EC5B14] hover:underline">{t('chat.integrations.manage')}</button>
                     </div>
                     <div className="space-y-3">
                       <div className="card-floating p-4 flex items-center justify-between group cursor-pointer hover:ring-2 hover:ring-[#EC5B14]/20 transition-all">
@@ -897,7 +897,7 @@ function AppContent() {
                           <div className="w-8 h-8 rounded-[8px] bg-[#1C1B1B] flex items-center justify-center text-white font-bold text-xs">GL</div>
                           <div>
                             <p className="text-sm font-bold text-[#1C1B1B]">GitLab</p>
-                            <p className="text-[11px] text-[#716B67]">2 Pending MRs</p>
+                            <p className="text-[11px] text-[#716B67]">2 {t('chat.integrations.pending_mrs')}</p>
                           </div>
                         </div>
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -907,7 +907,7 @@ function AppContent() {
                           <div className="w-8 h-8 rounded-[8px] bg-[#0E1529] flex items-center justify-center text-red-500 font-bold text-xs"><Cpu className="w-4 h-4" /></div>
                           <div>
                             <p className="text-sm font-bold text-[#1C1B1B]">Jenkins</p>
-                            <p className="text-[11px] text-[#716B67]">1 Pipeline Running</p>
+                            <p className="text-[11px] text-[#716B67]">1 {t('chat.integrations.pipeline_running')}</p>
                           </div>
                         </div>
                         <div className="w-2 h-2 rounded-full bg-[#EC5B14]"></div>
@@ -918,7 +918,7 @@ function AppContent() {
                             <div className="w-8 h-8 rounded-[8px] bg-blue-100 flex items-center justify-center text-blue-600"><Database className="w-4 h-4" /></div>
                             <div>
                               <p className="text-sm font-bold text-[#1C1B1B]">ZenTao</p>
-                              <p className="text-[11px] text-[#716B67]">4 Active Tasks</p>
+                              <p className="text-[11px] text-[#716B67]">4 {t('chat.integrations.active_tasks')}</p>
                             </div>
                           </div>
                           <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -929,21 +929,21 @@ function AppContent() {
 
                   {/* Conversation Meta */}
                   <div>
-                    <h4 className="text-[10px] font-extrabold text-[#716B67] uppercase tracking-widest mb-4">Conversation Meta</h4>
+                    <h4 className="text-[10px] font-extrabold text-[#716B67] uppercase tracking-widest mb-4">{t('chat.meta.title')}</h4>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#716B67]">Model</span>
+                        <span className="text-xs text-[#716B67]">{t('chat.meta.model')}</span>
                         <span className="text-xs font-bold text-[#1C1B1B] flex items-center gap-1">
                           uClaw-4o <BadgeCheck className="w-3 h-3 text-[#EC5B14]" />
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#716B67]">Tokens used</span>
+                        <span className="text-xs text-[#716B67]">{t('chat.meta.tokens')}</span>
                         <span className="text-xs font-mono font-bold text-[#1C1B1B]">1,402</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#716B67]">Legal Review Mode</span>
-                        <span className="bg-[#EC5B14]/10 text-[#EC5B14] px-2 py-0.5 rounded-full text-[10px] font-bold">STRICT</span>
+                        <span className="text-xs text-[#716B67]">{t('chat.meta.review_mode')}</span>
+                        <span className="bg-[#EC5B14]/10 text-[#EC5B14] px-2 py-0.5 rounded-full text-[10px] font-bold">{t('chat.meta.strict')}</span>
                       </div>
                     </div>
                   </div>
@@ -958,10 +958,10 @@ function AppContent() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#F6F3F2] via-[#F6F3F2]/50 to-transparent"></div>
                       <div className="relative h-full p-5 flex flex-col justify-end">
-                        <p className="text-[10px] font-bold text-[#716B67] uppercase tracking-widest mb-1.5">Weekly Insight</p>
-                        <p className="text-sm font-bold text-[#1C1B1B] leading-snug">New California labor regulations take effect Jan 1, 2025.</p>
+                        <p className="text-[10px] font-bold text-[#716B67] uppercase tracking-widest mb-1.5">{t('chat.weekly_insight.title')}</p>
+                        <p className="text-sm font-bold text-[#1C1B1B] leading-snug">{t('chat.weekly_insight.content')}</p>
                         <button className="mt-3 text-[11px] font-bold text-[#EC5B14] flex items-center gap-1 group-hover:gap-2 transition-all">
-                          Review Update <ArrowRight className="w-3 h-3" />
+                          {t('chat.weekly_insight.cta')} <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     </div>

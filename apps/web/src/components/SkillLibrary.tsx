@@ -6,7 +6,11 @@ import {
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 
+import { useTranslation } from 'react-i18next';
+
 export function SkillLibrary() {
+  const { t } = useTranslation();
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#fcf9f8] p-10 font-sans text-[#1c1b1b] relative pb-32">
       <div className="max-w-[1400px] mx-auto w-full">
@@ -15,26 +19,30 @@ export function SkillLibrary() {
         <section className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h2 className="font-display text-4xl font-extrabold tracking-tight text-[#1c1b1b] mb-3">
-              Skill & MCP Library <span className="text-[#a33800]">v3</span>
+              {t('library.title')} <span className="text-[#a33800]">{t('library.v3')}</span>
             </h2>
             <p className="text-[#716B67] max-w-xl text-[17px] leading-relaxed">
-              Extend uClaw's intelligence with curated Model Context Protocol connectors and specialized agent skills for your enterprise ecosystem.
+              {t('library.subtitle')}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className="bg-[#ffdbce] text-[#783112] px-3 py-1 rounded-full text-xs font-bold">124 Total Skills</span>
-            <span className="bg-[#ebe7e7] text-[#5a4138] px-3 py-1 rounded-full text-xs font-bold">12 New This Week</span>
+            <span className="bg-[#ffdbce] text-[#783112] px-3 py-1 rounded-full text-xs font-bold">
+              {t('library.stats.total_skills', { count: 124 })}
+            </span>
+            <span className="bg-[#ebe7e7] text-[#5a4138] px-3 py-1 rounded-full text-xs font-bold">
+              {t('library.stats.new_this_week', { count: 12 })}
+            </span>
           </div>
         </section>
 
         {/* Filters Bar */}
         <div className="flex flex-wrap items-center gap-3 mb-10 overflow-x-auto pb-2">
-          <button className="px-5 py-2 rounded-full bg-[#EC5B14] text-white text-sm font-bold shadow-md">All Extensions</button>
-          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">Project Management</button>
-          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">CI/CD Tools</button>
-          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">Version Control</button>
-          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">Communication</button>
-          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">Data Science</button>
+          <button className="px-5 py-2 rounded-full bg-[#EC5B14] text-white text-sm font-bold shadow-md">{t('library.filters.all')}</button>
+          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">{t('library.filters.pm')}</button>
+          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">{t('library.filters.cicd')}</button>
+          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">{t('library.filters.vc')}</button>
+          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">{t('library.filters.communication')}</button>
+          <button className="px-5 py-2 rounded-full bg-[#F6F3F2] hover:bg-[#ebe7e7] text-[#716B67] text-sm font-bold transition-colors">{t('library.filters.data_science')}</button>
         </div>
 
         {/* Bento Grid Marketplace */}
@@ -46,14 +54,14 @@ export function SkillLibrary() {
               <CheckCircle2 className="text-[#EC5B14] w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">ZenTao PM Integration</h3>
+              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">{t('library.cards.zentao.title')}</h3>
               <p className="text-[13px] text-[#716B67] leading-relaxed mb-6 font-medium">
-                Sync uClaw tasks directly with ZenTao projects. Automate sprint planning and bug tracking via natural language.
+                {t('library.cards.zentao.desc')}
               </p>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">MCP Connector</span>
-              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">Install</button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">{t('library.common.mcp_connector')}</span>
+              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">{t('library.common.install')}</button>
             </div>
           </div>
 
@@ -63,14 +71,14 @@ export function SkillLibrary() {
               <Rocket className="text-blue-600 w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">Jenkins CI/CD</h3>
+              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">{t('library.cards.jenkins.title')}</h3>
               <p className="text-[13px] text-[#716B67] leading-relaxed mb-6 font-medium">
-                Monitor pipelines, trigger builds, and analyze build logs directly within your chat session.
+                {t('library.cards.jenkins.desc')}
               </p>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">Skillset</span>
-              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">Install</button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">{t('library.common.skillset')}</span>
+              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">{t('library.common.install')}</button>
             </div>
           </div>
 
@@ -80,14 +88,14 @@ export function SkillLibrary() {
               <GitPullRequest className="text-red-500 w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">GitLab Repo</h3>
+              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">{t('library.cards.gitlab.title')}</h3>
               <p className="text-[13px] text-[#716B67] leading-relaxed mb-6 font-medium">
-                Advanced repository analysis. Perform code reviews and manage Merge Requests with AI-driven insights.
+                {t('library.cards.gitlab.desc')}
               </p>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">MCP Connector</span>
-              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">Install</button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">{t('library.common.mcp_connector')}</span>
+              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">{t('library.common.install')}</button>
             </div>
           </div>
 
@@ -97,14 +105,14 @@ export function SkillLibrary() {
               <MessageSquare className="text-purple-600 w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">Slack Bot Integration</h3>
+              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">{t('library.cards.slack.title')}</h3>
               <p className="text-[13px] text-[#716B67] leading-relaxed mb-6 font-medium">
-                Bridge uClaw to your Slack workspace. Notify teams of AI milestones and query uClaw from channels.
+                {t('library.cards.slack.desc')}
               </p>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">Automation</span>
-              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">Install</button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">{t('library.common.automation')}</span>
+              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">{t('library.common.install')}</button>
             </div>
           </div>
 
@@ -116,14 +124,14 @@ export function SkillLibrary() {
             <div className="relative z-10 flex-1">
               <div className="inline-flex items-center gap-1.5 bg-[#EC5B14]/20 text-[#ffb599] px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-5">
                 <Star className="w-3.5 h-3.5 fill-current" />
-                Featured by uClaw
+                {t('library.featured.badge')}
               </div>
-              <h3 className="font-display font-bold text-2xl text-white mb-3">Enterprise Knowledge Graph</h3>
+              <h3 className="font-display font-bold text-2xl text-white mb-3">{t('library.featured.title')}</h3>
               <p className="text-[#D3CDC9] text-[14px] leading-relaxed mb-8">
-                Index your entire Confluence, Notion, and Jira workspace into a unified RAG pipeline for instant retrieval.
+                {t('library.featured.desc')}
               </p>
               <button className="btn-kinetic px-6 py-2.5 rounded-xl text-sm font-bold hover:brightness-110 focus:outline-none">
-                Enable Full Suite
+                {t('library.featured.button')}
               </button>
             </div>
 
@@ -160,14 +168,14 @@ export function SkillLibrary() {
               <Box className="text-sky-500 w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">Docker Control</h3>
+              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">{t('library.cards.docker.title')}</h3>
               <p className="text-[13px] text-[#716B67] leading-relaxed mb-6 font-medium">
-                Interface with local or remote Docker engines. Start, stop, and inspect containers via voice or text.
+                {t('library.cards.docker.desc')}
               </p>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">DevOps</span>
-              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">Install</button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">{t('library.common.devops')}</span>
+              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">{t('library.common.install')}</button>
             </div>
           </div>
 
@@ -177,14 +185,14 @@ export function SkillLibrary() {
               <Mail className="text-emerald-600 w-6 h-6" />
             </div>
             <div className="flex-grow">
-              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">Google Workspace</h3>
+              <h3 className="font-display font-bold text-lg mb-2 group-hover:text-[#EC5B14] transition-colors">{t('library.cards.google.title')}</h3>
               <p className="text-[13px] text-[#716B67] leading-relaxed mb-6 font-medium">
-                Draft emails, schedule calendar events, and organize Drive folders within your workflow.
+                {t('library.cards.google.desc')}
               </p>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">Productivity</span>
-              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">Install</button>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">{t('library.common.productivity')}</span>
+              <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">{t('library.common.install')}</button>
             </div>
           </div>
 

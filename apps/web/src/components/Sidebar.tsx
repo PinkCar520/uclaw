@@ -152,7 +152,7 @@ function ChatRow({
         onClick={onLoad}
         title={chat.title}
         className={cn(
-          'w-full text-left px-3 py-2.5 text-sm font-medium rounded-[8px] transition-all flex items-center gap-2 min-w-0',
+          'w-full text-left px-2.5 py-1.5 text-[13px] font-medium rounded-[8px] transition-all flex items-center gap-2 min-w-0',
           isActive
             ? 'bg-[#1C1B1B]/[0.06] text-[#1C1B1B]'
             : 'text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B]'
@@ -279,14 +279,14 @@ export function Sidebar({
       )}>
 
         {/* 1. Logo Header */}
-        <div className="p-6 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="p-5 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <div className="bg-[#EC5B14] p-1.5 rounded-lg shadow-sm">
-              <Sparkles className="w-5 h-5 text-white" />
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-[#1C1B1B] text-xl leading-none">uClaw</span>
-              <span className="text-[9px] font-bold text-[#716B67] uppercase tracking-widest mt-0.5">{t('sidebar.enterprise_ai')}</span>
+              <span className="font-display font-bold text-[#1C1B1B] text-lg leading-none">uClaw</span>
+              <span className="text-[8px] font-bold text-[#716B67] uppercase tracking-widest mt-0.5">{t('sidebar.enterprise_ai')}</span>
             </div>
           </div>
           {/* Mobile close button */}
@@ -296,29 +296,29 @@ export function Sidebar({
         </div>
 
       {/* 2. Global Actions (New Chat & Search) */}
-      <div className="px-3 space-y-1.5 mt-4">
+      <div className="px-3 space-y-0.5 mt-2">
         <button
           onClick={onNewChat}
-          className="w-full h-10 flex items-center justify-start gap-3 bg-white px-3 rounded-[8px] border border-[#E8E4E2]/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] transition-all"
+          className="w-full flex items-center justify-start gap-2.5 bg-white px-2.5 py-1.5 rounded-[8px] border border-[#E8E4E2]/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] transition-all"
         >
-          <div className="bg-[#EC5B14]/10 p-1 rounded-md -ml-1">
+          <div className="bg-[#EC5B14]/10 p-0.5 rounded -ml-0.5">
             <Plus className="w-3.5 h-3.5 text-[#EC5B14]" />
           </div>
-          <span className="text-[#1C1B1B] font-semibold text-sm">{t('sidebar.new_chat')}</span>
+          <span className="text-[#1C1B1B] font-semibold text-[13px]">{t('sidebar.new_chat')}</span>
         </button>
 
         <button
           onClick={() => setIsSearchModalOpen(true)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[8px] transition-all text-[#1C1B1B] hover:bg-[#1C1B1B]/5"
+          className="w-full flex items-center gap-3 px-2.5 py-1.5 rounded-[8px] transition-all text-[#1C1B1B] hover:bg-[#1C1B1B]/5"
         >
           <Search className="w-4 h-4 text-[#716B67]" />
-          <span className="font-medium text-sm">{i18n.language === 'zh' ? '搜索聊天' : 'Search Chats'}</span>
+          <span className="font-medium text-[13px]">{i18n.language === 'zh' ? '搜索聊天' : 'Search Chats'}</span>
         </button>
       </div>
 
       {/* 3. Navigation Links (Platform Modules) */}
-      <nav className="px-3 mt-6 space-y-1 relative">
-        <div className="absolute top-0 left-7 right-7 h-px bg-[#E8E4E2] -mt-3" />
+      <nav className="px-3 mt-4 space-y-0.5 relative">
+        <div className="absolute top-0 left-6 right-6 h-px bg-[#E8E4E2] -mt-2" />
         {navItems.map((item) => {
           const isActive = activeMainTab === item.id;
           return (
@@ -326,7 +326,7 @@ export function Sidebar({
               key={item.id}
               onClick={() => onMainTabChange(item.id)}
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-[8px] font-medium text-sm transition-all focus:outline-none',
+                'w-full flex items-center gap-3 px-2.5 py-1.5 rounded-[8px] font-medium text-[13px] transition-all focus:outline-none',
                 isActive
                   ? 'bg-[#1C1B1B]/[0.06] text-[#1C1B1B]'
                   : 'text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B]'
@@ -340,13 +340,13 @@ export function Sidebar({
       </nav>
 
       {/* 4. Recent Activity & All Chats */}
-      <div className="flex-1 px-3 mt-8 overflow-y-auto no-scrollbar relative">
-        <div className="absolute top-0 left-6 right-6 h-px bg-[#E8E4E2] -mt-4 opacity-70" />
+      <div className="flex-1 px-3 mt-5 overflow-y-auto no-scrollbar relative">
+        <div className="absolute top-0 left-6 right-6 h-px bg-[#E8E4E2] -mt-2 opacity-70" />
         
         <button
           onClick={() => onMainTabChange('all_chats')}
           className={cn(
-             'w-full flex items-center gap-3 px-3 py-2.5 mb-4 rounded-[8px] font-medium text-sm transition-all focus:outline-none',
+             'w-full flex items-center gap-3 px-2.5 py-1.5 mb-2 rounded-[8px] font-medium text-[13px] transition-all focus:outline-none',
              activeMainTab === 'all_chats' ? 'bg-[#1C1B1B]/[0.06] text-[#1C1B1B]' : 'text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B]'
           )}
         >
@@ -354,7 +354,7 @@ export function Sidebar({
           <span>{t('sidebar.all_chats')}</span>
         </button>
 
-        <div className="flex items-center justify-between px-3 mb-2">
+        <div className="flex items-center justify-between px-2.5 mb-1.5 mt-2">
           <h4 className="text-[10px] font-bold text-[#A8A4A1] uppercase tracking-widest">{t('sidebar.recent_activity')}</h4>
         </div>
         <div className="space-y-0.5">

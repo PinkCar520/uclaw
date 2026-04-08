@@ -91,6 +91,7 @@ export function ChatSession({
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLocalThinking, setIsLocalThinking] = useState(false);
 
   const { messages, sendMessage, status, reload, setMessages, stop } = (useChat as any)({
     id: sessionId,
@@ -134,6 +135,13 @@ export function ChatSession({
   });
 
   const isLoading = status === 'streaming' || status === 'submitting';
+
+  // Reset local thinking when assistant message arrives
+  useEffect(() => {
+    if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+      setIsLocalThinking(false);
+    }
+  }, [messages]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -247,6 +255,10 @@ export function ChatSession({
   const onFormSubmit = async (e?: any) => {
     if (e) e.preventDefault();
     if ((!localInput.trim() && selectedFiles.length === 0) || isLoading) return;
+    
+    // Set local thinking immediately for zero-latency UI feedback
+    setIsLocalThinking(true);
+    
     const val = localInput;
     setLocalInput('');
     const filesToUpload = [...selectedFiles];
@@ -263,6 +275,7 @@ export function ChatSession({
       );
     } catch (err) {
       console.error(err);
+      setIsLocalThinking(false);
       setLocalInput(val);
       setSelectedFiles(filesToUpload);
     }
@@ -591,8 +604,10 @@ export function ChatSession({
                 </div>
               ) : (
                 <>
-                  {messages.map((m: any, idx: number) => {
-                  const isLast = idx === messages.length - 1;
+                  {Array.from(new Map(messages.map((m: any) => [m.id || m.createdAt || Math.random(), m])).values())
+                    .filter((m: any) => m.role === 'user' || m.role === 'assistant')
+                    .map((m: any, idx: number, arr: any[]) => {
+                  const isLast = idx === arr.length - 1;
                   const isAssistant = m.role === 'assistant';
                   const isUser = m.role === 'user';
                   const isStreaming = isLast && isLoading && isAssistant;
@@ -690,7 +705,11 @@ export function ChatSession({
                           )}
                         </div>
                       </div>
-                      <div className={cn("flex items-center gap-3 mt-2", isUser ? "px-5 flex-row-reverse" : "px-12 flex-row")}>
+                      <div className={cn(
+                        "flex items-center gap-3 mt-2 transition-opacity duration-300", 
+                        isUser ? "px-5 flex-row-reverse" : "px-12 flex-row",
+                        (isAssistant && status === 'streaming' && m.id === arr[arr.length - 1]?.id) ? "opacity-0 pointer-events-none" : "opacity-100"
+                      )}>
                         <div className="flex items-center gap-1 transition-opacity">
                           <Tooltip delayDuration={0}>
                             <TooltipTrigger asChild>
@@ -721,7 +740,7 @@ export function ChatSession({
                 })}
                 
               {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的“先行占位” */}
-              {isLoading && (messages.length === 0 || messages[messages.length - 1]?.role === 'user') && (
+              {(isLoading || isLocalThinking) && (messages.length === 0 || messages[messages.length - 1]?.role === 'user') && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex w-full gap-4 items-start mb-8">
                   <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
                     <Sparkles className="w-4 h-4" />

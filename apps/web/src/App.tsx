@@ -70,6 +70,7 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
+  const [isStorageInitialized, setIsStorageInitialized] = useState(false);
   
   // ── Global Authentication & Identity State ──
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('uclaw_auth_token'));
@@ -136,6 +137,20 @@ function AppContent() {
       } catch (e) {
         console.error('IDB Set Error:', e);
       }
+    },
+    async delete(key: string): Promise<void> {
+      try {
+        const db = await this.getDb();
+        return new Promise<void>((resolve, reject) => {
+          const tx = db.transaction('chats', 'readwrite');
+          const store = tx.objectStore('chats');
+          const request = store.delete(key);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      } catch (e) {
+        console.error('IDB Delete Error:', e);
+      }
     }
   };
 
@@ -166,6 +181,7 @@ function AppContent() {
       }
 
       setConversations(initialData);
+      setIsStorageInitialized(true);
 
       if (!token) return;
 
@@ -199,6 +215,10 @@ function AppContent() {
             const existing = prev.find(s => s.chatId === chat.id);
             if (existing) {
               setActiveSessionId(existing.sessionId);
+              // 同步消息（解决刷新竞态）
+              if ((!existing.initialMessages || existing.initialMessages.length === 0) && Array.isArray(chat.messages) && chat.messages.length > 0) {
+                return prev.map(s => s.sessionId === existing.sessionId ? { ...s, initialMessages: chat.messages } : s);
+              }
               return prev;
             }
             const newSession = { sessionId: 'session_' + Date.now(), chatId: chat.id, initialMessages: chat.messages };
@@ -212,12 +232,15 @@ function AppContent() {
     initStorage();
   }, []);
 
-  // 1b. 监听 conversations 变化并同步到 IndexedDB
+  // 1b. 监听 conversations 变化并同步到 IndexedDB (使用防抖减少 IO 压力)
+  const idbSyncTimeoutRef = useRef<any>(null);
   useEffect(() => {
-    if (conversations.length > 0) {
-      idb.set('uclaw_chats', conversations);
-    }
-  }, [conversations]);
+    if (!isStorageInitialized) return; // Prevent overwriting DB with empty array before initial load
+    if (idbSyncTimeoutRef.current) clearTimeout(idbSyncTimeoutRef.current);
+    idbSyncTimeoutRef.current = setTimeout(() => {
+      idb.set('uclaw_chats', conversations).catch(err => console.error('IDB sync error:', err));
+    }, 1000); // 1s debounce
+  }, [conversations, isStorageInitialized]);
 
   // 2. 监听 URL 变化，同步当前活跃 ID 和可见 Session
   useEffect(() => {
@@ -226,12 +249,16 @@ function AppContent() {
 
     if (chatIdFromUrl && chatIdFromUrl !== currentChatId) {
       setCurrentChatId(chatIdFromUrl);
-      // 检查是否已经在活跃会话中，找到则激活，否则新建
+      // 检查是否已经在活跃会话中，找到则激活，并确保 initialMessages 同步
       const chat = conversations.find(c => c.id === chatIdFromUrl);
       setActiveSessions(prev => {
         const existing = prev.find(s => s.chatId === chatIdFromUrl);
         if (existing) {
           setActiveSessionId(existing.sessionId);
+          // 如果现有 session 消息为空但找到了历史消息，则同步它（解决刷新竞态）
+          if ((!existing.initialMessages || existing.initialMessages.length === 0) && chat && Array.isArray(chat.messages) && chat.messages.length > 0) {
+            return prev.map(s => s.sessionId === existing.sessionId ? { ...s, initialMessages: chat.messages } : s);
+          }
           return prev;
         }
         const newSession = { 
@@ -401,7 +428,12 @@ function AppContent() {
   };
 
   const handleDeleteConversations = (ids: string[]) => {
-    setConversations(prev => prev.filter(c => !ids.includes(c.id)));
+    setConversations(prev => {
+      const updated = prev.filter(c => !ids.includes(c.id));
+      idb.set('uclaw_chats', updated).catch(err => console.error('Failed to sync deletion to IDB:', err));
+      return updated;
+    });
+    
     if (token) {
       const attemptDelete = async (retries = 2) => {
         try {
@@ -487,6 +519,10 @@ function AppContent() {
 
   if (!token) {
     return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (!isStorageInitialized) {
+    return <div className="h-screen w-full flex items-center justify-center bg-[#f6f3f2]"><div className="animate-pulse font-bold text-[#716B67]">Loading...</div></div>;
   }
 
   return (

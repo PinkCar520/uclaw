@@ -83,36 +83,36 @@ export function GlobalSearchModal({
       <DialogTitle className="sr-only">Search Modal</DialogTitle>
       
       <DialogContent 
-        className="sm:max-w-[640px] p-0 overflow-hidden bg-white/95 backdrop-blur-xl border-[#E8E4E2] shadow-2xl rounded-2xl top-[15%] translate-y-0"
+        className="sm:max-w-[640px] p-0 overflow-hidden bg-white/95 backdrop-blur-xl border-[#E8E4E2] shadow-2xl rounded-[12px] top-[15%] translate-y-0 [&>button]:hidden"
       >
         <div className="flex flex-col h-full max-h-[80vh]">
           {/* Search Input Area */}
-          <div className="flex items-center px-4 py-4 border-b border-[#E8E4E2]/50 gap-3">
-            <Search className="w-5 h-5 text-[#A8A4A1]" />
+          <div className="flex items-center px-6 py-5 border-b border-[#E8E4E2]/50 gap-4">
+            <Search className="w-5 h-5 text-[#716B67]" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('search_modal.placeholder', 'Search chats and projects...')}
-              className="flex-1 bg-transparent border-none outline-none text-[15px] font-medium text-[#1C1B1B] placeholder:text-[#A8A4A1] placeholder:font-normal"
+              className="flex-1 bg-transparent border-none outline-none text-[16px] font-medium text-[#1C1B1B] placeholder:text-[#A8A4A1] placeholder:font-normal"
             />
             {/* ESC hint */}
-            <div className="hidden sm:flex px-1.5 py-0.5 rounded text-[10px] font-bold text-[#A8A4A1] bg-[#F6F3F2]">
+            <div className="hidden sm:flex px-2 py-1 rounded-md text-[11px] font-bold text-[#A8A4A1] bg-[#F6F3F2]">
               ESC
             </div>
           </div>
 
           {/* Results Area */}
-          <div className="flex-1 overflow-y-auto px-2 py-2">
+          <div className="flex-1 overflow-y-auto p-3">
             {filtered.length === 0 ? (
-              <div className="py-14 text-center text-[#A8A4A1] text-sm">
+              <div className="py-16 text-center text-[#A8A4A1] text-[15px]">
                 {t('search_modal.no_results', 'No chats found')}
               </div>
             ) : (
-              <div className="flex flex-col space-y-0.5">
+              <div className="flex flex-col space-y-1">
                 {!query && (
-                  <div className="px-3 py-2 text-[11px] font-semibold tracking-wider text-[#A8A4A1] uppercase mb-1">
+                  <div className="px-4 py-3 text-[11px] font-bold tracking-wider text-[#A8A4A1] uppercase mb-1">
                     {t('search_modal.recent_discussions', 'Recent Discussions')}
                   </div>
                 )}
@@ -127,13 +127,13 @@ export function GlobalSearchModal({
                         onClose();
                       }}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                        isSelected ? 'bg-[#F6F3F2]' : 'hover:bg-[#F6F3F2]/50'
+                      className={`flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors ${
+                        isSelected ? 'bg-[#1C1B1B]/[0.06]' : 'hover:bg-[#1C1B1B]/[0.04]'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <MessageSquare className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#1C1B1B]' : 'text-[#716B67]'}`} />
-                        <span className={`text-[14px] truncate ${isSelected ? 'text-[#1C1B1B] font-medium' : 'text-[#494543]'}`}>
+                      <div className="flex items-center gap-4 min-w-0">
+                        <MessageSquare className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#1C1B1B]' : 'text-[#A8A4A1]'}`} />
+                        <span className={`text-[15px] truncate ${isSelected ? 'text-[#1C1B1B] font-semibold' : 'text-[#494543] font-medium'}`}>
                           {item.title}
                         </span>
                       </div>
@@ -154,8 +154,8 @@ export function GlobalSearchModal({
           </div>
 
           {/* Footer Footer Footer */}
-          <div className="px-4 py-2 border-t border-[#E8E4E2]/50 bg-[#FBFBFB] flex items-center justify-between">
-            <span className="text-[11px] text-[#A8A4A1]">
+          <div className="px-6 py-3 border-t border-[#E8E4E2]/50 bg-[#FBFBFB] flex items-center justify-between">
+            <span className="text-[12px] font-medium text-[#A8A4A1]">
               {t('search_modal.shortcut_hint', 'Use ↑↓ to navigate, Enter to select, Esc to close')}
             </span>
           </div>

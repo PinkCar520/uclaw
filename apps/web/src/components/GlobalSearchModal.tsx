@@ -81,9 +81,9 @@ export function GlobalSearchModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* Hidden DialogTitle for screen readers to avoid radix-ui warnings */}
       <DialogTitle className="sr-only">Search Modal</DialogTitle>
-      
-      <DialogContent 
-        className="sm:max-w-[640px] p-0 overflow-hidden bg-white/95 backdrop-blur-xl border-[#E8E4E2] shadow-2xl rounded-[12px] top-[15%] translate-y-0 [&>button]:hidden"
+
+      <DialogContent
+        className="sm:max-w-[640px] p-0 overflow-hidden bg-white/95 backdrop-blur-xl border-[#E8E4E2] shadow-2xl rounded-[8px] top-[15%] translate-y-0 [&>button]:hidden"
       >
         <div className="flex flex-col h-full max-h-[80vh]">
           {/* Search Input Area */}
@@ -116,7 +116,7 @@ export function GlobalSearchModal({
                     {t('search_modal.recent_discussions', 'Recent Discussions')}
                   </div>
                 )}
-                
+
                 {filtered.map((item, index) => {
                   const isSelected = index === selectedIndex;
                   return (
@@ -127,9 +127,8 @@ export function GlobalSearchModal({
                         onClose();
                       }}
                       onMouseEnter={() => setSelectedIndex(index)}
-                      className={`flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors ${
-                        isSelected ? 'bg-[#1C1B1B]/[0.06]' : 'hover:bg-[#1C1B1B]/[0.04]'
-                      }`}
+                      className={`flex items-center justify-between px-4 py-3.5 rounded-[8px] cursor-pointer transition-colors ${isSelected ? 'bg-[#1C1B1B]/[0.06]' : 'hover:bg-[#1C1B1B]/[0.04]'
+                        }`}
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <MessageSquare className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#1C1B1B]' : 'text-[#A8A4A1]'}`} />
@@ -137,7 +136,7 @@ export function GlobalSearchModal({
                           {item.title}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-3 shrink-0 ml-4">
                         <span className="text-[12px] text-[#A8A4A1]">
                           {getRelativeTime(item.timestamp)}

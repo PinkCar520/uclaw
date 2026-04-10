@@ -32,6 +32,11 @@ export interface UpdateSkillDto {
   tags?: string[];
 }
 
+export interface InstallSkillDto {
+  userId?: string;
+  config?: any;
+}
+
 @Injectable()
 export class SkillService {
   constructor(@Inject('PRISMA_CLIENT') private prisma: PrismaClient) {}
@@ -106,5 +111,52 @@ export class SkillService {
       }),
     ]);
     return { total, newThisWeek };
+  }
+
+  // ─── Skill Installation ─────────────────────────────────────────────
+
+  async installSkill(skillId: string, userId?: string, config?: any) {
+    const existing = await this.prisma.skillInstallation.findFirst({
+      where: { skillId, userId: userId || null },
+    });
+    if (existing) {
+      // Re-enable if disabled
+      return this.prisma.skillInstallation.update({
+        where: { id: existing.id },
+        data: { status: 'active', config: config || existing.config },
+      });
+    }
+    return this.prisma.skillInstallation.create({
+      data: {
+        skillId,
+        userId: userId || null,
+        config: config || {},
+        status: 'active',
+      },
+    });
+  }
+
+  async uninstallSkill(skillId: string, userId?: string) {
+    return this.prisma.skillInstallation.deleteMany({
+      where: { skillId, userId: userId || null },
+    });
+  }
+
+  async getInstallationStatus(skillId: string, userId?: string) {
+    const installation = await this.prisma.skillInstallation.findFirst({
+      where: { skillId, userId: userId || null },
+    });
+    return {
+      installed: !!installation,
+      status: installation?.status || null,
+      config: installation?.config || null,
+    };
+  }
+
+  async getUserInstallations(userId: string) {
+    return this.prisma.skillInstallation.findMany({
+      where: { userId },
+      include: { skill: true },
+    });
   }
 }

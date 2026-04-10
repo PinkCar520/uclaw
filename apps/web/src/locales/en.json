@@ -251,6 +251,18 @@
         "title": "Google Workspace",
         "desc": "Draft emails, schedule calendar events, and organize Drive folders within your workflow."
       }
+    },
+    "source_labels": {
+      "openclaw_hub": "OpenClaw Hub",
+      "claude_code": "Claude Code",
+      "git": "Git",
+      "local": "Local",
+      "internal": "Internal"
+    },
+    "actions": {
+      "installing": "Installing...",
+      "uninstalling": "Uninstalling...",
+      "installed": "Installed"
     }
   },
   "auth": {

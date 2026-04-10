@@ -273,6 +273,18 @@
         "title": "Google Workspace",
         "desc": "在工作流中直接起草邮件、安排日历事件并组织 Drive 文件夹。"
       }
+    },
+    "source_labels": {
+      "openclaw_hub": "OpenClaw Hub",
+      "claude_code": "Claude Code",
+      "git": "Git",
+      "local": "本地",
+      "internal": "内部"
+    },
+    "actions": {
+      "installing": "正在安装...",
+      "uninstalling": "正在卸载...",
+      "installed": "已安装"
     }
   },
   "auth": {

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   CheckCircle2, Rocket, GitPullRequest, MessageSquare,
-  Star, Box, Mail
+  Star, Box, Mail, Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,12 +46,12 @@ const ICON_STYLE_MAP: Record<string, { bg: string; color: string }> = {
   Mail: { bg: 'bg-emerald-50', color: 'text-emerald-600' },
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  'openclaw-hub': 'OpenClaw Hub',
-  'claude-code': 'Claude Code',
-  'git': 'Git',
-  'local': 'Local',
-  'internal': 'Internal',
+const SOURCE_LABEL_KEYS: Record<string, string> = {
+  'openclaw-hub': 'library.source_labels.openclaw_hub',
+  'claude-code': 'library.source_labels.claude_code',
+  'git': 'library.source_labels.git',
+  'local': 'library.source_labels.local',
+  'internal': 'library.source_labels.internal',
 };
 
 export function SkillLibrary() {
@@ -61,6 +61,9 @@ export function SkillLibrary() {
   const [stats, setStats] = useState({ total: 0, newThisWeek: 0 });
   const [loading, setLoading] = useState(true);
   const initialFetchRef = React.useRef(true);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
+  const installingRef = React.useRef<string | null>(null);
 
   useEffect(() => {
     // 切换筛选时先显示骨架屏
@@ -80,6 +83,22 @@ export function SkillLibrary() {
         const statsData = await statsRes.json();
         setSkills(skillsData.data || []);
         setStats(statsData.data || { total: 0, newThisWeek: 0 });
+
+        // Fetch installation status for each skill
+        const skillIds = (skillsData.data || []).map((s: SkillCard) => s.id);
+        const statusResults = await Promise.all(
+          skillIds.map(async (id: string) => {
+            try {
+              const res = await fetch(`/api/skills/${id}/install/status`);
+              const data = await res.json();
+              return { id, installed: data.data?.installed };
+            } catch {
+              return { id, installed: false };
+            }
+          }),
+        );
+        const installed = new Set(statusResults.filter((r) => r.installed).map((r) => r.id));
+        setInstalledIds(installed);
       } catch (err) {
         console.error('Failed to fetch skills:', err);
       } finally {
@@ -92,6 +111,48 @@ export function SkillLibrary() {
     };
     fetchData();
   }, [activeFilter]);
+
+  const handleInstall = async (skillId: string) => {
+    if (installingRef.current) return;
+    installingRef.current = skillId;
+    setInstallingId(skillId);
+
+    try {
+      const res = await fetch(`/api/skills/${skillId}/install`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setInstalledIds((prev) => new Set([...prev, skillId]));
+      }
+    } catch (err) {
+      console.error('Install failed:', err);
+    } finally {
+      installingRef.current = null;
+      setInstallingId(null);
+    }
+  };
+
+  const handleUninstall = async (skillId: string) => {
+    if (installingRef.current) return;
+    installingRef.current = skillId;
+    setInstallingId(skillId);
+
+    try {
+      const res = await fetch(`/api/skills/${skillId}/install`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setInstalledIds((prev) => {
+          const next = new Set(prev);
+          next.delete(skillId);
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('Uninstall failed:', err);
+    } finally {
+      installingRef.current = null;
+      setInstallingId(null);
+    }
+  };
 
   const filters: { id: Category; label: string }[] = [
     { id: 'all', label: t('library.filters.all') },
@@ -195,10 +256,32 @@ export function SkillLibrary() {
                       </div>
                       <div className="flex items-center justify-between mt-4">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-[#a8a19c]">
-                          {SOURCE_LABELS[card.source] || card.source}
+                          {t(SOURCE_LABEL_KEYS[card.source] || card.source)}
                         </span>
-                        <button className="text-[#EC5B14] hover:bg-[#EC5B14]/10 px-4 py-1.5 rounded-lg transition-colors text-xs font-bold">
-                          {t('library.common.install')}
+                        <button
+                          onClick={() => installedIds.has(card.id) ? handleUninstall(card.id) : handleInstall(card.id)}
+                          disabled={installingId === card.id}
+                          className={cn(
+                            "flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg transition-all text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed",
+                            "w-28", // 🔒 固定宽度，彻底消除抖动
+                            installedIds.has(card.id)
+                              ? "bg-[#EC5B14]/10 text-[#EC5B14] hover:bg-[#EC5B14]/20"
+                              : "text-[#EC5B14] hover:bg-[#EC5B14]/10"
+                          )}
+                        >
+                          {installingId === card.id ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>Loading</span>
+                            </>
+                          ) : installedIds.has(card.id) ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>{t('library.actions.installed')}</span>
+                            </>
+                          ) : (
+                            <span>{t('library.common.install')}</span>
+                          )}
                         </button>
                       </div>
                     </motion.div>

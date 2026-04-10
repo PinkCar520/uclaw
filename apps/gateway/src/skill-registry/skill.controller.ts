@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { SkillService, CreateSkillDto, UpdateSkillDto } from './skill.service';
 
 @Controller('api/skills')
@@ -75,5 +75,60 @@ export class SkillController {
   async deleteSkill(@Param('id') id: string) {
     await this.skillService.deleteSkill(id);
     return { success: true };
+  }
+
+  /**
+   * POST /api/skills/:id/install
+   * 安装技能
+   */
+  @Post(':id/install')
+  @HttpCode(HttpStatus.CREATED)
+  async installSkill(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const userId = req.user?.dbId;
+    const config = body?.config || {};
+    const installation = await this.skillService.installSkill(id, userId, config);
+    return { success: true, data: installation };
+  }
+
+  /**
+   * DELETE /api/skills/:id/install
+   * 卸载技能
+   */
+  @Delete(':id/install')
+  @HttpCode(HttpStatus.OK)
+  async uninstallSkill(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.dbId;
+    await this.skillService.uninstallSkill(id, userId);
+    return { success: true };
+  }
+
+  /**
+   * GET /api/skills/:id/install/status
+   * 获取安装状态
+   */
+  @Get(':id/install/status')
+  async getInstallStatus(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.dbId;
+    const status = await this.skillService.getInstallationStatus(id, userId);
+    return { success: true, data: status };
+  }
+
+  /**
+   * POST /api/skills/import
+   * 从外部源导入技能
+   */
+  @Post('import')
+  @HttpCode(HttpStatus.CREATED)
+  async importSkill(@Body() body: any) {
+    const { source, skillId, url, skillPath } = body;
+    // For now, return a placeholder — actual import adapters in Phase 3.2/3.3
+    return {
+      success: true,
+      data: {
+        message: `Import from ${source} is coming in the next update`,
+        source,
+        skillId,
+      },
+    };
   }
 }

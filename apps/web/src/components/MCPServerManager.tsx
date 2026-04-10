@@ -90,6 +90,9 @@ export function MCPServerManager() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [spinKey, setSpinKey] = useState(0);
   const [syncSpinKey, setSyncSpinKey] = useState(0);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importSource, setImportSource] = useState('openclaw-hub');
+  const [importUrl, setImportUrl] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -151,6 +154,27 @@ export function MCPServerManager() {
       showToast('Sync failed', 'error');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleImportSkill = async () => {
+    try {
+      const res = await fetch('/api/skills/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: importSource, url: importUrl }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.data?.message || 'Import started', 'success');
+        setShowImportModal(false);
+        setImportUrl('');
+      } else {
+        showToast('Import failed', 'error');
+      }
+    } catch (err) {
+      console.error('Import failed:', err);
+      showToast('Import failed', 'error');
     }
   };
 
@@ -297,6 +321,13 @@ export function MCPServerManager() {
             >
               <Plus className="w-4 h-4" />
               Add Server
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
+            >
+              <Globe className="w-4 h-4" />
+              Import Skill
             </button>
           </div>
         </div>
@@ -523,6 +554,80 @@ export function MCPServerManager() {
                     >
                       <Save className="w-4 h-4" />
                       {editingId ? 'Update' : 'Create'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Import Skill Modal */}
+        <AnimatePresence>
+          {showImportModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowImportModal(false)}
+                className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+              >
+                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md pointer-events-auto">
+                  <div className="p-6 border-b border-[#E8E4E2]">
+                    <h3 className="font-display font-bold text-xl text-[#1C1B1B]">
+                      Import Skill
+                    </h3>
+                    <p className="text-sm text-[#716B67] mt-1">Import skills from external sources</p>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1C1B1B] mb-1">Source</label>
+                      <select
+                        value={importSource}
+                        onChange={(e) => setImportSource(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E8E4E2] text-sm focus:ring-2 focus:ring-[#EC5B14]/20 focus:border-[#EC5B14] outline-none bg-white"
+                      >
+                        <option value="openclaw-hub">OpenClaw Hub</option>
+                        <option value="claude-code">Claude Code Skill</option>
+                        <option value="git">Git Repository</option>
+                        <option value="local">Local File</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#1C1B1B] mb-1">
+                        {importSource === 'git' ? 'Repository URL' : importSource === 'local' ? 'File Path' : 'Skill ID / URL'}
+                      </label>
+                      <input
+                        value={importUrl}
+                        onChange={(e) => setImportUrl(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E8E4E2] text-sm focus:ring-2 focus:ring-[#EC5B14]/20 focus:border-[#EC5B14] outline-none"
+                        placeholder={importSource === 'openclaw-hub' ? 'e.g., fix-bug' : importSource === 'git' ? 'https://github.com/user/repo' : '/path/to/skill'}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-6 border-t border-[#E8E4E2] flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowImportModal(false)}
+                      className="px-6 py-2 rounded-xl border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:bg-[#F6F3F2] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleImportSkill}
+                      className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[#EC5B14] text-white text-sm font-bold hover:bg-[#d44f0e] transition-all"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Import
                     </button>
                   </div>
                 </div>

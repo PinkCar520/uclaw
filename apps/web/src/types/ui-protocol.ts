@@ -11,7 +11,11 @@ export type UIComponentType =
   | 'approval_card'
   | 'code_block'
   | 'stats_card'
-  | 'text';
+  | 'text'
+  | 'zentao_task_card'
+  | 'leave_request_form'
+  | 'diff_viewer'
+  | 'print_console';
 
 export interface UIBase {
   uiType: UIComponentType;
@@ -132,6 +136,79 @@ export interface UIText extends UIBase {
   props: UITextProps;
 }
 
+// ── Stitch Components ──
+
+export interface ZenTaoAssignee {
+  name: string;
+  avatar?: string;
+}
+
+export interface UIZenTaoTaskCardProps {
+  title: string;
+  assignees?: ZenTaoAssignee[];
+  assigneeCount?: number;
+  priority?: 'High' | 'Medium' | 'Low';
+  assignee?: string;
+  sprintName?: string;
+  sprintStartsIn?: string;
+}
+
+export interface UIZenTaoTaskCard extends UIBase {
+  uiType: 'zentao_task_card';
+  props: UIZenTaoTaskCardProps;
+}
+
+export interface UILeaveRequestFormProps {
+  remainingDays?: number;
+  leaveType?: string;
+  defaultDates?: string;
+  quickActions?: string[];
+}
+
+export interface UILeaveRequestForm extends UIBase {
+  uiType: 'leave_request_form';
+  props: UILeaveRequestFormProps;
+}
+
+export interface UIDiffLine {
+  lineNumber: number;
+  type: 'context' | 'addition' | 'deletion';
+  content: string;
+}
+
+export interface UIDiffViewerProps {
+  fileName: string;
+  language?: string;
+  draft?: boolean;
+  diff: UIDiffLine[];
+}
+
+export interface UIDiffViewer extends UIBase {
+  uiType: 'diff_viewer';
+  props: UIDiffViewerProps;
+}
+
+export interface UIPrintConsoleProps {
+  printerName?: string;
+  location?: string;
+  status?: 'online' | 'offline' | 'busy';
+  paperPercent?: number;
+  paperTray?: string;
+  inkLevels?: { c: number; m: number; y: number; k: number };
+  documentName?: string;
+  documentPages?: number;
+  documentSize?: string;
+  documentGenerated?: string;
+  securityPass?: boolean;
+  securityMessage?: string;
+  quickActions?: string[];
+}
+
+export interface UIPrintConsole extends UIBase {
+  uiType: 'print_console';
+  props: UIPrintConsoleProps;
+}
+
 export type UIKit =
   | UIBugCard
   | UIBugList
@@ -140,7 +217,11 @@ export type UIKit =
   | UIApprovalCard
   | UICodeBlock
   | UIStatsCard
-  | UIText;
+  | UIText
+  | UIZenTaoTaskCard
+  | UILeaveRequestForm
+  | UIDiffViewer
+  | UIPrintConsole;
 
 export interface ToolResult<T = unknown> {
   data: T;

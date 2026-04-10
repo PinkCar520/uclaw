@@ -10,7 +10,8 @@
       "Bash(docker compose build *)",
       "Bash(docker inspect *)",
       "Bash(find *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(curl *)"
     ]
   },
   "$version": 3

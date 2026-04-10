@@ -125,6 +125,38 @@
   @apply bg-gradient-to-br from-[#a33800] to-[#cc4900] text-white border-0 shadow-[0_4px_14px_0_rgba(204,73,0,0.39)] hover:shadow-[0_6px_20px_rgba(204,73,0,0.23)] hover:from-[#c24200] hover:to-[#e65200] transition-all;
 }
 
+/* Stitch CTA Button — Large orange pill button with shadow */
+.btn-cta {
+  @apply bg-gradient-to-br from-[#a33800] to-[#cc4900] text-white font-bold text-[14px] 
+         py-3.5 px-8 rounded-[16px] border-0 shadow-[0_8px_24px_rgba(163,56,0,0.35)]
+         hover:shadow-[0_12px_32px_rgba(163,56,0,0.45)] hover:from-[#c24200] hover:to-[#e65200]
+         active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 w-full;
+}
+
+.btn-cta:disabled {
+  @apply opacity-50 cursor-not-allowed hover:shadow-[0_8px_24px_rgba(163,56,0,0.35)] active:scale-100;
+}
+
+/* Stitch Quick Action Pill */
+.btn-quick-action {
+  @apply bg-[#F5E6D8] text-[#6B3A1F] text-[12px] font-semibold py-2 px-4 rounded-full
+         hover:bg-[#EED5C3] transition-colors cursor-pointer whitespace-nowrap;
+}
+
+/* Stitch Thinking Pill */
+.thinking-pill {
+  @apply inline-flex items-center gap-1.5 text-[12px] font-medium py-1.5 px-3 rounded-full
+         transition-colors whitespace-nowrap;
+}
+
+.thinking-pill--active {
+  @apply bg-[#EC5B14]/10 text-[#A33800];
+}
+
+.thinking-pill--done {
+  @apply bg-[#F6F3F2] text-[#716B67];
+}
+
 /* Zero Elevation Depth Cards */
 .card-floating {
   @apply bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[12px] border-none;

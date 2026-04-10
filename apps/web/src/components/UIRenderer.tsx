@@ -5,6 +5,10 @@ import { TaskPlan } from '../components/TaskPlan';
 import { ApprovalCard } from '../components/ApprovalCard';
 import { StatsCard } from '../components/StatsCard';
 import { CodeBlock } from '../components/CodeBlock';
+import { ZenTaoTaskCard } from '../components/ZenTaoTaskCard';
+import { LeaveRequestForm } from '../components/LeaveRequestForm';
+import { DiffViewer } from '../components/DiffViewer';
+import { PrintConsole } from '../components/PrintConsole';
 import { registerUIRenderer, renderUIKit as renderFromRegistry } from '../lib/uiRegistry';
 
 // ──────────────────────────────────────────────
@@ -76,6 +80,46 @@ function CodeBlockRenderer({ uiKit }: { uiKit: UIKit & { uiType: 'code_block' } 
   return <CodeBlock {...uiKit.props} />;
 }
 
+// ── Stitch Components ──
+
+function ZenTaoTaskCardRenderer({ uiKit, onAction }: { uiKit: UIKit & { uiType: 'zentao_task_card' }; onAction?: (actionId: string, payload: unknown) => void }) {
+  return (
+    <ZenTaoTaskCard
+      {...uiKit.props}
+      onCreateTask={(data) => onAction?.('create_zentao_task', data)}
+    />
+  );
+}
+
+function LeaveRequestFormRenderer({ uiKit, onAction }: { uiKit: UIKit & { uiType: 'leave_request_form' }; onAction?: (actionId: string, payload: unknown) => void }) {
+  return (
+    <LeaveRequestForm
+      {...uiKit.props}
+      onSubmit={(data) => onAction?.('submit_leave_request', data)}
+      onQuickAction={(action) => onAction?.('leave_quick_action', { action })}
+    />
+  );
+}
+
+function DiffViewerRenderer({ uiKit, onAction }: { uiKit: UIKit & { uiType: 'diff_viewer' }; onAction?: (actionId: string, payload: unknown) => void }) {
+  return (
+    <DiffViewer
+      {...uiKit.props}
+      onApply={() => onAction?.('apply_diff', { fileName: uiKit.props.fileName })}
+    />
+  );
+}
+
+function PrintConsoleRenderer({ uiKit, onAction }: { uiKit: UIKit & { uiType: 'print_console' }; onAction?: (actionId: string, payload: unknown) => void }) {
+  return (
+    <PrintConsole
+      {...uiKit.props}
+      onConfirmPrint={() => onAction?.('confirm_print', {})}
+      onQuickAction={(action) => onAction?.('print_quick_action', { action })}
+    />
+  );
+}
+
 // ──────────────────────────────────────────────
 // UIRenderer 主组件
 // ──────────────────────────────────────────────
@@ -106,6 +150,10 @@ if (!(globalThis as Record<string, unknown>)[REGISTRATION_KEY]) {
     code_block: CodeBlockRenderer,
     stats_card: StatsCardRenderer,
     text: () => null,
+    zentao_task_card: ZenTaoTaskCardRenderer,
+    leave_request_form: LeaveRequestFormRenderer,
+    diff_viewer: DiffViewerRenderer,
+    print_console: PrintConsoleRenderer,
   };
 
   (Object.entries(renderers) as [UIComponentType, React.ComponentType<any>][]).forEach(([type, component]) => {

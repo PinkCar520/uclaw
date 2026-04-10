@@ -1,4 +1,4 @@
-import { Shield, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { Shield, Check, X, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
@@ -33,27 +33,31 @@ export function ApprovalCard({
     bg: string;
     border: string;
     text: string;
+    iconBg: string;
   }> = {
     pending: {
-      icon: <Clock className="w-4 h-4 text-amber-500" />,
-      label: t('approval.status.pending', '待审批'),
-      bg: 'bg-amber-50',
-      border: 'border-amber-200',
-      text: 'text-amber-700',
+      icon: <Clock className="w-4 h-4 text-[#F59E0B]" />,
+      label: t('approval.status.pending', 'Pending'),
+      bg: 'bg-[#F59E0B]/5',
+      border: 'border-[#F59E0B]/20',
+      text: 'text-[#D97706]',
+      iconBg: 'bg-[#F59E0B]/10',
     },
     approved: {
-      icon: <Check className="w-4 h-4 text-emerald-500" />,
-      label: t('approval.status.approved', '已同意'),
-      bg: 'bg-emerald-50',
-      border: 'border-emerald-200',
-      text: 'text-emerald-700',
+      icon: <Check className="w-4 h-4 text-[#10B981]" />,
+      label: t('approval.status.approved', 'Approved'),
+      bg: 'bg-[#10B981]/5',
+      border: 'border-[#10B981]/20',
+      text: 'text-[#059669]',
+      iconBg: 'bg-[#10B981]/10',
     },
     rejected: {
-      icon: <X className="w-4 h-4 text-rose-500" />,
-      label: t('approval.status.rejected', '已拒绝'),
-      bg: 'bg-rose-50',
-      border: 'border-rose-200',
-      text: 'text-rose-700',
+      icon: <X className="w-4 h-4 text-[#F43F5E]" />,
+      label: t('approval.status.rejected', 'Rejected'),
+      bg: 'bg-[#F43F5E]/5',
+      border: 'border-[#F43F5E]/20',
+      text: 'text-[#DC2626]',
+      iconBg: 'bg-[#F43F5E]/10',
     },
   };
 
@@ -62,66 +66,72 @@ export function ApprovalCard({
 
   return (
     <div className={cn(
-      "my-3 bg-white border rounded-2xl p-5 transition-all overflow-hidden",
+      "bg-white border rounded-[20px] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] mt-4 max-w-[520px] transition-all",
       config.border,
-      isPending && "shadow-md shadow-amber-500/5"
+      isPending && "shadow-[0_8px_30px_rgba(245,158,11,0.08)]"
     )}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={cn("p-2 rounded-xl", config.bg, config.border, "border")}>
-          <Shield className={cn("w-5 h-5", config.text)} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-bold text-slate-800 truncate">{toolName}</h4>
-          <p className="text-[11px] text-slate-400 font-mono">ID: {requestId}</p>
-        </div>
-        <div className={cn(
-          "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border uppercase",
-          config.bg, config.border, config.text
-        )}>
-          {config.icon}
-          {config.label}
+      <div className="px-6 pt-6 pb-5 border-b border-[#E8E4E2]/60">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-xl border", config.bg, config.iconBg, config.border)}>
+            <Shield className={cn("w-5 h-5", config.text)} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-[15px] font-bold text-[#1C1B1B] truncate">{toolName}</h4>
+            <p className="text-[10px] text-[#716B67] font-mono mt-0.5">ID: {requestId}</p>
+          </div>
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border uppercase",
+            config.bg, config.border, config.text
+          )}>
+            {config.icon}
+            {config.label}
+          </div>
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-[13px] text-slate-600 leading-relaxed mb-4 font-medium">
-        {description}
-      </p>
+      <div className="px-6 py-5">
+        <p className="text-[13px] text-[#716B67] leading-relaxed font-medium">{description}</p>
 
-      {/* Args Preview */}
-      {args && Object.keys(args).length > 0 && (
-        <details className="mb-4 group/details">
-          <summary className="text-[11px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-600 transition-colors">
-            {t('approval.view_args', '查看参数')}
-          </summary>
-          <pre className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] font-mono text-slate-600 overflow-auto max-h-32">
-            {JSON.stringify(args, null, 2)}
-          </pre>
-        </details>
-      )}
+        {/* Args */}
+        {args && Object.keys(args).length > 0 && (
+          <details className="mt-4 group/details">
+            <summary className="text-[10px] font-bold text-[#716B67] uppercase tracking-wider cursor-pointer hover:text-[#1C1B1B] transition-colors">
+              {t('approval.view_args', 'View Parameters')}
+            </summary>
+            <pre className="mt-2 p-3 bg-[#F6F3F2] rounded-[12px] border border-[#E8E4E2]/60 text-[11px] font-mono text-[#716B67] overflow-auto max-h-32">
+              {JSON.stringify(args, null, 2)}
+            </pre>
+          </details>
+        )}
+      </div>
 
       {/* Actions */}
       {isPending && (
-        <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
-          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-          <span className="text-[11px] text-slate-500 font-medium flex-1">
-            {t('approval.confirm_message', '确认执行此操作？')}
-          </span>
-          <button
-            onClick={onReject}
-            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-all border border-slate-200 flex items-center gap-1.5"
-          >
-            <X className="w-3 h-3" />
-            {t('approval.reject', '拒绝')}
-          </button>
-          <button
-            onClick={onApprove}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition-all border border-emerald-500 flex items-center gap-1.5"
-          >
-            <Check className="w-3 h-3" />
-            {t('approval.approve', '同意')}
-          </button>
+        <div className="px-6 pb-6 pt-4 border-t border-[#E8E4E2]/60">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-4 h-4 text-[#F59E0B] shrink-0" />
+            <span className="text-[12px] text-[#716B67] font-medium flex-1">
+              {t('approval.confirm_message', 'Confirm this action?')}
+            </span>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onReject}
+              className="flex-1 py-3 rounded-[12px] bg-[#F6F3F2] hover:bg-[#E8E4E2] text-[#716B67] text-[12px] font-bold transition-all border border-[#E8E4E2] flex items-center justify-center gap-2"
+            >
+              <X className="w-3.5 h-3.5" />
+              {t('approval.reject', 'Reject')}
+            </button>
+            <button
+              onClick={onApprove}
+              className="flex-1 py-3 rounded-[12px] bg-gradient-to-br from-[#a33800] to-[#cc4900] hover:from-[#c24200] hover:to-[#e65200] text-white text-[12px] font-bold transition-all border border-transparent flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(204,73,0,0.3)]"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              {t('approval.approve', 'Approve')}
+            </button>
+          </div>
         </div>
       )}
     </div>

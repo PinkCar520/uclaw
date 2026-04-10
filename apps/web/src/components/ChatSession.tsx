@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ThinkingPills, type ThinkingStep } from './ThinkingPills';
+import { ZenTaoTaskCard } from './ZenTaoTaskCard';
+import { DiffViewer } from './DiffViewer';
 
 // 提升到模块级：避免在 ChatSession 每次渲染时重新定义，导致 React 视其为全新组件而重挂载
 // 重挂载会清除 setInterval，造成 BrailleSpinner 在流式传输期间频繁闪烁
@@ -608,6 +611,48 @@ export function ChatSession({
     }
 
     // ── Gen 1: 向后兼容 — 无 ui 字段时回退到旧逻辑 ──
+
+    // ── Stitch Demo: 根据工具名渲染 Stitch 组件 ──
+    if (toolName === 'getBugInfo' || toolName === 'tool-getBugInfo') {
+      if (result) {
+        // Stitch ZenTao Task Card
+        return (
+          <ZenTaoTaskCard
+            key={part.toolCallId}
+            title={result.title || 'Authentication Refactor'}
+            assignees={result.assignee ? [{ name: result.assignee }] : []}
+            priority={result.severity === 'high' ? 'High' : result.severity === 'medium' ? 'Medium' : 'Low'}
+            assignee={result.assignee || 'Sarah Chen'}
+            sprintName="Sprint 24: Q3 Security Overhaul"
+            sprintStartsIn="Starts in 12h"
+            onCreateTask={(data) => {
+              sendMessage({ content: `Create ZenTao task: ${JSON.stringify(data)}`, role: 'user' });
+            }}
+          />
+        );
+      }
+    }
+
+    // Stitch Diff Viewer — 代码修复场景
+    if (toolName === 'runLocalCommand' || toolName === 'tool-runLocalCommand') {
+      if (result?.status === 'Success' && result.command === 'git_diff') {
+        return (
+          <DiffViewer
+            key={part.toolCallId}
+            fileName="gitlab-api-v4.ts"
+            draft
+            diff={[
+              { lineNumber: 24, type: 'context', content: "const authHeader = `Bearer ${token}`;" },
+              { lineNumber: 25, type: 'deletion', content: "console.log(`Request sent with ${authHeader}`);" },
+              { lineNumber: 25, type: 'addition', content: "logger.debug('Request sent', { correlationId }); // Redact tokens" },
+              { lineNumber: 26, type: 'context', content: "return await fetch(url, { headers: { authHeader } });" },
+            ]}
+            onApply={() => sendMessage({ content: 'Apply fix to GitLab', role: 'user' })}
+          />
+        );
+      }
+    }
+
     if (toolName === 'getBugInfo' || toolName === 'tool-getBugInfo') {
       if (result) return <BugCard key={part.toolCallId} {...result} />;
     }
@@ -854,7 +899,15 @@ export function ChatSession({
                                         </div>
                                       ) : (
                                         <React.Fragment key={i}>
-                                          <ToolGroupTimeline tools={group.tools} />
+                                          {/* Stitch Thinking Pills */}
+                                          <ThinkingPills
+                                            steps={group.tools.map((t: any) => ({
+                                              label: getFriendlyToolName(t),
+                                              status: (t.output || t.result) ? 'done' as const : 'active' as const,
+                                            }))}
+                                            variant="pills"
+                                          />
+                                          {/* Tool Results — UI Components in message body */}
                                           <ToolResults tools={group.tools} />
                                         </React.Fragment>
                                       )

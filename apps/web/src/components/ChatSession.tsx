@@ -1,4 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
+
+// 提升到模块级：避免在 ChatSession 每次渲染时重新定义，导致 React 视其为全新组件而重挂载
+// 重挂载会清除 setInterval，造成 BrailleSpinner 在流式传输期间频繁闪烁
+const BrailleSpinner = () => {
+  const [pattern, setPattern] = useState('⠋');
+  useEffect(() => {
+    const patterns = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    let i = 0;
+    const interval = setInterval(() => {
+      setPattern(patterns[i]);
+      i = (i + 1) % patterns.length;
+    }, 80);
+    return () => clearInterval(interval);
+  }, []);
+  return <span className="font-mono text-[#716B67] mr-1">{pattern}</span>;
+};
 import { useChat } from '@ai-sdk/react';
 import {
   ArrowDown, Sparkles, Copy, RotateCcw, Check,
@@ -329,19 +345,7 @@ export function ChatSession({
       setSelectedFiles(filesToUpload);
     }
   };
-  const BrailleSpinner = () => {
-    const [pattern, setPattern] = useState("⠋");
-    useEffect(() => {
-      const patterns = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-      let i = 0;
-      const interval = setInterval(() => {
-        setPattern(patterns[i]);
-        i = (i + 1) % patterns.length;
-      }, 80);
-      return () => clearInterval(interval);
-    }, []);
-    return <span className="font-mono text-[#716B67] mr-1">{pattern}</span>;
-  };
+  // BrailleSpinner 已提升到模块顶层，避免组件重新挂载导致 spinner 闪烁
 
   const getFriendlyToolName = (part: any) => {
     // 安全提取底层对象，应对 AI SDK 各版本嵌套结构
@@ -393,15 +397,25 @@ export function ChatSession({
     return rawToolName.split(/[-_]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
+  // 自定义比较函数：只在工具数量、完成状态或结果内容变化时才允许重渲
+  // 流式传输期间父组件频繁刷新，但 tools 数组的「重要状态」未变，不应重渲 ToolGroupTimeline
+  const toolGroupAreEqual = (prev: { tools: any[] }, next: { tools: any[] }) => {
+    if (prev.tools.length !== next.tools.length) return false;
+    for (let i = 0; i < prev.tools.length; i++) {
+      const p = prev.tools[i];
+      const n = next.tools[i];
+      const prevDone = !!(p.output || p.result);
+      const nextDone = !!(n.output || n.result);
+      if (prevDone !== nextDone) return false;
+      if (nextDone && JSON.stringify(p.result ?? p.output) !== JSON.stringify(n.result ?? n.output)) return false;
+    }
+    return true;
+  };
+
   const ToolGroupTimeline = React.memo(({ tools }: { tools: any[] }) => {
     const isRunning = tools.some((t: any) => !(t.output || t.result));
-    // 修复：移除基于 isRunning 的 state 同步，避免流式传输期间的频繁重渲染
-    // 默认展开，用户可手动折叠（但在运行中禁止折叠以防闪烁）
     const [isManuallyClosed, setIsManuallyClosed] = useState(false);
     const isOpen = isRunning || !isManuallyClosed;
-
-    const titleParts = Array.from(new Set(tools.map(t => getFriendlyToolName(t))));
-    const title = titleParts.length > 2 ? `${titleParts.slice(0, 2).join(', ')} ...` : titleParts.join(', ');
 
     return (
       <div className="my-3 overflow-hidden">
@@ -449,7 +463,7 @@ export function ChatSession({
         )}
       </div>
     );
-  });
+  }, toolGroupAreEqual);
 
   const renderToolInvocation = (part: any) => {
     const rawToolName = part.toolName || part.type?.replace('tool-', '') || 'unknown';
@@ -479,7 +493,7 @@ export function ChatSession({
     };
 
     return (
-      <div key={part.toolCallId} className="flex flex-col gap-2 my-2 animate-in fade-in slide-in-from-left-1 duration-200">
+      <div key={part.toolCallId} className="flex flex-col gap-2 my-2">
         <div
           onClick={handleToolClick}
           className={cn(

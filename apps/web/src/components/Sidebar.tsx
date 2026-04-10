@@ -333,7 +333,7 @@ export function Sidebar({
         </div>
 
         {/* Separator */}
-        <div className={cn("border-t border-[#E8E4E2]/60", isCollapsed ? "mx-2 mt-3" : "mx-3 mt-4")} />
+        <div className={cn("border-t border-[#E8E4E2]/60", isCollapsed ? "mx-2 mt-3" : "mx-3 mt-3")} />
 
         {/* 3. Navigation Links (Platform Modules) */}
         <nav className={cn("mt-3 space-y-1 relative", isCollapsed ? "px-2" : "px-3")}>
@@ -360,7 +360,7 @@ export function Sidebar({
         </nav>
 
         {/* Separator */}
-        <div className={cn("border-t border-[#E8E4E2]/60", isCollapsed ? "mx-3 mt-3" : "mx-3 mt-4")} />
+        <div className={cn("border-t border-[#E8E4E2]/60", isCollapsed ? "mx-3 mt-3" : "mx-3 mt-3")} />
 
         {/* 4. Recent Activity & All Chats */}
         <div className={cn("flex-1 mt-5 overflow-y-auto no-scrollbar relative", isCollapsed ? "px-2 hidden" : "px-3")}>

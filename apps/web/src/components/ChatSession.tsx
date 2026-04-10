@@ -3,7 +3,7 @@ import { useChat } from '@ai-sdk/react';
 import {
   ArrowDown, Sparkles, Copy, RotateCcw, Check,
   Plus, FileText, X as CloseIcon, Image as ImageIcon,
-  ChevronDown, Paperclip, ArrowRight, Terminal, Cpu, Database, BadgeCheck, Globe, Square
+  ChevronDown, Paperclip, ArrowRight, ArrowUp, Terminal, Cpu, Database, BadgeCheck, Globe, Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -867,8 +867,8 @@ export function ChatSession({
                     <Database className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
-                <button onClick={() => isLoading ? stop() : onFormSubmit()} className={cn("w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl flex items-center justify-center transition-all", isLoading ? "bg-[#1C1B1B] text-white" : ((!localInput.trim() && selectedFiles.length === 0) ? "bg-[#eeece9] text-[#716B67]/40 cursor-not-allowed" : "bg-[#EC5B14] text-white shadow-lg hover:scale-105 active:scale-95"))}>
-                  {isLoading ? <Square className="w-4 h-4 fill-current" /> : <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />}
+                <button onClick={() => isLoading ? stop() : onFormSubmit()} className={cn("w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full flex items-center justify-center transition-all", isLoading ? "bg-[#1C1B1B] text-white" : ((!localInput.trim() && selectedFiles.length === 0) ? "bg-[#eeece9] text-[#716B67]/40 cursor-not-allowed" : "bg-[#EC5B14] text-white shadow-lg hover:scale-105 active:scale-95"))}>
+                  {isLoading ? <Square className="w-4 h-4 fill-current" /> : <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
               </div>
             </div>

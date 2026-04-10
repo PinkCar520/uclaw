@@ -18,6 +18,7 @@ import { Sidebar } from './components/Sidebar';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthPage } from './components/AuthPage';
 import { useConversations } from './lib/useConversations';
+import { cn } from './lib/utils';
 
 function AppContent() {
   const { t } = useTranslation();
@@ -28,6 +29,16 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('chat');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('uclaw_sidebar_collapsed');
+    return saved === 'true';
+  });
+
+  const toggleSidebar = () => {
+    const newState = !isSidebarCollapsed;
+    setIsSidebarCollapsed(newState);
+    localStorage.setItem('uclaw_sidebar_collapsed', String(newState));
+  };
 
   // ── Global Authentication & Identity State ──
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('uclaw_auth_token'));
@@ -161,6 +172,8 @@ function AppContent() {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={toggleSidebar}
         activeMainTab={activeTab}
         onMainTabChange={(id) => { setActiveTab(id); }}
         onOpenSettings={() => { setIsSettingsOpen(true); }}
@@ -175,7 +188,10 @@ function AppContent() {
         onLogout={handleLogout}
       />
       {/* 2. 主区域 (Fluid Workspace) */}
-      <main className="md:ml-64 flex-1 flex flex-col relative h-screen max-w-full overflow-hidden">
+      <main className={cn(
+        "flex-1 flex flex-col relative h-screen max-w-full overflow-hidden transition-all duration-300",
+        isSidebarCollapsed ? "md:ml-16" : "md:ml-64"
+      )}>
         {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between p-3 border-b border-[#E8E4E2] bg-white shrink-0 z-30">
           <button

@@ -15,11 +15,12 @@ import {
   Settings,
   LogOut,
   HelpCircle,
-  ChevronRight,
   Globe,
   ChevronUp,
   History,
   Search,
+  PanelLeft,
+  PanelRight,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +42,8 @@ import type { ConversationSummary } from '../lib/useConversations';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed: boolean;
+  onToggle: () => void;
   activeMainTab: string;
   onMainTabChange: (id: string) => void;
   onOpenSettings: () => void;
@@ -224,6 +227,8 @@ function ChatRow({
 export function Sidebar({
   isOpen,
   onClose,
+  isCollapsed,
+  onToggle,
   activeMainTab,
   onMainTabChange,
   onOpenSettings,
@@ -260,21 +265,51 @@ export function Sidebar({
         />
       )}
       <aside className={cn(
-        "fixed left-0 top-0 h-screen w-64 bg-[#f6f3f2] flex flex-col shrink-0 z-50 transition-transform duration-300 ease-in-out md:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed left-0 top-0 h-screen bg-[#f6f3f2] flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        isCollapsed ? "w-24" : "w-64"
       )}>
 
         {/* 1. Logo Header */}
-        <div className="p-5 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-[#EC5B14] p-1.5 rounded-lg shadow-sm">
-              <Sparkles className="w-4 h-4 text-white" />
+        <div className={cn(
+          "flex items-center border-b border-[#E8E4E2]/60",
+          isCollapsed ? "p-2 justify-center" : "p-5 pb-3 justify-between"
+        )}>
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-2.5">
+                <div className="bg-[#EC5B14] p-1.5 rounded-lg shadow-sm">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-display font-bold text-[#1C1B1B] text-lg leading-none">uClaw</span>
+                  <span className="text-[8px] font-bold text-[#716B67] uppercase tracking-widest mt-0.5">{t('sidebar.enterprise_ai')}</span>
+                </div>
+              </div>
+              {/* Toggle button (desktop only) */}
+              <button
+                className="hidden md:flex p-2 rounded-lg hover:bg-[#1C1B1B]/5 text-[#716B67] hover:text-[#EC5B14] transition-colors"
+                onClick={onToggle}
+                title="收起侧边栏"
+              >
+                <PanelLeft className="w-5 h-5" />
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="bg-[#EC5B14] p-2 rounded-lg shadow-sm">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              {/* Toggle button (desktop only) */}
+              <button
+                className="hidden md:flex p-2 rounded-lg hover:bg-[#1C1B1B]/5 text-[#716B67] hover:text-[#EC5B14] transition-colors"
+                onClick={onToggle}
+                title="展开侧边栏"
+              >
+                <PanelRight className="w-5 h-5" />
+              </button>
             </div>
-            <div className="flex flex-col">
-              <span className="font-display font-bold text-[#1C1B1B] text-lg leading-none">uClaw</span>
-              <span className="text-[8px] font-bold text-[#716B67] uppercase tracking-widest mt-0.5">{t('sidebar.enterprise_ai')}</span>
-            </div>
-          </div>
+          )}
           {/* Mobile close button */}
           <button className="md:hidden p-1.5 text-[#716B67]" onClick={onClose}>
             <X className="w-5 h-5" />
@@ -282,29 +317,41 @@ export function Sidebar({
         </div>
 
         {/* 2. Global Actions (New Chat & Search) */}
-        <div className="px-3 space-y-0.5 mt-2">
+        <div className={cn("space-y-1 mt-3", isCollapsed ? "px-2" : "px-3")}>
           <button
             onClick={onNewChat}
-            className="w-full flex items-center justify-start gap-2.5 bg-white px-2.5 py-1.5 rounded-[8px] border border-[#E8E4E2]/50 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition-all"
+            className={cn(
+              "w-full flex items-center justify-start text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B] transition-all",
+              isCollapsed ? "p-2.5 justify-center" : "px-2.5 py-1.5 gap-2.5 rounded-[8px]"
+            )}
+            title={t('sidebar.new_chat')}
           >
-            <div className="bg-[#EC5B14]/10 p-0.5 rounded -ml-0.5">
-              <Plus className="w-3.5 h-3.5 text-[#EC5B14]" />
-            </div>
-            <span className="text-[#1C1B1B] font-semibold text-[14px]">{t('sidebar.new_chat')}</span>
+            <Plus className={cn("text-[#EC5B14]", "w-4 h-4")} />
+            {!isCollapsed && (
+              <span className="text-[#1C1B1B] font-semibold text-[14px]">{t('sidebar.new_chat')}</span>
+            )}
           </button>
 
           <button
             onClick={() => setIsSearchModalOpen(true)}
-            className="w-full flex items-center gap-3 px-2.5 py-1.5 rounded-[8px] transition-all text-[#1C1B1B] hover:bg-[#1C1B1B]/5"
+            className={cn(
+              "w-full flex items-center transition-all text-[#1C1B1B] hover:bg-[#1C1B1B]/5",
+              isCollapsed ? "justify-center p-2.5" : "gap-3 px-2.5 py-1.5 rounded-[8px]"
+            )}
+            title={i18n.language === 'zh' ? '搜索聊天' : 'Search Chats'}
           >
-            <Search className="w-4 h-4 text-[#716B67]" />
-            <span className="font-medium text-[14px]">{i18n.language === 'zh' ? '搜索聊天' : 'Search Chats'}</span>
+            <Search className={cn("text-[#716B67]", "w-4 h-4")} />
+            {!isCollapsed && (
+              <span className="font-medium text-[14px]">{i18n.language === 'zh' ? '搜索聊天' : 'Search Chats'}</span>
+            )}
           </button>
         </div>
 
+        {/* Separator */}
+        <div className={cn("border-t border-[#E8E4E2]/60", isCollapsed ? "mx-2 mt-3" : "mx-3 mt-4")} />
+
         {/* 3. Navigation Links (Platform Modules) */}
-        <nav className="px-3 mt-4 space-y-0.5 relative">
-          <div className="absolute top-0 left-6 right-6 h-px bg-[#E8E4E2] -mt-2" />
+        <nav className={cn("mt-3 space-y-1 relative", isCollapsed ? "px-2" : "px-3")}>
           {navItems.map((item) => {
             const isActive = activeMainTab === item.id;
             return (
@@ -312,21 +359,23 @@ export function Sidebar({
                 key={item.id}
                 onClick={() => onMainTabChange(item.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-2.5 py-1.5 rounded-[8px] font-medium text-[14px] transition-all focus:outline-none',
+                  'w-full flex items-center font-medium text-[14px] transition-all focus:outline-none',
+                  isCollapsed ? "justify-center p-2.5" : "items-center gap-3 px-2.5 py-1.5 rounded-[8px]",
                   isActive
                     ? 'bg-[#1C1B1B]/[0.06] text-[#1C1B1B]'
                     : 'text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B]'
                 )}
+                title={item.label}
               >
                 <item.icon className="w-4 h-4" />
-                <span>{item.label}</span>
+                {!isCollapsed && <span>{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
         {/* 4. Recent Activity & All Chats */}
-        <div className="flex-1 px-3 mt-5 overflow-y-auto no-scrollbar relative">
+        <div className={cn("flex-1 mt-5 overflow-y-auto no-scrollbar relative", isCollapsed ? "px-2 hidden" : "px-3")}>
           <div className="absolute top-0 left-6 right-6 h-px bg-[#E8E4E2] -mt-2 opacity-70" />
 
           <button
@@ -363,21 +412,27 @@ export function Sidebar({
         </div>
 
         {/* 5. Bottom Profile */}
-        <div className="p-4 pb-3 mt-auto">
+        <div className={cn("pb-3 mt-auto", isCollapsed ? "p-2" : "p-4")}>
           <button
             onClick={onOpenSettings}
-            className="w-full flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-white hover:border-[#E8E4E2]/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all text-left group overflow-hidden outline-none"
+            className={cn(
+              "w-full flex items-center border border-transparent hover:bg-white hover:border-[#E8E4E2]/50 hover:shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all text-left group overflow-hidden outline-none",
+              isCollapsed ? "justify-center p-1 rounded-full" : "gap-3 p-2 rounded-xl"
+            )}
+            title={user?.name || 'Alex Rivera'}
           >
             <img
               src={user?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuA0oS2KtsdNSGQoheV6v31oxAq-NhwZzQ47xg8__EJhv8OqGKGnZL3wep9OPHmM8x2Ik6mpZYLUp_nlIoldi6DXVNzDnTDsq10ls1jkUj-t_evdmGKwkn_t5xfFRgHK6-mmcStkVS-zdI45IF3rmBL3mH9KmAB8N9AvKqU-Dv45N0-NNrOIrD2ZlsGh9MmfkPMjEPcNRAJQVNa20KRYE9eY-Svv7Taq6vVmmqM9HxckuxqA9UWUSYJjawCeP6JhTrR_2ym5Y9kmaeo"}
               alt="profile"
-              className="w-9 h-9 rounded-full border border-[#E8E4E2] shrink-0 object-cover"
+              className="w-8 h-8 rounded-full border border-[#E8E4E2] shrink-0 object-cover"
             />
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-sm font-bold text-[#1C1B1B] truncate">{user?.name || 'Alex Rivera'}</span>
-              <span className="text-[10px] text-[#716B67] truncate uppercase tracking-widest font-bold mt-0.5">{user?.department || t('sidebar.admin')}</span>
-            </div>
-            <ChevronUp className="w-4 h-4 text-[#716B67] shrink-0" />
+            {!isCollapsed && (
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-bold text-[#1C1B1B] truncate">{user?.name || 'Alex Rivera'}</span>
+                <span className="text-[10px] text-[#716B67] truncate uppercase tracking-widest font-bold mt-0.5">{user?.department || t('sidebar.admin')}</span>
+              </div>
+            )}
+            {!isCollapsed && <ChevronUp className="w-4 h-4 text-[#716B67] shrink-0" />}
           </button>
         </div>
 

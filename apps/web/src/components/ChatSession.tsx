@@ -61,7 +61,7 @@ export function ChatSession({
   const initializedRef = useRef(false);
   const sessionIdRef = useRef(sessionId);
   const titleGeneratedRef = useRef(false);
-  
+
   // Custom Hook: globally fetches & caches dynamic skill names
   const { getLocalizedName } = useSkillCatalog();
   const navigate = useNavigate();
@@ -211,14 +211,14 @@ export function ChatSession({
     const data = await res.json();
     return { name: file.name, contentType: file.type || 'application/octet-stream', url: data.url };
   };
-  
+
   const handleRegenerate = async (msgId: string) => {
     if (isLoading) return;
-    
+
     // 找到当前点击的消息索引
     const idx = messages.findIndex((m: any) => m.id === msgId);
     if (idx === -1) return;
-    
+
     // 向上寻找最近的一条用户消息
     let userMsgIdx = -1;
     for (let i = idx; i >= 0; i--) {
@@ -227,15 +227,15 @@ export function ChatSession({
         break;
       }
     }
-    
+
     if (userMsgIdx === -1) return;
-    
+
     const userMsg = messages[userMsgIdx];
-    
+
     // 回滚消息列表：保留到该条用户消息之前
     const newMessages = messages.slice(0, userMsgIdx);
     setMessages(newMessages);
-    
+
     // 重新发送该消息
     try {
       await sendMessage({
@@ -264,7 +264,7 @@ export function ChatSession({
       }
       activeSessionId = newId;
       sessionIdRef.current = newId;
-      
+
       // 正常的 React Router 导航
       navigate(`/chat/${newId}`, { state: { autoSubmit: true } });
       return; // 终止当前提交，等待路由跳转完成并在新的生命周期发起消息流
@@ -312,23 +312,23 @@ export function ChatSession({
     // 安全提取底层对象，应对 AI SDK 各版本嵌套结构
     const inner = part.toolInvocation || part.invocation || part;
     const rawToolName = inner.toolName || part.toolName || part.type?.replace('tool-', '') || 'unknown';
-    
+
     let args = inner.args || part.args;
     // 如果是字符串序列化，做一层解析
     if (typeof args === 'string') {
       try {
         args = JSON.parse(args);
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     // 优先显示具体技能名称，其次显示翻译名称
     if (rawToolName === 'activate_skill') {
       let skillName = args?.skill_name || args?.skillName || args?.name || args?.skill;
-      
+
       // 添加硬回退，解决在 streaming 最初期拿不到 args 的问题
       if (!skillName && inner.state !== 'result' && !part.result) {
-         // 在尚未接收到 args 时，默认显示正在识别的常见技能
-         skillName = 'write-prd';
+        // 在尚未接收到 args 时，默认显示正在识别的常见技能
+        skillName = 'write-prd';
       }
 
       if (skillName) {
@@ -353,11 +353,11 @@ export function ChatSession({
       };
       return cmdMap[args.command] || t('chat.tool_status.names.runLocalCommand');
     }
-    
+
     // Fallback translation
     const translated = t(`chat.tool_status.names.${rawToolName}`);
     if (translated && translated !== `chat.tool_status.names.${rawToolName}`) return translated;
-    
+
     return rawToolName.split(/[-_]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
@@ -365,7 +365,7 @@ export function ChatSession({
     // 默认执行中自动展开，完成后如果是多个步骤也可以展开，或者可以默认为收起
     const isRunning = tools.some((t: any) => !(t.output || t.result));
     const [isOpen, setIsOpen] = useState(isRunning);
-    
+
     useEffect(() => {
       // 只要有一个在 running，就保持展开。全做完了可以继续保持原状态
       if (isRunning) {
@@ -378,20 +378,20 @@ export function ChatSession({
 
     return (
       <div className="my-3 overflow-hidden">
-        <button 
+        <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F6F3F2]/80 transition-colors group"
         >
           <div className="flex items-center gap-3 text-[#716B67] text-[13px] font-bold">
-             {isRunning ? <BrailleSpinner /> : <Check className="w-4 h-4 text-green-500 shrink-0" />}
-             <span className="truncate max-w-[200px] sm:max-w-xs text-[#1C1B1B]">{t('chat.thinking', 'Thinking...')}</span>
-             <span className="text-[11px] font-medium text-[#716B67]/70 bg-[#F6F3F2] px-2 py-0.5 rounded-full hidden sm:inline-block">
-               {tools.length} {t('chat.tools.calls_count', 'steps')}
-             </span>
+            {isRunning ? <BrailleSpinner /> : <Check className="w-4 h-4 text-green-500 shrink-0" />}
+            <span className="truncate max-w-[200px] sm:max-w-xs text-[#1C1B1B]">{t('chat.thinking', 'Thinking...')}</span>
+            <span className="text-[11px] font-medium text-[#716B67]/70 bg-[#F6F3F2] px-2 py-0.5 rounded-full hidden sm:inline-block">
+              {tools.length} {t('chat.tools.calls_count', 'steps')}
+            </span>
           </div>
           <ChevronDown className={cn("w-4 h-4 text-[#716B67] transition-transform group-hover:text-[#1C1B1B]", isOpen ? "rotate-180" : "")} />
         </button>
-        
+
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -403,16 +403,16 @@ export function ChatSession({
               <div className="px-4 pb-4 pt-4 bg-white flex flex-col gap-0 border-t border-[#E8E4E2]/40 relative">
                 {/* 垂直时间轴轨道 */}
                 <div className="absolute left-[29px] top-6 bottom-8 w-px bg-[#E8E4E2]/80 z-0"></div>
-                
+
                 {tools.map((part: any, idx: number) => {
                   const isCompleted = !!(part.output || part.result);
                   return (
                     <div key={part.toolCallId || idx} className="relative flex gap-4 pb-2 last:pb-0 z-10 w-full group/timeline">
                       <div className="relative z-10 w-[30px] flex justify-center pt-3.5 shrink-0">
-                         <div className={cn("w-[10px] h-[10px] rounded-full ring-4 ring-white z-10 transition-colors", isCompleted ? "bg-[#E8E4E2]" : "bg-[#EC5B14] shadow-[0_0_8px_rgba(236,91,20,0.4)]")}></div>
+                        <div className={cn("w-[10px] h-[10px] rounded-full ring-4 ring-white z-10 transition-colors", isCompleted ? "bg-[#E8E4E2]" : "bg-[#EC5B14] shadow-[0_0_8px_rgba(236,91,20,0.4)]")}></div>
                       </div>
                       <div className="flex-1 min-w-0">
-                         {renderToolInvocation(part)}
+                        {renderToolInvocation(part)}
                       </div>
                     </div>
                   );
@@ -454,12 +454,12 @@ export function ChatSession({
 
     return (
       <div key={part.toolCallId} className="flex flex-col gap-2 my-2 animate-in fade-in slide-in-from-left-1 duration-200">
-        <div 
+        <div
           onClick={handleToolClick}
           className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all w-fit group/invocation",
-            isCompleted 
-              ? "bg-[#F6F3F2]/40 border-[#E8E4E2]/40 text-[#716B67] opacity-80" 
+            isCompleted
+              ? "bg-[#F6F3F2]/40 border-[#E8E4E2]/40 text-[#716B67] opacity-80"
               : "bg-[#EC5B14]/5 border-[#EC5B14]/15 text-[#EC5B14] shadow-sm shadow-[#EC5B14]/5",
             isSkillActivation && isCompleted && "cursor-pointer hover:bg-[#F6F3F2]/60 hover:border-[#EC5B14]/30 hover:opacity-100"
           )}
@@ -471,11 +471,11 @@ export function ChatSession({
               <Cpu className="w-3 h-3 animate-pulse" />
             </div>
           )}
-          
+
           <div className="flex items-center gap-1.5 overflow-hidden">
             <span className="text-[11px] font-bold tracking-tight truncate">
-              {isCompleted 
-                ? t('chat.tool_status.completed', { name: toolDisplayName }) 
+              {isCompleted
+                ? t('chat.tool_status.completed', { name: toolDisplayName })
                 : t('chat.tool_status.executing', { name: toolDisplayName })}
             </span>
           </div>
@@ -487,12 +487,12 @@ export function ChatSession({
               <span className="w-0.5 h-0.5 rounded-full bg-[#EC5B14] animate-bounce"></span>
             </div>
           )}
-          
+
           {isSkillActivation && isCompleted && (
             <ArrowRight className="w-2.5 h-2.5 ml-1 opacity-0 group-hover/invocation:opacity-100 transition-opacity translate-x-[-4px] group-hover/invocation:translate-x-0" />
           )}
         </div>
-        
+
         {/* If we have the result, render the specific UI for it */}
         {isCompleted && renderToolResult(part)}
       </div>
@@ -567,7 +567,7 @@ export function ChatSession({
   };
 
   return (
-    <div 
+    <div
       className="flex-1 flex overflow-hidden h-full"
       onDragOver={handleDragOver}
     >
@@ -588,8 +588,19 @@ export function ChatSession({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-4 md:px-8 py-4 scroll-smooth"
+          className="flex-1 overflow-y-auto px-4 md:px-8 py-4 scroll-smooth relative"
         >
+          {/* 右侧栏关闭按钮 */}
+          {previewAttachment && (
+            <button
+              onClick={() => setPreviewAttachment(null)}
+              className="absolute right-4 top-4 z-30 p-2 rounded-lg bg-white/80 backdrop-blur-sm border border-[#E8E4E2]/60 text-[#716B67] hover:text-[#EC5B14] hover:bg-white hover:border-[#EC5B14]/30 transition-all shadow-sm"
+              title="关闭预览"
+            >
+              <CloseIcon className="w-4 h-4" />
+            </button>
+          )}
+
           <div className="max-w-[800px] mx-auto space-y-8">
             <AnimatePresence mode="popLayout" initial={false}>
               {isLoadingHistory ? (
@@ -631,156 +642,156 @@ export function ChatSession({
                   {Array.from(new Map(messages.map((m: any) => [m.id || m.createdAt || Math.random(), m])).values())
                     .filter((m: any) => m.role === 'user' || m.role === 'assistant')
                     .map((m: any, idx: number, arr: any[]) => {
-                  const isLast = idx === arr.length - 1;
-                  const isAssistant = m.role === 'assistant';
-                  const isUser = m.role === 'user';
-                  const isStreaming = isLast && isLoading && isAssistant;
-                  const hasContent = m.content || (Array.isArray(m.parts) && m.parts.some((p: any) => p.text));
+                      const isLast = idx === arr.length - 1;
+                      const isAssistant = m.role === 'assistant';
+                      const isUser = m.role === 'user';
+                      const isStreaming = isLast && isLoading && isAssistant;
+                      const hasContent = m.content || (Array.isArray(m.parts) && m.parts.some((p: any) => p.text));
 
-                  return (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id || idx} className={cn("flex flex-col group", isUser ? "items-end" : "items-start w-full")}>
-                      <div className={cn("flex w-full gap-4", isUser ? "justify-end" : "justify-start")}>
-                        {isAssistant && (
-                          <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
-                            <Sparkles className="w-4 h-4" />
-                          </div>
-                        )}
-                        <div className={cn(
-                          "py-3 rounded-[20px] text-[15px] leading-relaxed",
-                          isUser
-                            ? "bg-[#eeece9] text-[#1C1B1B] max-w-[85%] px-5"
-                            : "bg-transparent text-[#1C1B1B] flex-1 min-w-0"
-                        )}>
-                          {(m.experimental_attachments || m.attachments) && (m.experimental_attachments || m.attachments).length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-[#E8E4E2]/40">
-                              {(m.experimental_attachments || m.attachments).map((at: any, aidx: number) => {
-                                const isImage = at.contentType?.startsWith('image/') || at.type?.startsWith('image/');
-                                const displayUrl = at.url || (at.data ? `data:${at.contentType || at.type};base64,${at.data}` : '');
-                                const isActive = previewAttachment?.name === at.name && previewAttachment?.url === displayUrl;
-                                return (
-                                  <button
-                                    key={aidx}
-                                    onClick={() => setPreviewAttachment(isActive ? null : { name: at.name, contentType: at.contentType || at.type || '', url: displayUrl })}
-                                    className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border max-w-[200px] transition-all", isActive ? 'bg-[#EC5B14]/10 border-[#EC5B14]/40 text-[#EC5B14]' : 'bg-[#F6F3F2] border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:bg-[#EC5B14]/5')}
-                                  >
-                                    {isImage && displayUrl ? <div className="w-6 h-6 rounded-md bg-white border border-[#E8E4E2] overflow-hidden flex items-center justify-center shrink-0"><img src={displayUrl} alt={at.name} className="w-full h-full object-cover" /></div> : <FileText className="w-4 h-4 shrink-0" />}
-                                    <span className="text-[11px] font-bold truncate" title={at.name}>{at.name}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
+                      return (
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id || idx} className={cn("flex flex-col group", isUser ? "items-end" : "items-start w-full")}>
+                          <div className={cn("flex w-full gap-4", isUser ? "justify-end" : "justify-start")}>
+                            {isAssistant && (
+                              <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
+                                <Sparkles className="w-4 h-4" />
+                              </div>
+                            )}
+                            <div className={cn(
+                              "py-3 rounded-[20px] text-[15px] leading-relaxed",
+                              isUser
+                                ? "bg-[#eeece9] text-[#1C1B1B] max-w-[85%] px-5"
+                                : "bg-transparent text-[#1C1B1B] flex-1 min-w-0"
+                            )}>
+                              {(m.experimental_attachments || m.attachments) && (m.experimental_attachments || m.attachments).length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-[#E8E4E2]/40">
+                                  {(m.experimental_attachments || m.attachments).map((at: any, aidx: number) => {
+                                    const isImage = at.contentType?.startsWith('image/') || at.type?.startsWith('image/');
+                                    const displayUrl = at.url || (at.data ? `data:${at.contentType || at.type};base64,${at.data}` : '');
+                                    const isActive = previewAttachment?.name === at.name && previewAttachment?.url === displayUrl;
+                                    return (
+                                      <button
+                                        key={aidx}
+                                        onClick={() => setPreviewAttachment(isActive ? null : { name: at.name, contentType: at.contentType || at.type || '', url: displayUrl })}
+                                        className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border max-w-[200px] transition-all", isActive ? 'bg-[#EC5B14]/10 border-[#EC5B14]/40 text-[#EC5B14]' : 'bg-[#F6F3F2] border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:bg-[#EC5B14]/5')}
+                                      >
+                                        {isImage && displayUrl ? <div className="w-6 h-6 rounded-md bg-white border border-[#E8E4E2] overflow-hidden flex items-center justify-center shrink-0"><img src={displayUrl} alt={at.name} className="w-full h-full object-cover" /></div> : <FileText className="w-4 h-4 shrink-0" />}
+                                        <span className="text-[11px] font-bold truncate" title={at.name}>{at.name}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
 
-                          {!hasContent && isAssistant && isLoading ? (
-                            <div className="flex items-center py-2 animate-pulse">
-                              <BrailleSpinner />
-                              <span className="text-[12px] font-bold text-[#716B67] tracking-tight">
-                                {t('chat.thinking')}
-                              </span>
-                            </div>
-                          ) : Array.isArray(m.parts) ? (
-                            <div className="flex flex-col gap-3">
-                              {(() => {
-                                const groupedParts = m.parts.reduce((acc: any[], part: any) => {
-                                  const isTool = part.type === 'tool-invocation' || part.toolName || part.type?.startsWith('tool-');
-                                  if (isTool) {
-                                    if (acc.length > 0 && acc[acc.length - 1].type === 'tools') {
-                                      acc[acc.length - 1].tools.push(part);
-                                    } else {
-                                      acc.push({ type: 'tools', tools: [part] });
-                                    }
-                                  } else {
-                                    acc.push({ type: 'text', part });
-                                  }
-                                  return acc;
-                                }, []);
-                                
-                                return groupedParts.map((group: any, i: number) => (
-                                  group.type === 'text' ? (
-                                    <div key={i} className="prose prose-slate prose-sm max-w-none">
-                                      {group.part.type === 'text' && (
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                          {group.part.text}
-                                        </ReactMarkdown>
-                                      )}
+                              {!hasContent && isAssistant && isLoading ? (
+                                <div className="flex items-center py-2 animate-pulse">
+                                  <BrailleSpinner />
+                                  <span className="text-[12px] font-bold text-[#716B67] tracking-tight">
+                                    {t('chat.thinking')}
+                                  </span>
+                                </div>
+                              ) : Array.isArray(m.parts) ? (
+                                <div className="flex flex-col gap-3">
+                                  {(() => {
+                                    const groupedParts = m.parts.reduce((acc: any[], part: any) => {
+                                      const isTool = part.type === 'tool-invocation' || part.toolName || part.type?.startsWith('tool-');
+                                      if (isTool) {
+                                        if (acc.length > 0 && acc[acc.length - 1].type === 'tools') {
+                                          acc[acc.length - 1].tools.push(part);
+                                        } else {
+                                          acc.push({ type: 'tools', tools: [part] });
+                                        }
+                                      } else {
+                                        acc.push({ type: 'text', part });
+                                      }
+                                      return acc;
+                                    }, []);
+
+                                    return groupedParts.map((group: any, i: number) => (
+                                      group.type === 'text' ? (
+                                        <div key={i} className="prose prose-slate prose-sm max-w-none">
+                                          {group.part.type === 'text' && (
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                              {group.part.text}
+                                            </ReactMarkdown>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <ToolGroupTimeline key={i} tools={group.tools} />
+                                      )
+                                    ));
+                                  })()}
+                                  {isStreaming && (
+                                    <div className="flex items-center mt-2 opacity-60">
+                                      <BrailleSpinner />
+                                      <span className="text-[11px] text-[#716B67] font-bold tracking-tight">{t('chat.thinking')}</span>
                                     </div>
-                                  ) : (
-                                    <ToolGroupTimeline key={i} tools={group.tools} />
-                                  )
-                                ));
-                              })()}
-                              {isStreaming && (
-                                <div className="flex items-center mt-2 opacity-60">
-                                  <BrailleSpinner />
-                                  <span className="text-[11px] text-[#716B67] font-bold tracking-tight">{t('chat.thinking')}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="prose prose-slate prose-sm max-w-none relative">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                                  {isStreaming && (
+                                    <div className="flex items-center mt-2 opacity-60">
+                                      <BrailleSpinner />
+                                      <span className="text-[11px] text-[#716B67] font-bold tracking-tight">{t('chat.thinking')}</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
-                          ) : (
-                            <div className="prose prose-slate prose-sm max-w-none relative">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                              {isStreaming && (
-                                <div className="flex items-center mt-2 opacity-60">
-                                  <BrailleSpinner />
-                                  <span className="text-[11px] text-[#716B67] font-bold tracking-tight">{t('chat.thinking')}</span>
-                                </div>
+                          </div>
+                          <div className={cn(
+                            "flex items-center gap-3 mt-2 transition-opacity duration-300",
+                            isUser ? "px-5 flex-row-reverse" : "px-12 flex-row",
+                            (isAssistant && status === 'streaming' && m.id === arr[arr.length - 1]?.id) ? "opacity-0 pointer-events-none" : "opacity-100"
+                          )}>
+                            <div className="flex items-center gap-1 transition-opacity">
+                              <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                  <button onClick={() => copyToClipboard(m)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">
+                                    {copiedId === m.id ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
+                                  {copiedId === m.id ? t('common.copied') : t('common.copy')}
+                                </TooltipContent>
+                              </Tooltip>
+                              {isAssistant && (
+                                <Tooltip delayDuration={0}>
+                                  <TooltipTrigger asChild>
+                                    <button onClick={() => handleRegenerate(m.id)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">
+                                      <RotateCcw className="w-4 h-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
+                                    {t('common.regenerate')}
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+
+                  {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的“先行占位” */}
+                  {(isLoading || isLocalThinking) && (messages.length === 0 || messages[messages.length - 1]?.role === 'user') && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex w-full gap-4 items-start mb-8">
+                      <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
+                        <Sparkles className="w-4 h-4" />
                       </div>
-                      <div className={cn(
-                        "flex items-center gap-3 mt-2 transition-opacity duration-300", 
-                        isUser ? "px-5 flex-row-reverse" : "px-12 flex-row",
-                        (isAssistant && status === 'streaming' && m.id === arr[arr.length - 1]?.id) ? "opacity-0 pointer-events-none" : "opacity-100"
-                      )}>
-                        <div className="flex items-center gap-1 transition-opacity">
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <button onClick={() => copyToClipboard(m)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">
-                                {copiedId === m.id ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                              {copiedId === m.id ? t('common.copied') : t('common.copy')}
-                            </TooltipContent>
-                          </Tooltip>
-                          {isAssistant && (
-                            <Tooltip delayDuration={0}>
-                              <TooltipTrigger asChild>
-                                <button onClick={() => handleRegenerate(m.id)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">
-                                  <RotateCcw className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                                {t('common.regenerate')}
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
+                      <div className="flex flex-col gap-2 py-3">
+                        <div className="flex items-center animate-pulse">
+                          <BrailleSpinner />
+                          <span className="text-[12px] font-bold text-[#716B67] tracking-tight">
+                            {t('chat.thinking')}
+                          </span>
                         </div>
                       </div>
                     </motion.div>
-                  );
-                })}
-                
-              {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的“先行占位” */}
-              {(isLoading || isLocalThinking) && (messages.length === 0 || messages[messages.length - 1]?.role === 'user') && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex w-full gap-4 items-start mb-8">
-                  <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div className="flex flex-col gap-2 py-3">
-                    <div className="flex items-center animate-pulse">
-                      <BrailleSpinner />
-                      <span className="text-[12px] font-bold text-[#716B67] tracking-tight">
-                        {t('chat.thinking')}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
+                  )}
+                </>
               )}
-            </>
-          )}
 
             </AnimatePresence>
           </div>
@@ -831,7 +842,7 @@ export function ChatSession({
                   </DropdownMenu>
                   <div className="w-px h-4 bg-[#E8E4E2]/60 mx-1 shrink-0" />
                   <button onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.onchange = (e: any) => { if (e.target.files) setSelectedFiles(prev => [...prev, ...Array.from(e.target.files as FileList)]); }; input.click(); }} className="p-1.5 sm:p-2 rounded-lg text-[#716B67] hover:bg-[#eeece9] hover:text-[#1C1B1B] transition-all shrink-0"><Paperclip className="w-4 h-4 sm:w-5 sm:h-5" /></button>
-                  
+
                   <button
                     onClick={() => setIsSearchMode(!isSearchMode)}
                     className={cn(
@@ -867,12 +878,18 @@ export function ChatSession({
 
       {/* Sidebar Right (Meta + Preview) */}
       <aside className={cn(
-        "absolute lg:relative right-0 top-0 bottom-0 z-40 w-full lg:w-80 border-l border-[#E8E4E2] bg-[#fcf9f8] lg:bg-[#fcf9f8]/80 backdrop-blur-md flex-col h-full overflow-hidden transition-transform duration-300",
-        previewAttachment ? "translate-x-0 flex" : "translate-x-full lg:translate-x-0 hidden lg:flex"
+        "absolute lg:relative right-0 top-0 bottom-0 z-40 border-l border-[#E8E4E2] bg-[#fcf9f8] lg:bg-[#fcf9f8]/80 backdrop-blur-md flex-col h-full overflow-hidden transition-all duration-300",
+        previewAttachment ? "translate-x-0 flex w-full lg:w-[450px]" : "translate-x-full lg:translate-x-0 hidden lg:flex lg:w-80"
       )}>
         {previewAttachment ? (
           /* ── File Preview Overrides Aside (Claude/Deepseek style) ── */
-          <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-300">
+          <motion.div
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="flex-1 flex flex-col h-full bg-white"
+          >
             <div className="p-4 border-b border-[#E8E4E2]/60 flex items-center justify-between bg-[#F6F3F2]/50">
               <div className="flex items-center gap-3">
                 {previewAttachment.contentType.startsWith('image/') ? <ImageIcon className="w-4 h-4 text-[#EC5B14]" /> : <FileText className="w-4 h-4 text-[#EC5B14]" />}
@@ -902,7 +919,7 @@ export function ChatSession({
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         ) : (
           /* ── Integrations Panel ── */
           <div className="p-6 flex flex-col gap-8 overflow-y-auto flex-1">
@@ -934,11 +951,11 @@ export function ChatSession({
               </div>
             </div>
             <div className="mt-auto pointer-events-none opacity-40 grayscale">
-                <div className="relative rounded-[16px] overflow-hidden aspect-square border border-[#E8E4E2]/50">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr81NID_90Yy5CvYiCWyQuR_y9N_VafML_ttYyYtfSjf9jKr6XGdQbphqaCw1RNRV7cXKmhd7mCGXKD7zFngPrXo_X9rsn5SOJ_Zm33YJYNwgHgqAMynf0rzM6r8fHecJFgX3JfJUo09Gcb_tYo4uzHiM9j8dPiCGm-gia9TTdnFa3LGPxoKpBvdM0OACh_MqUpC0qNufnob3xIDqaVuMh5orjOJfsmCRQRTUQlwwnBkvCyMbhVztwLZqJMRJuxsJODFHj3ECVE40" className="absolute inset-0 w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#F6F3F2] to-transparent"></div>
-                    <div className="relative h-full p-5 flex flex-col justify-end"><p className="text-[10px] font-bold text-[#716B67] uppercase tracking-widest mb-1.5">{t('chat.weekly_insight.title')}</p><p className="text-sm font-bold text-[#1C1B1B] leading-snug">{t('chat.weekly_insight.content')}</p></div>
-                </div>
+              <div className="relative rounded-[16px] overflow-hidden aspect-square border border-[#E8E4E2]/50">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr81NID_90Yy5CvYiCWyQuR_y9N_VafML_ttYyYtfSjf9jKr6XGdQbphqaCw1RNRV7cXKmhd7mCGXKD7zFngPrXo_X9rsn5SOJ_Zm33YJYNwgHgqAMynf0rzM6r8fHecJFgX3JfJUo09Gcb_tYo4uzHiM9j8dPiCGm-gia9TTdnFa3LGPxoKpBvdM0OACh_MqUpC0qNufnob3xIDqaVuMh5orjOJfsmCRQRTUQlwwnBkvCyMbhVztwLZqJMRJuxsJODFHj3ECVE40" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#F6F3F2] to-transparent"></div>
+                <div className="relative h-full p-5 flex flex-col justify-end"><p className="text-[10px] font-bold text-[#716B67] uppercase tracking-widest mb-1.5">{t('chat.weekly_insight.title')}</p><p className="text-sm font-bold text-[#1C1B1B] leading-snug">{t('chat.weekly_insight.content')}</p></div>
+              </div>
             </div>
           </div>
         )}

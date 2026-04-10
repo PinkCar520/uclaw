@@ -5,6 +5,7 @@ import { MCPModule } from '../mcp/mcp.module';
 import { RpcModule } from '../chat/rpc.module';
 import { SessionModule } from '../session/session.module';
 import { SkillController } from './skill.controller';
+import { ApprovalModule } from './approval.module';
 
 /**
  * SkillModule
@@ -19,7 +20,7 @@ import { SkillController } from './skill.controller';
  * Depends on SessionModule for Server-First message persistence.
  */
 @Module({
-  imports: [MCPModule, RpcModule, SessionModule],
+  imports: [MCPModule, RpcModule, SessionModule, ApprovalModule],
   controllers: [SkillController],
   providers: [SkillOrchestrator, SkillLoader],
   exports: [SkillOrchestrator, SkillLoader],

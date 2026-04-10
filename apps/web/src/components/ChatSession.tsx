@@ -15,6 +15,7 @@ import { useSkillCatalog } from '../lib/useSkillCatalog';
 import { BugCard } from './BugCard';
 import { PipelineCard } from './PipelineCard';
 import { TaskPlan } from './TaskPlan';
+import { ApprovalModal } from './ApprovalModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -100,6 +101,38 @@ export function ChatSession({
   const [isKnowledgeMode, setIsKnowledgeMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isLocalThinking, setIsLocalThinking] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState<any>(null);
+
+  // Poll for approval requests
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/chat/approvals/${sessionId}`);
+        const data = await res.json();
+        if (data.success && data.data?.length > 0) {
+          setPendingApproval(data.data[0]); // Show first pending request
+        }
+      } catch (err) {
+        // Ignore errors
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
+  const handleApprovalResponse = async (status: 'approved' | 'denied') => {
+    if (!pendingApproval) return;
+    try {
+      await fetch(`/api/chat/approvals/${pendingApproval.id}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      setPendingApproval(null);
+    } catch (err) {
+      console.error('Approval response failed:', err);
+    }
+  };
 
   useEffect(() => {
     if (sessionId !== sessionIdRef.current) {
@@ -875,6 +908,13 @@ export function ChatSession({
           </div>
         </div>
       </div>
+
+      {/* Approval Modal */}
+      <ApprovalModal
+        request={pendingApproval ? { id: pendingApproval.id, toolName: pendingApproval.toolName, args: pendingApproval.args } : null}
+        onRespond={handleApprovalResponse}
+        onClose={() => setPendingApproval(null)}
+      />
 
       {/* Sidebar Right (Meta + Preview) */}
       <aside className={cn(

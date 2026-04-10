@@ -8,6 +8,7 @@ import { MCPClientManager } from '../mcp/mcp-client.manager';
 import { SkillLoader } from './skill.loader';
 import { RpcGateway } from '../chat/rpc.gateway';
 import { SessionService } from '../session/session.service';
+import { ApprovalService } from './approval.service';
 import { z } from 'zod';
 import type { SkillContext } from '@uclaw/core';
 
@@ -35,6 +36,7 @@ export class SkillOrchestrator {
     private skillLoader: SkillLoader,
     private rpcGateway: RpcGateway,
     private sessionService: SessionService,
+    private approvalService: ApprovalService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -160,9 +162,23 @@ ${catalogXml}`;
   // ──────────────────────────────────────────────
   // Tools: MCP + local CLI + activate_skill
   // ──────────────────────────────────────────────
-  private async buildTools(ctx: SkillContext): Promise<Record<string, any>> {
+  private async buildTools(ctx: SkillContext, sessionId?: string): Promise<Record<string, any>> {
     // MCP tools (dynamic from mcp.config.json)
     const mcpTools = await this.mcpManager.getAITools();
+
+    // Governance: Get active skill's governance rules (for Phase 4, we apply to all tools for demonstration)
+    // In a real scenario, we would look up the active skill for this session.
+    const requiresApproval = this.skillLoader.getRequiresApproval('fix-bug'); // Example: apply fix-bug rules
+
+    // Wrap tools with approval logic
+    const wrappedMcpTools: Record<string, any> = {};
+    for (const [name, toolDef] of Object.entries(mcpTools)) {
+      if (requiresApproval.includes(name)) {
+        wrappedMcpTools[name] = this.wrapWithApproval(name, toolDef, sessionId || '', ctx.userId);
+      } else {
+        wrappedMcpTools[name] = toolDef;
+      }
+    }
 
     // Local CLI RPC tool (until mcp-local-fs is ready)
     const localCliTools = {
@@ -216,7 +232,38 @@ ${catalogXml}`;
       } as any),
     };
 
-    return { ...mcpTools, ...localCliTools, ...skillTools };
+    return { ...wrappedMcpTools, ...localCliTools, ...skillTools };
+  }
+
+  /**
+   * Wraps a tool with approval logic.
+   * If the tool is in `requires-approval`, execution is paused and a request is created.
+   */
+  private wrapWithApproval(toolName: string, toolDef: any, sessionId: string, userId: string): any {
+    const originalExecute = toolDef.execute;
+    const approvalService = this.approvalService;
+    const logger = this.logger;
+
+    return tool({
+      ...toolDef,
+      execute: async (args: any) => {
+        logger.log(`[AGP] Tool "${toolName}" requires approval. Pausing execution...`);
+        
+        // Create approval request
+        const requestId = approvalService.createRequest({
+          sessionId,
+          userId,
+          toolName,
+          args,
+        });
+
+        return {
+          status: 'pending_approval',
+          requestId,
+          message: `Action "${toolName}" requires your approval. Please check the UI to proceed.`,
+        };
+      },
+    } as any);
   }
 
   // ──────────────────────────────────────────────
@@ -309,7 +356,7 @@ ${catalogXml}`;
 
       const [systemPrompt, tools] = await Promise.all([
         this.buildSystemPrompt(ctx),
-        this.buildTools(ctx),
+        this.buildTools(ctx, sessionId),
       ]);
       
       this.logger.debug(`SystemPrompt built (${systemPrompt?.length} chars)`);
@@ -402,7 +449,7 @@ ${catalogXml}`;
 
       const [systemPrompt, tools] = await Promise.all([
         this.buildSystemPrompt(ctx),
-        this.buildTools(ctx),
+        this.buildTools(ctx, undefined),
       ]);
 
       const { text } = await generateText({

@@ -18,6 +18,8 @@ export interface SkillEntry {
   skillDir: string;
   /** Space-delimited list of pre-approved tools (experimental) */
   allowedTools?: string[];
+  /** List of tools that require user approval before execution */
+  requiresApproval?: string[];
   metadata?: Record<string, string>;
   compatibility?: string;
   /** Localized mapping overrides for the frontend UI (e.g. { zh: { displayName: "..." } }) */
@@ -207,6 +209,11 @@ export class SkillLoader {
             .split(' ')
             .filter(Boolean)
         : undefined,
+      requiresApproval: fm['requires-approval']
+        ? String(fm['requires-approval'])
+            .split(' ')
+            .filter(Boolean)
+        : undefined,
       compatibility: fm['compatibility'] ? String(fm['compatibility']) : undefined,
       metadata: fm['metadata'] ? (fm['metadata'] as Record<string, string>) : undefined,
       locales: fm['locales'] ? (fm['locales'] as Record<string, { displayName?: string; description?: string }>) : undefined,
@@ -297,6 +304,11 @@ export class SkillLoader {
   /** Get allowed tools for a skill (for Gateway-level permission enforcement) */
   getAllowedTools(skillName: string): string[] {
     return this.catalog.get(skillName)?.allowedTools ?? [];
+  }
+
+  /** Get tools requiring approval for a skill */
+  getRequiresApproval(skillName: string): string[] {
+    return this.catalog.get(skillName)?.requiresApproval ?? [];
   }
 
   private listResources(skillDir: string): string[] {

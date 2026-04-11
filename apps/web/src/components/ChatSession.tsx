@@ -512,12 +512,15 @@ export function ChatSession({
     stop();
   };
 
-  // Reset stopped state when new assistant message starts
+  // Reset stopped state only when new streaming starts (not when it just finished)
+  const prevIsLoadingRef = useRef(false);
   useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].role === 'assistant' && !isLoading) {
+    if (prevIsLoadingRef.current === false && isLoading) {
+      // New streaming session started
       setIsStopped(false);
     }
-  }, [messages, isLoading]);
+    prevIsLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   // BrailleSpinner 已提升到模块顶层，避免组件重新挂载导致 spinner 闪烁
 
@@ -771,7 +774,7 @@ export function ChatSession({
         <AnimatePresence>
           {isDragging && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              {...(reducedMotion ? { initial: false, animate: { opacity: 1 } } : { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } })}
               onDragLeave={handleDragLeave} onDrop={handleDrop}
               className="absolute inset-0 z-50 bg-[#EC5B14]/5 backdrop-blur-[2px] border-4 border-dashed border-[#EC5B14]/20 m-4 rounded-[40px] flex flex-col items-center justify-center text-[#EC5B14]"
             >
@@ -1067,6 +1070,13 @@ export function ChatSession({
                                 {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
+                            {/* Stopped indicator — inline within the last assistant message */}
+                            {isAssistant && isStopped && isLast && (
+                              <span className="text-[10px] text-[#716B67] font-medium flex items-center gap-1">
+                                <Square className="w-3 h-3 fill-current" />
+                                {t('chat.stopped', '已停止')}
+                              </span>
+                            )}
                           </div>
                         </motion.div>
                       );
@@ -1101,28 +1111,9 @@ export function ChatSession({
                     </motion.div>
                   )}
 
-                  {/* Stopped Banner */}
-                  {isStopped && (
-                    <motion.div
-                      {...(reducedMotion ? { initial: false, animate: { opacity: 1 } } : { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } })}
-                      className="flex w-full gap-4 items-start mb-8"
-                    >
-                      <div className="w-8 h-8 rounded-[10px] bg-[#F6F3F2] flex items-center justify-center shrink-0 mt-1">
-                        <Square className="w-3.5 h-3.5 fill-current text-[#716B67]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="bg-[#F6F3F2]/80 border border-[#E8E4E2]/60 rounded-[20px] px-5 py-3">
-                          <p className="text-xs font-medium text-[#716B67]">
-                            {t('chat.stopped', 'Generation stopped')}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
                   {/* 当正在提交但 messages 列表还没更新出 assistant 回复时的"先行占位" */}
                   {(isLoading || isLocalThinking) && (messages.length === 0 || messages[messages.length - 1]?.role === 'user') && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex w-full gap-4 items-start mb-8">
+                    <motion.div {...(reducedMotion ? { initial: false, animate: { opacity: 1 } } : { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } })} className="flex w-full gap-4 items-start mb-8">
                       <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
                         <Sparkles className="w-4 h-4" />
                       </div>
@@ -1144,9 +1135,9 @@ export function ChatSession({
             <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 ring-[#1C1B1B]/5 transition-all focus-within:ring-[#EC5B14]/30 focus-within:shadow-[0_10px_40px_-10px_rgba(236,91,20,0.15)]">
               <AnimatePresence>
                 {selectedFiles.length > 0 && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-wrap gap-2 px-4 py-2 border-b border-[#E8E4E2]/40 overflow-hidden">
+                  <motion.div {...(reducedMotion ? { initial: false, animate: { opacity: 1 } } : { initial: { opacity: 0, height: 0 }, animate: { opacity: 1, height: 'auto' }, exit: { opacity: 0, height: 0 } })} className="flex flex-wrap gap-2 px-4 py-2 border-b border-[#E8E4E2]/40 overflow-hidden">
                     {selectedFiles.map((file, idx) => (
-                      <motion.div key={`${file.name}-${idx}`} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex items-center gap-2 bg-[#F6F3F2] px-3 py-1.5 rounded-xl border border-[#E8E4E2]/60 group transition-all hover:border-[#EC5B14]/30">
+                      <motion.div key={`${file.name}-${idx}`} {...(reducedMotion ? { initial: false, animate: { opacity: 1 } } : { initial: { scale: 0.8, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0.8, opacity: 0 } })} className="flex items-center gap-2 bg-[#F6F3F2] px-3 py-1.5 rounded-xl border border-[#E8E4E2]/60 group transition-all hover:border-[#EC5B14]/30">
                         <FileText className="w-3.5 h-3.5 text-[#716B67]" /><span className="text-xs font-semibold text-[#1C1B1B] max-w-[120px] truncate">{file.name}</span>
                         <button onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white text-[#716B67] hover:text-red-500 transition-colors"><CloseIcon className="w-3 h-3" /></button>
                       </motion.div>
@@ -1257,10 +1248,10 @@ export function ChatSession({
         {activeCapsule ? (
           /* ── Capsule Panel ── */
           <motion.div
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            {...(reducedMotion
+              ? { initial: false, animate: { x: 0, opacity: 1 } }
+              : { initial: { x: '100%', opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: '100%', opacity: 0 }, transition: { type: 'spring', damping: 25, stiffness: 200 } }
+            )}
             className="flex-1 flex flex-col h-full bg-white"
           >
             <div className="px-4 py-3 border-b border-[#E8E4E2]/60 flex items-center justify-between bg-[#F6F3F2]/50">
@@ -1302,10 +1293,10 @@ export function ChatSession({
         ) : previewAttachment ? (
           /* ── File Preview Overrides Aside (Claude/Deepseek style) ── */
           <motion.div
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            {...(reducedMotion
+              ? { initial: false, animate: { x: 0, opacity: 1 } }
+              : { initial: { x: '100%', opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: '100%', opacity: 0 }, transition: { type: 'spring', damping: 25, stiffness: 200 } }
+            )}
             className="flex-1 flex flex-col h-full bg-white"
           >
             <div className="p-4 border-b border-[#E8E4E2]/60 flex items-center justify-between bg-[#F6F3F2]/50">

@@ -495,14 +495,18 @@ ${catalogXml}`;
             }
           }
         },
-        onFinish: async () => {
+        onFinish: async ({ totalUsage }) => {
           // ── Step 2: 持久化 AI 回复（流完成后写库）────────────────
           if (sessionId && fullText) {
             try {
+              const usage = totalUsage
+                ? { inputTokens: totalUsage.inputTokens ?? 0, outputTokens: totalUsage.outputTokens ?? 0, totalTokens: totalUsage.totalTokens ?? 0 }
+                : undefined;
               const messageId = await this.sessionService.addMessage(sessionId, {
                 role: 'assistant',
                 content: fullText,
                 parts: allParts.length > 0 ? allParts : undefined,
+                usage,
               });
               this.logger.log(`[Orchestrator] Persisted assistant reply: ${fullText.length} chars, ${allParts.length} parts (${allToolInvocations.length} tool invocations, ${fullReasoning.length} chars reasoning, accumulated from all steps)`);
 

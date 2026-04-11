@@ -93,6 +93,7 @@ model Message {
   content     String   @default("") // 消息文本内容
   parts       Json?    // AI SDK UIMessage parts（含 tool-invocation 等）
   attachments Json?    // 附件列表（url, name, contentType）
+  usage       Json?    // Token 用量 { inputTokens, outputTokens, totalTokens }
   seq         Int      @default(0) // 消息序号，用于有序恢复
 
   capsuleSnapshots CapsuleSnapshot[]

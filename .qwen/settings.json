@@ -21,7 +21,10 @@
       "Bash(ls *)",
       "Bash(strings *)",
       "Bash(node *)",
-      "Bash(rm *)"
+      "Bash(rm *)",
+      "Bash(grep *)",
+      "Bash(cat *)",
+      "Bash(file *)"
     ]
   },
   "$version": 3

@@ -6,6 +6,7 @@ export interface CreateMessageDto {
   content: string;
   parts?: any;
   attachments?: any;
+  usage?: { inputTokens: number; outputTokens: number; totalTokens: number };
 }
 
 @Injectable()
@@ -91,6 +92,7 @@ export class SessionService {
         content: dto.content,
         parts: dto.parts ?? undefined,
         attachments: dto.attachments ?? undefined,
+        usage: dto.usage ?? undefined,
         seq,
       },
     });
@@ -123,6 +125,7 @@ export class SessionService {
       content: row.content,
       parts: row.parts ?? undefined,
       experimental_attachments: row.attachments ?? undefined,
+      usage: row.usage ?? undefined,
       createdAt: row.createdAt,
     }));
   }

@@ -5,7 +5,7 @@ import { DiffViewer } from './DiffViewer';
 
 // 打字光标：流式输出时闪烁的光标
 const TypingCursor = () => (
-  <span className="inline-block w-[2px] h-[1.1em] bg-[#EC5B14] ml-[1px] align-text-bottom animate-blink" />
+  <span className="inline-block w-[2px] h-[1.1em] bg-[#EC5B14] ml-[1px] align-text-bottom animate-cursor-blink" />
 );
 
 // Parse reasoning text into ThinkingStep[] for ThinkingList rendering.
@@ -153,7 +153,7 @@ import {
   ArrowDown, Sparkles, Copy, RotateCcw, Check,
   Plus, FileText, X as CloseIcon, Image as ImageIcon,
   ChevronDown, Paperclip, ArrowRight, ArrowUp, Terminal, Cpu, Database, BadgeCheck, Globe, Square,
-  ThumbsUp, ThumbsDown, AlertCircle
+  ThumbsUp, ThumbsDown, AlertCircle, Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReducedMotion } from '../lib/useReducedMotion';
@@ -264,6 +264,11 @@ export function ChatSession({
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
   // Stopped generation indicator
   const [isStopped, setIsStopped] = useState(false);
+  // Message editing state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  // Branch tracking: messageId -> branch index (1-based)
+  const [branchIndex, setBranchIndex] = useState<Record<string, number>>({});
 
   // Poll for approval requests
   useEffect(() => {
@@ -326,6 +331,21 @@ export function ChatSession({
       }
     }
   });
+
+  // Cumulative token usage tracking — computed from messages array
+  // Each assistant message may have a `usage` field from the backend
+  const totalUsage = React.useMemo(() => {
+    let inputTokens = 0;
+    let outputTokens = 0;
+    for (const msg of messages) {
+      const u = (msg as any).usage;
+      if (u) {
+        inputTokens += u.inputTokens ?? u.promptTokens ?? u.prompt_tokens ?? 0;
+        outputTokens += u.outputTokens ?? u.completionTokens ?? u.completion_tokens ?? 0;
+      }
+    }
+    return { promptTokens: inputTokens, completionTokens: outputTokens, totalTokens: inputTokens + outputTokens };
+  }, [messages]);
 
   useEffect(() => {
     if ((!initializedRef.current || messages.length === 0) && initialMessages.length > 0) {
@@ -510,6 +530,93 @@ export function ChatSession({
   const handleStop = () => {
     setIsStopped(true);
     stop();
+  };
+
+  // Retry after error: find last user message and re-send it cleanly
+  // This avoids MissingToolResultsError from incomplete tool calls in history
+  const handleRetry = async () => {
+    // Find the last user message
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    if (lastUserIdx === -1) return;
+
+    const userMsg = messages[lastUserIdx];
+    // Truncate messages to before the last user message
+    setMessages(messages.slice(0, lastUserIdx));
+    // Re-send cleanly
+    try {
+      await sendMessage({
+        content: userMsg.content,
+        role: 'user',
+        experimental_attachments: userMsg.experimental_attachments,
+      } as any, {
+        body: {
+          modelId: selectedModelId,
+          search: isSearchMode,
+          knowledge: isKnowledgeMode,
+          sessionId: sessionIdRef.current,
+        },
+      });
+    } catch (err) {
+      console.error('Retry failed:', err);
+    }
+  };
+
+  // ── Message Editing ──────────────────────────────────────────
+  const startEditing = (msgId: string, content: string) => {
+    setEditingMessageId(msgId);
+    setEditText(content);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditText('');
+  };
+
+  const submitEdit = async (msgId: string) => {
+    const trimmed = editText.trim();
+    if (!trimmed) {
+      cancelEdit();
+      return;
+    }
+
+    // Find the index of the message being edited
+    const msgIdx = messages.findIndex((m: any) => m.id === msgId);
+    if (msgIdx === -1) return;
+
+    // Increment branch index for this message
+    setBranchIndex(prev => ({ ...prev, [msgId]: (prev[msgId] || 0) + 1 }));
+
+    // Truncate to this user message (inclusive) and update its content
+    const newMessages = messages.slice(0, msgIdx + 1).map((m: any, i: number) => {
+      if (i === msgIdx) return { ...m, content: trimmed };
+      return m;
+    });
+    setMessages(newMessages);
+
+    // Re-send from this point
+    try {
+      await sendMessage({
+        content: trimmed,
+        role: 'user',
+        experimental_attachments: newMessages[msgIdx]?.experimental_attachments,
+      } as any, {
+        body: {
+          modelId: selectedModelId,
+          search: isSearchMode,
+          knowledge: isKnowledgeMode,
+          sessionId: sessionIdRef.current,
+        },
+      });
+    } catch (err) {
+      console.error('Edit submit failed:', err);
+    }
+    cancelEdit();
   };
 
   // Reset stopped state only when new streaming starts (not when it just finished)
@@ -985,15 +1092,54 @@ export function ChatSession({
                                   })()}
                                 </div>
                               ) : (
-                                <div className="prose prose-slate prose-sm max-w-none relative">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>{m.content}</ReactMarkdown>
-                                  {isStreaming && <TypingCursor />}
-                                  {isStreaming && (
-                                    <div className="mt-1">
-                                      <ThinkingList steps={[{ label: t('chat.thinking'), status: 'active' }]} />
+                                editingMessageId === m.id ? (
+                                  /* Edit Mode */
+                                  <div className="space-y-3">
+                                    <textarea
+                                      value={editText}
+                                      onChange={(e) => setEditText(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                          e.preventDefault();
+                                          submitEdit(m.id);
+                                        }
+                                        if (e.key === 'Escape') {
+                                          cancelEdit();
+                                        }
+                                      }}
+                                      autoFocus
+                                      rows={Math.min(6, editText.split('\n').length + 1)}
+                                      className="w-full bg-white border border-[#E8E4E2] rounded-xl px-4 py-3 text-sm text-[#1C1B1B] focus:ring-2 focus:ring-[#EC5B14]/30 focus:border-[#EC5B14]/30 outline-none resize-none"
+                                    />
+                                    <div className="flex items-center gap-2 justify-end">
+                                      <span className="text-[10px] text-[#716B67]/60 mr-auto hidden sm:inline">
+                                        {t('chat.edit.hint', '⌘Enter to save, Esc to cancel')}
+                                      </span>
+                                      <button
+                                        onClick={cancelEdit}
+                                        className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#716B67] hover:bg-[#F6F3F2] transition-colors"
+                                      >
+                                        {t('common.cancel')}
+                                      </button>
+                                      <button
+                                        onClick={() => submitEdit(m.id)}
+                                        className="px-4 py-1.5 rounded-lg text-xs font-medium bg-[#EC5B14] text-white hover:bg-[#d44e00] transition-colors"
+                                      >
+                                        {t('chat.edit.save', 'Save & Send')}
+                                      </button>
                                     </div>
-                                  )}
-                                </div>
+                                  </div>
+                                ) : (
+                                  <div className="prose prose-slate prose-sm max-w-none relative">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>{m.content}</ReactMarkdown>
+                                    {isStreaming && <TypingCursor />}
+                                    {isStreaming && (
+                                      <div className="mt-1">
+                                        <ThinkingList steps={[{ label: t('chat.thinking'), status: 'active' }]} />
+                                      </div>
+                                    )}
+                                  </div>
+                                )
                               )}
                             </div>
                           </div>
@@ -1003,9 +1149,25 @@ export function ChatSession({
                             (isAssistant && status === 'streaming' && m.id === arr[arr.length - 1]?.id) ? "opacity-0 pointer-events-none" : "opacity-100"
                           )}>
                             <div className="flex items-center gap-1 transition-opacity">
+                              {isUser && (
+                                <Tooltip delayDuration={0}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => startEditing(m.id, m.content || '')}
+                                      className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]"
+                                      aria-label={t('common.edit', 'Edit message')}
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
+                                    {t('common.edit', 'Edit message')}
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
                               <Tooltip delayDuration={0}>
                                 <TooltipTrigger asChild>
-                                  <button onClick={() => copyToClipboard(m)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">
+                                  <button onClick={() => copyToClipboard(m)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]" aria-label={copiedId === m.id ? t('common.copied') : t('common.copy', 'Copy message')}>
                                     {copiedId === m.id ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                                   </button>
                                 </TooltipTrigger>
@@ -1025,6 +1187,7 @@ export function ChatSession({
                                             ? "bg-[#EC5B14]/10 text-[#EC5B14]"
                                             : "hover:bg-[#F6F3F2] text-[#716B67]"
                                         )}
+                                        aria-label={t('common.good_response', 'Good response')}
                                       >
                                         <ThumbsUp className="w-4 h-4" />
                                       </button>
@@ -1043,6 +1206,7 @@ export function ChatSession({
                                             ? "bg-red-500/10 text-red-500"
                                             : "hover:bg-[#F6F3F2] text-[#716B67]"
                                         )}
+                                        aria-label={t('common.bad_response', 'Bad response')}
                                       >
                                         <ThumbsDown className="w-4 h-4" />
                                       </button>
@@ -1053,7 +1217,7 @@ export function ChatSession({
                                   </Tooltip>
                                   <Tooltip delayDuration={0}>
                                     <TooltipTrigger asChild>
-                                      <button onClick={() => handleRegenerate(m.id)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]">
+                                      <button onClick={() => handleRegenerate(m.id)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]" aria-label={t('common.regenerate', 'Regenerate response')}>
                                         <RotateCcw className="w-4 h-4" />
                                       </button>
                                     </TooltipTrigger>
@@ -1068,6 +1232,12 @@ export function ChatSession({
                             {m.createdAt && (
                               <span className="text-[10px] text-[#716B67]/60 font-mono">
                                 {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                            {/* Branch indicator — shows "1/2" for edited user messages */}
+                            {isUser && (branchIndex[m.id] || 0) > 0 && (
+                              <span className="text-[10px] text-[#716B67]/60 font-mono">
+                                {branchIndex[m.id] + 1}
                               </span>
                             )}
                             {/* Stopped indicator — inline within the last assistant message */}
@@ -1355,7 +1525,7 @@ export function ChatSession({
               <h4 className="text-[10px] font-extrabold text-[#716B67] uppercase tracking-widest mb-4">{t('chat.meta.title')}</h4>
               <div className="space-y-4">
                 <div className="flex items-center justify-between"><span className="text-xs text-[#716B67]">{t('chat.meta.model')}</span><span className="text-xs font-bold text-[#1C1B1B] flex items-center gap-1">{activeDisplayName} <BadgeCheck className="w-3 h-3 text-[#EC5B14]" /></span></div>
-                <div className="flex items-center justify-between"><span className="text-xs text-[#716B67]">{t('chat.meta.tokens')}</span><span className="text-xs font-mono font-bold text-[#1C1B1B]">1,402</span></div>
+                <div className="flex items-center justify-between"><span className="text-xs text-[#716B67]">{t('chat.meta.tokens')}</span><span className="text-xs font-mono font-bold text-[#1C1B1B]">{totalUsage.totalTokens > 0 ? totalUsage.totalTokens.toLocaleString() : '—'}</span></div>
                 <div className="flex items-center justify-between"><span className="text-xs text-[#716B67]">{t('chat.meta.review_mode')}</span><span className="bg-[#EC5B14]/10 text-[#EC5B14] px-2 py-0.5 rounded-full text-[10px] font-bold">{t('chat.meta.strict')}</span></div>
               </div>
             </div>

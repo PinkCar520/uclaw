@@ -322,9 +322,30 @@ export function ChatSession({
       knowledge: isKnowledgeMode,
       sessionId: sessionId,  // 核心：告知 Gateway 将消息写入哪个会话
     },
-    onFinish: async (_message: any) => {
-      // Server-First: 服务端已在 onFinish 中持久化消息
-      // 前端只需刷新侧边栏列表以显示最新标题/消息数
+    onFinish: async ({ message, isAbort, isDisconnect, isError }: any) => {
+      // AI SDK v6: usage 通过 messageMetadata 机制从后端传递，存储在 message.metadata 中
+      const metadata = message?.metadata;
+      const usage = metadata?.usage;
+      
+      if (usage) {
+        // 将 usage 合并到当前最后一条 assistant 消息中
+        setMessages((prev: any[]) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          if (lastIdx >= 0 && updated[lastIdx].role === 'assistant') {
+            updated[lastIdx] = {
+              ...updated[lastIdx],
+              usage: {
+                inputTokens: usage.inputTokens ?? 0,
+                outputTokens: usage.outputTokens ?? 0,
+                totalTokens: usage.totalTokens ?? 0,
+              },
+            };
+          }
+          return updated;
+        });
+      }
+
       const sid = sessionIdRef.current;
       if (sid) {
         await onStreamFinished(sid);

@@ -24,7 +24,10 @@
       "Bash(rm *)",
       "Bash(grep *)",
       "Bash(cat *)",
-      "Bash(file *)"
+      "Bash(file *)",
+      "WebSearch",
+      "WebFetch(github.com)",
+      "WebFetch(vercel.com)"
     ]
   },
   "$version": 3

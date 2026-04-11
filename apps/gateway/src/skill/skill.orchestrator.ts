@@ -525,7 +525,20 @@ ${catalogXml}`;
         },
       });
 
-      result.pipeUIMessageStreamToResponse(res);
+      result.pipeUIMessageStreamToResponse(res, {
+        messageMetadata: ({ part }) => {
+          if (part.type === 'finish') {
+            return {
+              usage: {
+                inputTokens: part.totalUsage?.inputTokens ?? 0,
+                outputTokens: part.totalUsage?.outputTokens ?? 0,
+                totalTokens: part.totalUsage?.totalTokens ?? 0,
+              },
+            };
+          }
+          return {};
+        },
+      });
     } catch (err: any) {
       this.logger.error(`Stream error: ${err.message}`);
       if (err.stack) this.logger.error(err.stack);

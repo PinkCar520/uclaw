@@ -31,6 +31,7 @@ export interface UIBugCardProps {
   severity: 'low' | 'medium' | 'high';
   description?: string;
   createdAt?: string;
+  attachments?: Array<{ url: string; name?: string; contentType?: string }>;
 }
 
 export interface UIBugCard extends UIBase {

@@ -97,6 +97,8 @@ export class ZentaoTool {
         severity: this.mapSeverity(data.severity),
         createdAt: data.openedDate,
         description: data.steps || data.description || '',
+        // 提取图片附件
+        attachments: this.extractAttachments(data),
       };
     } catch (err: any) {
       console.error(`[@uclaw/tools-zentao] API Error:`, err.message);
@@ -491,5 +493,54 @@ export class ZentaoTool {
     if (s === 1 || s === 2) return 'high';
     if (s === 3) return 'medium';
     return 'low';
+  }
+
+  /**
+   * 从禅道 Bug 数据中提取图片附件
+   * 禅道通常在 files 或 attachments 字段中返回附件列表
+   */
+  private extractAttachments(data: any): Array<{ url: string; name?: string; contentType?: string }> {
+    const attachments: Array<{ url: string; name?: string; contentType?: string }> = [];
+    
+    // 尝试多种可能的附件字段名
+    const filesData = data.files || data.attachments || data.pics || [];
+    
+    if (Array.isArray(filesData)) {
+      for (const file of filesData) {
+        // 只提取图片类型
+        const contentType = file.type || file.contentType || file.extension || '';
+        const isImage = contentType.startsWith('image/') || 
+                        /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(file.name || file.title || file.path || '');
+        
+        if (isImage && (file.url || file.path || file.downloadUrl)) {
+          attachments.push({
+            url: file.url || file.path || file.downloadUrl,
+            name: file.name || file.title || file.realname || 'image',
+            contentType: contentType.startsWith('image/') ? contentType : undefined,
+          });
+        }
+      }
+    }
+
+    // 如果 description 中包含 <img> 标签，也提取出来
+    const description = data.description || data.steps || '';
+    if (description) {
+      const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/gi;
+      let match;
+      while ((match = imgRegex.exec(description)) !== null) {
+        const imgSrc = match[1];
+        if (imgSrc && !attachments.find(a => a.url === imgSrc)) {
+          // 提取 alt 文本作为 name
+          const altMatch = match[0].match(/alt="([^"]*)"/i);
+          attachments.push({
+            url: imgSrc,
+            name: altMatch ? altMatch[1] : 'screenshot',
+            contentType: 'image/png',
+          });
+        }
+      }
+    }
+
+    return attachments;
   }
 }

@@ -9,6 +9,7 @@ import { SessionModule } from './session/session.module';
 import { SkillRegistryModule } from './skill-registry/skill-registry.module';
 import { MCPServerModule } from './mcp-server/mcp-server.module';
 import { ApprovalModule } from './skill/approval.module';
+import { ProxyModule } from './proxy/proxy.module';
 
 /**
  * AppModule
@@ -27,6 +28,7 @@ import { ApprovalModule } from './skill/approval.module';
     SkillRegistryModule, // 技能注册中心
     MCPServerModule, // MCP Server 管理
     ApprovalModule, // AGP 审批治理
+    ProxyModule, // 图片代理
   ],
   controllers: [],
   providers: [],

@@ -12,6 +12,7 @@ import {
 import { z } from 'zod';
 import { ZentaoService } from './zentao.service';
 import { RpcGateway } from './rpc.gateway';
+import { MCPClientManager } from '../mcp/mcp-client.manager';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -21,6 +22,7 @@ export class ChatService {
     private configService: ConfigService,
     private zentaoService: ZentaoService,
     private rpcGateway: RpcGateway,
+    private mcpManager: MCPClientManager,
   ) { }
 
   private getModel(modelId?: string) {
@@ -77,12 +79,9 @@ export class ChatService {
           if (!bug) {
             return { found: false, message: `未找到 BUG-${bugId}` };
           }
-          // 关键：只返回最小信息给模型，避免模型复述卡片内容
-          // 完整数据通过 ui 字段传递给前端渲染
           return {
             found: true,
             bugId: bug.id,
-            // 不返回 title/status/severity/assignee 等字段，防止模型复述
             ui: {
               uiType: 'bug_card',
               props: {
@@ -117,18 +116,60 @@ export class ChatService {
           return { status: success ? 'Success' : 'Error', bugId };
         },
       }),
-      runLocalCommand: tool({
-        description: '在开发者的本地工作站执行安全指令',
+
+      // --- New Atomic Local Tools ---
+
+      local_file_read: tool({
+        description: '读取开发者本地工作站的文件内容',
         inputSchema: z.object({
-          userId: z.string().describe('目标用户的 ID（如 local_dev 或工号）'),
-          command: z.enum(['ls', 'git_status', 'git_add', 'git_commit', 'npm_build', 'read_file']).describe('执行的指令名'),
-          args: z.record(z.string(), z.any()).optional().describe('指令所需的参数'),
+          userId: z.string().describe('目标用户的 ID'),
+          path: z.string().describe('文件相对路径'),
         }),
-        execute: async ({ userId, command, args }) => {
+        execute: async ({ userId, path }) => {
+          const result = await this.rpcGateway.sendToCli(userId, 'read_file', { path });
+          return { status: 'Success', path, content: result };
+        },
+      }),
+
+      local_file_edit: tool({
+        description: '通过精准匹配旧代码块并替换为新代码块来修改本地文件。比全量写入更安全可靠。',
+        inputSchema: z.object({
+          userId: z.string().describe('目标用户的 ID'),
+          path: z.string().describe('文件相对路径'),
+          oldString: z.string().describe('要被替换的原始代码块（必须完全匹配，包括空格和缩进）'),
+          newString: z.string().describe('替换后的新代码块'),
+        }),
+        execute: async ({ userId, path, oldString, newString }) => {
           try {
-            // 内部逻辑优化：确保大模型知道 git_add 是暂存，git_commit 是提交暂存区
-            const result = await this.rpcGateway.sendToCli(userId, command, args || {});
-            return { status: 'Success', command, result };
+            const result = await this.rpcGateway.sendToCli(userId, 'local_file_edit', { path, oldString, newString });
+            return { status: 'Success', path, result };
+          } catch (err: any) {
+            return { status: 'Error', message: err.message };
+          }
+        },
+      }),
+
+      local_git_status: tool({
+        description: '获取开发者本地工作区的 Git 状态（查看改动文件、当前分支等）',
+        inputSchema: z.object({
+          userId: z.string().describe('目标用户的 ID'),
+        }),
+        execute: async ({ userId }) => {
+          const result = await this.rpcGateway.sendToCli(userId, 'local_git', { action: 'status' });
+          return { status: 'Success', ...result };
+        },
+      }),
+
+      local_bash: tool({
+        description: '在开发者本地工作站执行 Shell 指令。适用于运行测试、编译、列出目录等。',
+        inputSchema: z.object({
+          userId: z.string().describe('目标用户的 ID'),
+          command: z.string().describe('要执行的完整 Shell 指令'),
+        }),
+        execute: async ({ userId, command }) => {
+          try {
+            const result = await this.rpcGateway.sendToCli(userId, 'bash', { command });
+            return { status: 'Success', output: result };
           } catch (err: any) {
             return { status: 'Error', message: err.message };
           }
@@ -174,13 +215,20 @@ export class ChatService {
       const onlineClis = this.rpcGateway.getOnlineUsers();
       const currentUserId = req?.user?.id || 'Anonymous';
 
+      // Load MCP tools dynamically
+      const mcpTools = await this.mcpManager.getAITools();
+      const allTools = {
+        ...this.getTools(),
+        ...mcpTools,
+      };
+
       const result = streamText({
         model: this.getModel(modelId),
         messages: modelMessages,
         toolChoice: 'auto',
         stopWhen: stepCountIs(5),
         system: this.getSystemPrompt(currentUserId, onlineClis),
-        tools: this.getTools(),
+        tools: allTools,
         onStepFinish: ({ stepNumber, text, toolCalls, toolResults }) => {
           console.log(`[Gateway] [Stream] Step ${stepNumber} finished. Tools: ${toolCalls.length}`);
         },
@@ -200,13 +248,20 @@ export class ChatService {
     try {
       const onlineClis = this.rpcGateway.getOnlineUsers();
 
+      // Load MCP tools dynamically
+      const mcpTools = await this.mcpManager.getAITools();
+      const allTools = {
+        ...this.getTools(),
+        ...mcpTools,
+      };
+
       const { text } = await generateText({
         model: this.getModel(),
         messages: [{ role: 'user', content }],
         toolChoice: 'auto',
         stopWhen: stepCountIs(5),
         system: this.getSystemPrompt(userId, onlineClis),
-        tools: this.getTools(),
+        tools: allTools,
       });
 
       return text;

@@ -107,7 +107,7 @@ export function MessageInput({ isWaiting, isThinking, onSubmit }: MessageInputPr
     // Placeholder logic - rendered only if value is empty
     if (!value && !isThinking) {
       segments.push(
-        <Text key="cursor-empty" inverse>
+        <Text key="cursor-empty" backgroundColor="cyan" color="black">
           {' '}
         </Text>
       );
@@ -131,7 +131,11 @@ export function MessageInput({ isWaiting, isThinking, onSubmit }: MessageInputPr
 
       const isCursor = i === cursorOffset;
       segments.push(
-        <Text key={i} color={color} inverse={isCursor}>
+        <Text 
+          key={i} 
+          color={isCursor ? 'black' : color} 
+          backgroundColor={isCursor ? 'cyan' : undefined}
+        >
           {char}
         </Text>
       );

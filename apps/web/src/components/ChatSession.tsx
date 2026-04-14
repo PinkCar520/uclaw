@@ -323,26 +323,25 @@ export function ChatSession({
     }
   }, [sessionId]);
 
-  // Memoize auth headers to ensure they're recalculated when token changes
   const chatHeaders = React.useMemo(() => {
     return getAuthHeaders(token ?? localStorage.getItem('uclaw_auth_token'));
   }, [token]);
 
-  const { messages, sendMessage, status, reload, setMessages, stop, error } = (useChat as any)({
-    id: sessionId ?? 'new',  // 回归正常 React 状态设计
-    initialMessages: initialMessages, // 确保卸载重载时直接初始化为历史消息！
+  const { messages, append: sendMessage, status, reload, setMessages, stop, error } = (useChat as any)({
+    id: sessionId ?? 'new',
+    initialMessages: initialMessages as any,
     api: '/api/chat',
-    headers: chatHeaders,
+    headers: chatHeaders as any,
     body: {
       modelId: selectedModelId,
       search: isSearchMode,
       knowledge: isKnowledgeMode,
-      sessionId: sessionId,  // 核心：告知 Gateway 将消息写入哪个会话
+      sessionId: sessionId,
     },
-    onFinish: async ({ message, isAbort, isDisconnect, isError }: any) => {
-      // AI SDK v6: usage 通过 messageMetadata 机制从后端传递，存储在 message.metadata 中
+    onFinish: async (message: any) => {
       const metadata = message?.metadata;
       const usage = metadata?.usage;
+      // ... (rest of onFinish)
 
       if (usage) {
         // 将 usage 合并到当前最后一条 assistant 消息中
@@ -394,7 +393,7 @@ export function ChatSession({
     }
   }, [initialMessages, messages.length, setMessages]);
 
-  const isLoading = status === 'streaming' || status === 'submitting';
+  const isLoading = status === 'streaming' || (status as any) === 'submitting';
 
   // Reset local thinking when assistant message arrives
   useEffect(() => {
@@ -506,9 +505,9 @@ export function ChatSession({
     // 重新发送该消息
     try {
       await sendMessage({
-        content: userMsg.content,
+        content: (userMsg as any).content,
         role: 'user',
-        experimental_attachments: userMsg.experimental_attachments
+        experimental_attachments: (userMsg as any).experimental_attachments
       } as any, { headers: chatHeaders });
     } catch (err) {
       console.error('Regenerate failed:', err);
@@ -700,20 +699,19 @@ export function ChatSession({
     // 使用统一的 i18n 工具名称映射（消除硬编码）
     const translated = t(`tools.${rawToolName}`);
     if (translated && translated !== `tools.${rawToolName}`) {
-      // 对于 runLocalCommand，追加具体子命令
-      if (rawToolName === 'runLocalCommand' && args?.command) {
-        const cmdNames: Record<string, string> = {
-          'ls': t('chat.tool_status.names.ls'),
-          'git_status': t('chat.tool_status.names.git_status'),
-          'git_add': t('chat.tool_status.names.git_add'),
-          'git_commit': t('chat.tool_status.names.git_commit'),
-          'npm_build': t('chat.tool_status.names.npm_build'),
-          'read_file': t('chat.tool_status.names.read_file'),
-        };
-        const cmdName = cmdNames[args.command] || args.command;
-        return `${translated} → ${cmdName}`;
-      }
       return translated;
+    }
+
+    // 处理新原子工具的友好显示
+    const atomicNames: Record<string, string> = {
+      'local_file_read': t('chat.tool_status.names.read_file', '读取文件'),
+      'local_file_edit': t('chat.tool_status.names.edit_file', '精准修改文件'),
+      'local_git_status': t('chat.tool_status.names.git_status', '检查 Git 状态'),
+      'local_bash': t('chat.tool_status.names.bash', '运行本地命令'),
+    };
+
+    if (atomicNames[rawToolName]) {
+      return atomicNames[rawToolName];
     }
 
     // Fallback: title-case the raw name
@@ -827,22 +825,68 @@ export function ChatSession({
       }
     }
 
-    // ── Stitch Diff Viewer — 代码修复场景 ──
-    if (toolName === 'runLocalCommand' || toolName === 'tool-runLocalCommand') {
-      if (result?.status === 'Success' && result.command === 'git_diff') {
+    // ── Stitch Diff Viewer ──
+    if (toolName === 'local_file_edit') {
+      if (result?.status === 'Success') {
         return (
-          <DiffViewer
-            key={part.toolCallId}
-            fileName="gitlab-api-v4.ts"
-            draft
-            diff={[
-              { lineNumber: 24, type: 'context', content: "const authHeader = `Bearer ${token}`;" },
-              { lineNumber: 25, type: 'deletion', content: "console.log(`Request sent with ${authHeader}`);" },
-              { lineNumber: 25, type: 'addition', content: "logger.debug('Request sent', { correlationId }); // Redact tokens" },
-              { lineNumber: 26, type: 'context', content: "return await fetch(url, { headers: { authHeader } });" },
-            ]}
-            onApply={() => sendMessage({ content: 'Apply fix to GitLab', role: 'user' }, { headers: chatHeaders })}
-          />
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 font-mono text-xs mt-2" key={part.toolCallId}>
+            <div className="flex items-center gap-2 mb-2 text-emerald-600 font-semibold">
+              <Check className="w-3 h-3" />
+              <span>文件修改成功: {result.path}</span>
+            </div>
+            <Text dimColor>已精准替换代码片段</Text>
+          </div>
+        );
+      }
+    }
+
+    if (toolName === 'local_git_status') {
+      if (result?.status === 'Success') {
+        return (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 font-mono text-xs mt-2" key={part.toolCallId}>
+            <div className="flex items-center gap-2 mb-2 text-blue-600 font-semibold">
+              <div className="flex items-center gap-1.5 bg-blue-100 px-2 py-0.5 rounded text-[10px]">
+                <Globe className="w-3 h-3" />
+                <span>{result.branch}</span>
+              </div>
+              <span className={result.isClean ? "text-emerald-600" : "text-amber-600"}>
+                {result.isClean ? "工作区干净" : "有未提交改动"}
+              </span>
+            </div>
+            <pre className="text-slate-600 whitespace-pre-wrap max-h-40 overflow-y-auto mt-2 text-[10px]">
+              {result.raw}
+            </pre>
+          </div>
+        );
+      }
+    }
+
+    if (toolName === 'local_file_read' || toolName === 'local_bash') {
+      if (result?.status === 'Success') {
+        const isCode = toolName === 'local_file_read';
+        return (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-xs mt-2 overflow-hidden shadow-xl" key={part.toolCallId}>
+            <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+              <div className="flex items-center gap-2 text-white/50">
+                {isCode ? <Code2 className="w-3 h-3" /> : <Terminal className="w-3 h-3" />}
+                <span className="text-[10px]">{isCode ? result.path : 'Terminal Output'}</span>
+              </div>
+            </div>
+            {isCode ? (
+              <SyntaxHighlighter
+                language="typescript"
+                style={vscDarkPlus}
+                customStyle={{ margin: 0, padding: 0, fontSize: '11px', background: 'transparent' }}
+                maxHeight="300px"
+              >
+                {result.content}
+              </SyntaxHighlighter>
+            ) : (
+              <pre className="text-slate-300 whitespace-pre-wrap max-h-60 overflow-y-auto text-[11px] leading-relaxed">
+                {result.output}
+              </pre>
+            )}
+          </div>
         );
       }
     }
@@ -1012,7 +1056,7 @@ export function ChatSession({
                         : { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
                       return (
-                        <motion.div {...messageAnimation} key={m.id || idx} className={cn("flex flex-col group", isUser ? "items-end" : "items-start w-full")}>
+                        <motion.div {...messageAnimation} key={m.id || idx} className={cn("flex flex-col group w-full mb-8", isUser ? "items-end" : "items-start")}>
                           <div className={cn("flex w-full gap-4", isUser ? "justify-end" : "justify-start")}>
                             {isAssistant && (
                               <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] flex items-center justify-center shadow-[0_4px_15px_rgba(236,91,20,0.3)] text-white shrink-0 mt-1">
@@ -1020,11 +1064,12 @@ export function ChatSession({
                               </div>
                             )}
                             <div className={cn(
-                              "py-3 rounded-[20px] text-[15px] leading-relaxed",
+                              "py-3 rounded-[20px] text-[15px] leading-relaxed relative",
                               isUser
                                 ? "bg-[#eeece9] text-[#1C1B1B] max-w-[85%] px-5"
                                 : "bg-transparent text-[#1C1B1B] flex-1 min-w-0"
                             )}>
+                              {/* Attachments */}
                               {(m.experimental_attachments || m.attachments) && (m.experimental_attachments || m.attachments).length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-[#E8E4E2]/40">
                                   {(m.experimental_attachments || m.attachments).map((at: any, aidx: number) => {
@@ -1050,7 +1095,6 @@ export function ChatSession({
                               ) : Array.isArray(m.parts) ? (
                                 <div className="flex flex-col gap-1">
                                   {(() => {
-                                    // Collect all thinking steps from both reasoning and tool-invocation
                                     const allThinkingSteps: ThinkingStep[] = [];
                                     const completedTools: any[] = [];
                                     const textParts: any[] = [];
@@ -1076,9 +1120,7 @@ export function ChatSession({
                                       }
                                     });
 
-                                    // If streaming and last step is active, keep it active; otherwise mark all done
                                     if (isStreaming && allThinkingSteps.length > 0) {
-                                      // Mark last step as active during streaming (only if still in thinking phase)
                                       const hasTextContent = textParts.some(p => p.type === 'text' && p.text?.trim());
                                       if (!hasTextContent) {
                                         allThinkingSteps[allThinkingSteps.length - 1].status = 'active';
@@ -1087,20 +1129,12 @@ export function ChatSession({
                                       allThinkingSteps.forEach(s => s.status = 'done');
                                     }
 
-                                    // If there's no content at all but we're streaming, show a placeholder
                                     const hasAnySteps = allThinkingSteps.length > 0 || completedTools.length > 0;
 
                                     return (
                                       <>
-                                        {/* Unified ThinkingList - merges tool steps + reasoning steps */}
-                                        {allThinkingSteps.length > 0 && (
-                                          <ThinkingList steps={allThinkingSteps} />
-                                        )}
-                                        {/* Placeholder during streaming when no steps yet */}
-                                        {!hasAnySteps && isStreaming && (
-                                          <ThinkingList steps={[{ label: t('chat.thinking'), status: 'active' }]} />
-                                        )}
-                                        {/* Text content */}
+                                        {allThinkingSteps.length > 0 && <ThinkingList steps={allThinkingSteps} />}
+                                        {!hasAnySteps && isStreaming && <ThinkingList steps={[{ label: t('chat.thinking'), status: 'active' }]} />}
                                         {textParts.map((part: any, i: number) => (
                                           <div key={i} className="prose prose-slate prose-sm max-w-none">
                                             {part.type === 'text' && (
@@ -1110,9 +1144,7 @@ export function ChatSession({
                                             )}
                                           </div>
                                         ))}
-                                        {/* Typing cursor during streaming */}
                                         {isStreaming && <TypingCursor />}
-                                        {/* Tool results (CapsuleAnchor, BugCard, etc.) */}
                                         {completedTools.map((part: any) => {
                                           const result = part.output || part.result;
                                           if (result?.ui) {
@@ -1133,7 +1165,6 @@ export function ChatSession({
                                 </div>
                               ) : (
                                 editingMessageId === m.id ? (
-                                  /* Edit Mode */
                                   <div className="space-y-3">
                                     <textarea
                                       value={editText}
@@ -1155,18 +1186,8 @@ export function ChatSession({
                                       <span className="text-[10px] text-[#716B67]/60 mr-auto hidden sm:inline">
                                         {t('chat.edit.hint', '⌘Enter to save, Esc to cancel')}
                                       </span>
-                                      <button
-                                        onClick={cancelEdit}
-                                        className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#716B67] hover:bg-[#F6F3F2] transition-colors"
-                                      >
-                                        {t('common.cancel')}
-                                      </button>
-                                      <button
-                                        onClick={() => submitEdit(m.id)}
-                                        className="px-4 py-1.5 rounded-lg text-xs font-medium bg-[#EC5B14] text-white hover:bg-[#d44e00] transition-colors"
-                                      >
-                                        {t('chat.edit.save', 'Save & Send')}
-                                      </button>
+                                      <button onClick={cancelEdit} className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#716B67] hover:bg-[#F6F3F2] transition-colors">{t('common.cancel')}</button>
+                                      <button onClick={() => submitEdit(m.id)} className="px-4 py-1.5 rounded-lg text-xs font-medium bg-[#EC5B14] text-white hover:bg-[#d44e00] transition-colors">{t('chat.edit.save', 'Save & Send')}</button>
                                     </div>
                                   </div>
                                 ) : (
@@ -1183,108 +1204,56 @@ export function ChatSession({
                               )}
                             </div>
                           </div>
+
+                          {/* ── Metadata & Actions Footer (Claude Style) ── */}
                           <div className={cn(
-                            "flex items-center gap-3 mt-2 transition-opacity duration-300",
-                            isUser ? "px-5 flex-row-reverse" : "px-12 flex-row",
-                            (isAssistant && status === 'streaming' && m.id === arr[arr.length - 1]?.id) ? "opacity-0 pointer-events-none" : "opacity-100"
+                            "flex items-center gap-3 mt-1.5 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                            isUser ? "flex-row-reverse" : "flex-row ml-12"
                           )}>
-                            <div className="flex items-center gap-1 transition-opacity">
+                            {/* Branch Indicator (For User Messages) */}
+                            {isUser && (branchIndex[m.id] || 0) >= 0 && (
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-[#716B67]/60 bg-[#F6F3F2] px-1.5 py-0.5 rounded-md border border-[#E8E4E2]/40">
+                                <button className="hover:text-[#EC5B14] transition-colors"><ArrowRight className="w-2.5 h-2.5 rotate-180" /></button>
+                                <span className="font-mono">{(branchIndex[m.id] || 0) + 1} / {(branchIndex[m.id] || 0) + 1}</span>
+                                <button className="hover:text-[#EC5B14] transition-colors"><ArrowRight className="w-2.5 h-2.5" /></button>
+                              </div>
+                            )}
+
+                            {/* Actions Group */}
+                            <div className="flex items-center gap-1">
                               {isUser && (
-                                <Tooltip delayDuration={0}>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      onClick={() => startEditing(m.id, m.content || '')}
-                                      className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]"
-                                      aria-label={t('common.edit', 'Edit message')}
-                                    >
-                                      <Pencil className="w-4 h-4" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                                    {t('common.edit', 'Edit message')}
-                                  </TooltipContent>
-                                </Tooltip>
+                                <button onClick={() => startEditing(m.id, m.content || '')} className="p-1 hover:bg-[#F6F3F2] rounded text-[#716B67]/60 hover:text-[#EC5B14] transition-colors" title={t('common.edit')}>
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
                               )}
-                              <Tooltip delayDuration={0}>
-                                <TooltipTrigger asChild>
-                                  <button onClick={() => copyToClipboard(m)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]" aria-label={copiedId === m.id ? t('common.copied') : t('common.copy', 'Copy message')}>
-                                    {copiedId === m.id ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                                  {copiedId === m.id ? t('common.copied') : t('common.copy')}
-                                </TooltipContent>
-                              </Tooltip>
+                              <button onClick={() => copyToClipboard(m)} className="p-1 hover:bg-[#F6F3F2] rounded text-[#716B67]/60 hover:text-[#EC5B14] transition-colors" title={t('common.copy')}>
+                                {copiedId === m.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
                               {isAssistant && (
                                 <>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => setMessageFeedback(prev => ({ ...prev, [m.id]: prev[m.id] === 'up' ? undefined : 'up' }))}
-                                        className={cn(
-                                          "p-1.5 rounded-md transition-colors",
-                                          messageFeedback[m.id] === 'up'
-                                            ? "bg-[#EC5B14]/10 text-[#EC5B14]"
-                                            : "hover:bg-[#F6F3F2] text-[#716B67]"
-                                        )}
-                                        aria-label={t('common.good_response', 'Good response')}
-                                      >
-                                        <ThumbsUp className="w-4 h-4" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                                      {t('common.good_response', 'Good response')}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => setMessageFeedback(prev => ({ ...prev, [m.id]: prev[m.id] === 'down' ? undefined : 'down' }))}
-                                        className={cn(
-                                          "p-1.5 rounded-md transition-colors",
-                                          messageFeedback[m.id] === 'down'
-                                            ? "bg-red-500/10 text-red-500"
-                                            : "hover:bg-[#F6F3F2] text-[#716B67]"
-                                        )}
-                                        aria-label={t('common.bad_response', 'Bad response')}
-                                      >
-                                        <ThumbsDown className="w-4 h-4" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                                      {t('common.bad_response', 'Bad response')}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <button onClick={() => handleRegenerate(m.id)} className="p-1.5 hover:bg-[#F6F3F2] rounded-md text-[#716B67]" aria-label={t('common.regenerate', 'Regenerate response')}>
-                                        <RotateCcw className="w-4 h-4" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="text-[10px] px-2 py-1 bg-[#4A443F] border-none text-white shadow-none">
-                                      {t('common.regenerate')}
-                                    </TooltipContent>
-                                  </Tooltip>
+                                  <button
+                                    onClick={() => setMessageFeedback(prev => ({ ...prev, [m.id]: prev[m.id] === 'up' ? undefined : 'up' }))}
+                                    className={cn("p-1 rounded transition-colors", messageFeedback[m.id] === 'up' ? "bg-[#EC5B14]/10 text-[#EC5B14]" : "hover:bg-[#F6F3F2] text-[#716B67]/60")}
+                                  >
+                                    <ThumbsUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setMessageFeedback(prev => ({ ...prev, [m.id]: prev[m.id] === 'down' ? undefined : 'down' }))}
+                                    className={cn("p-1 rounded transition-colors", messageFeedback[m.id] === 'down' ? "bg-red-500/10 text-red-500" : "hover:bg-[#F6F3F2] text-[#716B67]/60")}
+                                  >
+                                    <ThumbsDown className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={() => handleRegenerate(m.id)} className="p-1 hover:bg-[#F6F3F2] rounded text-[#716B67]/60 hover:text-[#EC5B14] transition-colors" title={t('common.regenerate')}>
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                  </button>
                                 </>
                               )}
                             </div>
+
                             {/* Timestamp */}
                             {m.createdAt && (
-                              <span className="text-[10px] text-[#716B67]/60 font-mono">
-                                {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
-                            {/* Branch indicator — shows "1/2" for edited user messages */}
-                            {isUser && (branchIndex[m.id] || 0) > 0 && (
-                              <span className="text-[10px] text-[#716B67]/60 font-mono">
-                                {branchIndex[m.id] + 1}
-                              </span>
-                            )}
-                            {/* Stopped indicator — inline within the last assistant message */}
-                            {isAssistant && isStopped && isLast && (
-                              <span className="text-[10px] text-[#716B67] font-medium flex items-center gap-1">
-                                <Square className="w-3 h-3 fill-current" />
-                                {t('chat.stopped', '已停止')}
+                              <span className="text-[10px] text-[#716B67]/40 font-mono tracking-tighter">
+                                {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                               </span>
                             )}
                           </div>
@@ -1585,3 +1554,4 @@ export function ChatSession({
 // cache buster 1775898677
 // cache buster 1775898894
 // cache buster 1775899337
+// cache buster 1775899888

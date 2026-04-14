@@ -7,35 +7,34 @@ import chalk from 'chalk';
 import type { RPCMessage } from '@uclaw/core';
 import { resolveApiKey, getAutoUserId } from './utils/auth.js';
 import { CONFIG, LOG } from './utils/config.js';
+import { security } from './utils/security.js';
+
+// Import new atomic tools
+import { FileEditTool } from './tools/local/file-edit.js';
+import { GitTool } from './tools/local/git.js';
 
 const execAsync = promisify(exec);
+
+// Initialize tool instances
+const tools = {
+  fileEdit: new FileEditTool(),
+  git: new GitTool(),
+};
 
 interface DaemonOptions {
   userId: string;
 }
 
-/**
- * Run the daemon mode - connects to Gateway and awaits RPC requests
- */
 export async function runDaemon(options: DaemonOptions) {
-  // Resolve actual userId: env override > API Key > git config
   const effectiveUserId = process.env.UCLAW_WORK_ID || process.env.UCLAW_USER_ID || options.userId;
   const apiKey = await resolveApiKey();
 
   console.log(chalk.green(LOG.DAEMON) + ` Identity: ${chalk.bold(effectiveUserId)}`);
   console.log(chalk.green(LOG.DAEMON) + ` Connecting to Gateway (${CONFIG.GATEWAY_URL})...`);
 
-  if (apiKey) {
-    console.log(chalk.green(LOG.DAEMON) + ' Auth: Using API Key');
-  } else {
-    console.log(chalk.yellow(LOG.DAEMON) + ' Auth: No API Key found. Set UCLAW_API_KEY or run `uclaw login`');
-  }
-
   const socket = io(CONFIG.GATEWAY_URL, {
     query: { userId: effectiveUserId },
-    auth: {
-      token: apiKey || undefined,
-    },
+    auth: { token: apiKey || undefined },
     extraHeaders: apiKey ? {
       'x-api-key': apiKey,
       'Authorization': `Bearer ${apiKey}`,
@@ -51,64 +50,62 @@ export async function runDaemon(options: DaemonOptions) {
 
     let result: any = null;
     let error: string | null = null;
+    let uiHint: string = 'text';
 
     try {
-      // Security gate: sensitive operations require Y/N confirmation
-      const sensitiveMethods = ['git_commit', 'npm_build', 'git_add'];
-      if (sensitiveMethods.includes(data.method)) {
-        console.log(chalk.yellow('[SECURITY ALERT]') + ` Incoming sensitive command: ${chalk.bold(data.method)}`);
-
-        const { confirmed } = await inquirer.prompt([{
-          type: 'confirm',
-          name: 'confirmed',
-          message: `[UClaw Security] Allow execution of "${data.method}"?`,
-          default: false,
-        }]);
-
-        if (!confirmed) {
-          throw new Error('User manually denied command execution.');
-        }
-        console.log(chalk.green('[Security]') + ' User approved. Executing...');
+      // 1. Path Security Check
+      const targetPath = data.params?.path || data.params?.dir;
+      if (targetPath) {
+        const { isValid } = security.validatePath(targetPath);
+        if (!isValid) throw new Error(`Security Violation: Path "${targetPath}" is outside workspace.`);
       }
 
-      // Get git root for git operations
-      const getGitRoot = async () => {
-        const { stdout } = await execAsync('git rev-parse --show-toplevel');
-        return stdout.trim();
-      };
-
+      // 2. Dispatch to New Atomic Tools or Legacy Switch
       switch (data.method) {
+        case 'local_file_edit':
+          const editRes = await tools.fileEdit.execute(data.params);
+          if (!editRes.success) throw new Error(editRes.error);
+          result = editRes.data;
+          uiHint = editRes.uiHint || 'diff';
+          break;
+
+        case 'local_git':
+          const gitRes = await tools.git.execute(data.params);
+          if (!gitRes.success) throw new Error(gitRes.error);
+          result = gitRes.data;
+          uiHint = gitRes.uiHint || 'git';
+          break;
+
+        // Legacy / Standard methods
         case 'ls':
           result = await fs.readdir(process.cwd());
-          break;
-        case 'git_status':
-          const { stdout: status } = await execAsync('git status');
-          result = status;
-          break;
-        case 'git_add':
-          const rootForAdd = await getGitRoot();
-          const files = data.params?.files || '.';
-          const { stdout: addOut } = await execAsync(`git add ${files}`, { cwd: rootForAdd });
-          result = addOut || `Successfully staged: ${files}`;
-          break;
-        case 'git_commit':
-          const rootForCommit = await getGitRoot();
-          const msg = (data.params?.message || 'UClaw auto-commit').replace(/"/g, '\\"');
-          const { stdout: commitOut } = await execAsync(`git commit -m "${msg}"`, { cwd: rootForCommit });
-          result = commitOut;
-          break;
-        case 'npm_build':
-          console.log(chalk.yellow('[Build]') + ' Running build process...');
-          const { stdout: buildOut } = await execAsync('npm run build');
-          result = buildOut;
+          uiHint = 'tree';
           break;
         case 'read_file':
-          const filePath = data.params?.path;
-          if (!filePath) throw new Error('File path is required');
-          result = await fs.readFile(filePath, 'utf-8');
+          if (!data.params?.path) throw new Error('Path required');
+          result = await fs.readFile(data.params.path, 'utf-8');
+          uiHint = 'code';
           break;
+        case 'bash':
+          if (!data.params?.command) throw new Error('Command required');
+          // Audit Bash
+          const audit = security.auditCommand(data.params.command);
+          if (!audit.allowed) throw new Error(`Command Denied: ${audit.reason}`);
+          if (audit.riskLevel === 'HIGH') {
+            const { confirmed } = await inquirer.prompt([{
+              type: 'confirm',
+              name: 'confirmed',
+              message: `[Security] Authorize "${data.params.command}"?`,
+              default: false,
+            }]);
+            if (!confirmed) throw new Error('Denied.');
+          }
+          const { stdout, stderr } = await execAsync(data.params.command);
+          result = stdout || stderr;
+          break;
+
         default:
-          result = `Unknown method: ${data.method}`;
+          result = `Method ${data.method} not implemented.`;
       }
     } catch (err: any) {
       console.error(chalk.red('[RPC Error]'), err.message);
@@ -119,18 +116,12 @@ export async function runDaemon(options: DaemonOptions) {
       id: data.id,
       result,
       error,
+      metadata: { uiHint }
     });
-    console.log(chalk.green('[RPC Response]') + ` Sent result for ${data.id}`);
   });
 
-  socket.on('disconnect', () => {
-    console.log(chalk.red('✗ Disconnected from Gateway.'));
-  });
+  socket.on('disconnect', () => console.log(chalk.red('✗ Disconnected.')));
+  socket.on('connect_error', (err) => console.error(chalk.red('✗ Connection Error:'), err.message));
 
-  socket.on('connect_error', (err) => {
-    console.error(chalk.red('✗ Connection Error:'), err.message);
-  });
-
-  // Keep process alive
   await new Promise(() => {});
 }

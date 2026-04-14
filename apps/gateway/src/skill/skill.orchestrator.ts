@@ -226,18 +226,27 @@ ${catalogXml}`;
           command: z
             .enum(['ls', 'git_status', 'git_add', 'git_commit', 'git_push', 'npm_build', 'read_file'])
             .describe('执行的指令名'),
-          args: z.record(z.string(), z.any()).optional().describe('指令参数'),
+          args: z.record(z.string(), z.any()).optional().describe('指令参数（例如 git_push 可传入 remote: "origin", branch: "main"）'),
         }),
         execute: async ({ userId, command, args }) => {
           try {
             const result = await this.rpcGateway.sendToCli(userId, command, args || {});
             const output = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+            
+            // Generate a more descriptive message for the LLM
+            let message = `Command "${command}" executed successfully.`;
+            if (command === 'git_push') message = `Code successfully pushed to ${args?.remote || 'origin'}/${args?.branch || 'main'}.`;
+            if (command === 'git_commit') message = `Code successfully committed locally.`;
+
             return {
+              status: 'Success',
+              command,
+              message,
               data: result,
               ui: {
                 uiType: 'code_block',
                 props: {
-                  command,
+                  command: `${command} ${Object.values(args || {}).join(' ')}`.trim(),
                   output,
                   status: 'success' as const,
                   language: 'bash',
@@ -246,6 +255,9 @@ ${catalogXml}`;
             };
           } catch (err: any) {
             return {
+              status: 'Error',
+              command,
+              message: err.message,
               data: null,
               ui: {
                 uiType: 'code_block',

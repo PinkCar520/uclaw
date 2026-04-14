@@ -32,6 +32,9 @@ export function renderUIKit(
   uiKit: UIKit,
   onAction?: (actionId: string, payload: unknown) => void,
 ): ReactElement | null {
+  if (!uiKit || !uiKit.uiType) {
+    return null;
+  }
   const Renderer = registry.get(uiKit.uiType);
   if (!Renderer) {
     return <UnknownUIFallback uiKit={uiKit} />;

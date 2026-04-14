@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { getAuthHeaders } from '../lib/api';
 import { type ThinkingStep } from './ThinkingPills';
 import { ThinkingList } from './ThinkingList';
@@ -256,7 +256,8 @@ export function ChatSession({
   }, [token]);
 
   // Using (useChat as any) because the current project's AI SDK might have custom typings
-  const { messages, append, handleSubmit, status, reload, setMessages, stop, error } = (useChat as any)({
+  // Debug log showed: { messages, setMessages, sendMessage, regenerate, ... }
+  const { messages, sendMessage, status, reload, setMessages, stop, error, regenerate } = (useChat as any)({
     id: sessionId ?? 'new',
     initialMessages: initialMessages,
     api: '/api/chat',
@@ -294,14 +295,6 @@ export function ChatSession({
     }
   });
 
-  const sendMessage = append || handleSubmit;
-
-  useEffect(() => {
-    if (typeof sendMessage !== 'function') {
-      console.warn('useChat did not return a valid append or handleSubmit function', { append, handleSubmit });
-    }
-  }, [sendMessage, append, handleSubmit]);
-
   const totalUsage = React.useMemo(() => {
     let inputTokens = 0;
     let outputTokens = 0;
@@ -334,12 +327,18 @@ export function ChatSession({
 
   // Handle autoSubmit from location.state (e.g. after navigating from a new chat)
   useEffect(() => {
-    if (location.state?.autoSubmit && !isLoading && localInput.trim()) {
-      onFormSubmit();
+    if (location.state?.autoSubmit && location.state?.initialInput && !isLoading) {
+      const initialInput = location.state.initialInput;
+      // Use a small timeout to ensure the component is fully ready
+      const timer = setTimeout(() => {
+        onFormSubmit(null, initialInput);
+      }, 100);
+      
       // Clear state after handling
       navigate(location.pathname, { replace: true, state: {} });
+      return () => clearTimeout(timer);
     }
-  }, [location.state, isLoading, localInput]);
+  }, [location.state, isLoading]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -405,6 +404,16 @@ export function ChatSession({
 
   const handleRegenerate = async (msgId: string) => {
     if (isLoading) return;
+    if (typeof regenerate === 'function') {
+      try {
+        await regenerate(msgId);
+        return;
+      } catch (err: any) {
+        console.error('regenerate hook failed, falling back:', err);
+      }
+    }
+    
+    // Fallback logic
     const idx = messages.findIndex((m: any) => m.id === msgId);
     if (idx === -1) return;
     let userMsgIdx = -1;
@@ -429,9 +438,11 @@ export function ChatSession({
     }
   };
 
-  const onFormSubmit = async (e?: any) => {
+  const onFormSubmit = async (e?: any, overrideInput?: string) => {
     if (e) e.preventDefault();
-    if ((!localInput.trim() && selectedFiles.length === 0) || isLoading) return;
+    const inputVal = overrideInput !== undefined ? overrideInput : localInput;
+    if ((!inputVal.trim() && selectedFiles.length === 0) || isLoading) return;
+    
     let activeSessionId = sessionIdRef.current;
     if (!activeSessionId) {
       if (typeof createSession !== 'function') {
@@ -449,17 +460,20 @@ export function ChatSession({
       }
       activeSessionId = newId;
       sessionIdRef.current = newId;
-      navigate(`/chat/${newId}`, { state: { autoSubmit: true } });
+      navigate(`/chat/${newId}`, { state: { autoSubmit: true, initialInput: inputVal } });
       return;
     }
+    
     if (typeof sendMessage !== 'function') {
       console.error('sendMessage is not a function');
       return;
     }
+    
     setIsLocalThinking(true);
     userScrolledUpRef.current = false;
-    const val = localInput;
-    setLocalInput('');
+    const val = inputVal;
+    if (overrideInput === undefined) setLocalInput('');
+    
     const filesToUpload = [...selectedFiles];
     setSelectedFiles([]);
     try {
@@ -475,13 +489,13 @@ export function ChatSession({
       }).catch((err: any) => {
         console.error('sendMessage failed:', err);
         setIsLocalThinking(false);
-        setLocalInput(val);
+        if (overrideInput === undefined) setLocalInput(val);
         setSelectedFiles(filesToUpload);
       });
     } catch (err: any) {
       console.error(err);
       setIsLocalThinking(false);
-      setLocalInput(val);
+      if (overrideInput === undefined) setLocalInput(val);
       setSelectedFiles(filesToUpload);
     }
   };

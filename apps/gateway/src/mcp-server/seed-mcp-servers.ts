@@ -15,11 +15,11 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Seeding MCP Servers from mcp.config.json...');
+  console.log('▸ Seeding MCP Servers from mcp.config.json...');
 
   const configPath = path.join(__dirname, '../../mcp.config.json');
   if (!fs.existsSync(configPath)) {
-    console.log('  ⚠️  mcp.config.json not found, skipping.');
+    console.log('  ⚠  mcp.config.json not found, skipping.');
     return;
   }
 
@@ -50,7 +50,7 @@ async function main() {
           category: category || existing.category,
         },
       });
-      console.log(`  ✅ Updated ${srv.name}`);
+      console.log(`  ✓ Updated ${srv.name}`);
     } else {
       await prisma.mCPServer.create({
         data: {
@@ -65,11 +65,11 @@ async function main() {
           category,
         },
       });
-      console.log(`  ✅ Created ${srv.name}`);
+      console.log(`  ✓ Created ${srv.name}`);
     }
   }
 
-  console.log('🎉 MCP Server seed completed!');
+  console.log('✓ MCP Server seed completed!');
 }
 
 main()

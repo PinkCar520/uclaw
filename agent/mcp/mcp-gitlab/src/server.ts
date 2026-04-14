@@ -164,7 +164,7 @@ server.tool(
   async ({ projectId, state }) => {
     const mrs = await gitlab.listMRs(projectId, state);
     const textContent = mrs.map((mr) => {
-      const stateIcon = mr.state === 'opened' ? '🔵' : mr.state === 'merged' ? '🟢' : '🔴';
+      const stateIcon = mr.state === 'opened' ? '●' : mr.state === 'merged' ? '✓' : '✗';
       return `${stateIcon} !${mr.iid}: ${mr.sourceBranch} → ${mr.targetBranch} (${mr.author})`;
     }).join('\n');
     return {
@@ -189,7 +189,7 @@ server.tool(
   async ({ projectId, title, sourceBranch, targetBranch, description }) => {
     const mr = await gitlab.createMR(projectId, { title, sourceBranch, targetBranch, description });
     return {
-      content: [{ type: 'text' as const, text: `✅ MR 创建成功: !${mr.iid} - ${mr.title}\n${mr.webUrl}` }],
+      content: [{ type: 'text' as const, text: `✓ MR 创建成功: !${mr.iid} - ${mr.title}\n${mr.webUrl}` }],
     };
   },
 );
@@ -207,7 +207,7 @@ server.tool(
   async ({ projectId, mrIid }) => {
     const changes = await gitlab.getMRChanges(projectId, mrIid);
     const textContent = changes.map((c) => {
-      const type = c.newFile ? '🆕' : c.deletedFile ? '🗑️' : '📝';
+      const type = c.newFile ? '+' : c.deletedFile ? '-' : 'M';
       return `${type} ${c.newPath}\n\`\`\`diff\n${c.diff}\n\`\`\``;
     }).join('\n\n');
     return {
@@ -233,12 +233,12 @@ server.tool(
     const success = await gitlab.addReviewComment(projectId, mrIid, { body, path, line });
     if (!success) {
       return {
-        content: [{ type: 'text' as const, text: '❌ 添加评论失败' }],
+        content: [{ type: 'text' as const, text: '✗ 添加评论失败' }],
         isError: true,
       };
     }
     return {
-      content: [{ type: 'text' as const, text: `✅ 评论已添加到 MR !${mrIid}` }],
+      content: [{ type: 'text' as const, text: `✓ 评论已添加到 MR !${mrIid}` }],
     };
   },
 );
@@ -258,12 +258,12 @@ server.tool(
     const success = await gitlab.mergeMR(projectId, mrIid, message);
     if (!success) {
       return {
-        content: [{ type: 'text' as const, text: '❌ 合并失败' }],
+        content: [{ type: 'text' as const, text: '✗ 合并失败' }],
         isError: true,
       };
     }
     return {
-      content: [{ type: 'text' as const, text: `✅ MR !${mrIid} 已成功合并` }],
+      content: [{ type: 'text' as const, text: `✓ MR !${mrIid} 已成功合并` }],
     };
   },
 );
@@ -275,6 +275,15 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write('[mcp-gitlab] GitLab MCP Server started via stdio\n');
+
+  const shutdown = () => {
+    process.stderr.write('[mcp-gitlab] Shutting down...\n');
+    process.exit(0);
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+  process.stdin.on('end', shutdown);
+  process.stdin.resume();
 }
 
 main().catch((err: Error) => {

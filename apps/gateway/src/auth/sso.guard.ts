@@ -4,43 +4,85 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { UserService } from './user.service';
+import { ApiKeyService } from './api-key.service';
+
+export const IS_PUBLIC_KEY = 'isPublic';
 
 @Injectable()
 export class SsoAuthGuard implements CanActivate {
-  constructor(private userService: UserService) {}
+  constructor(
+    private reflector: Reflector,
+    private userService: UserService,
+    private apiKeyService: ApiKeyService,
+  ) {}
 
-  async canActivate(
-    context: ExecutionContext,
-  ): Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const request = context.switchToHttp().getRequest();
-    const ssoToken = request.headers['x-sso-token'] || request.headers['authorization'];
+    const authHeader = request.headers['authorization'] || '';
 
-    // 严谨校验：不再允许 mock-token，必须有合法的 SSO 令牌
-    if (!ssoToken) {
-      throw new UnauthorizedException('Authentication Failed: Missing SSO Token.');
+    // ── 1. API Key ──
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+    if (token.startsWith('uclaw_sk_')) {
+      const user = await this.apiKeyService.findUserByApiKey(token);
+      if (user) {
+        const dbUser = await this.userService.getUserFullProfile(user.workId);
+        request.user = {
+          workId: user.workId,
+          dbId: user.userId,
+          name: dbUser?.name || user.workId,
+          preferences: dbUser?.preferences,
+          role: 'developer',
+          authType: 'api-key',
+        };
+        return true;
+      }
+      throw new UnauthorizedException('Invalid or expired API Key.');
     }
 
-    // 提取工号（必须由上游网关或 SSO 注入）
-    const workId = request.headers['x-user-id'] as string;
-    if (!workId) {
-      throw new UnauthorizedException('Authentication Failed: Missing Work-ID.');
+    // ── 2. JWT Bearer Token ──
+    if (token && token.split('.').length === 3) {
+      try {
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        const dbUser = await this.userService.getUserFullProfile(payload.workId);
+        request.user = {
+          workId: payload.workId,
+          dbId: payload.sub,
+          name: payload.name || payload.workId,
+          preferences: dbUser?.preferences,
+          role: 'developer',
+          authType: 'jwt',
+        };
+        return true;
+      } catch {
+        // fall through
+      }
     }
 
-    const userName = (request.headers['x-user-name'] as string) || workId;
+    // ── 3. SSO Headers ──
+    if (request.headers['x-sso-token']) {
+      const workId = request.headers['x-user-id'] as string;
+      if (!workId) throw new UnauthorizedException('Missing Work-ID.');
+      const userName = (request.headers['x-user-name'] as string) || workId;
+      const dbUser = await this.userService.syncUserFromSso(workId, userName);
+      request.user = {
+        workId,
+        dbId: dbUser?.id,
+        name: dbUser?.name || userName,
+        preferences: dbUser?.preferences,
+        role: 'developer',
+        authType: 'sso',
+      };
+      return true;
+    }
 
-    // 同步影子用户到数据库
-    const dbUser = await this.userService.syncUserFromSso(workId, userName);
-
-    // 将真实的持久化 ID 注入 Context
-    request.user = {
-      workId: workId,
-      dbId: dbUser?.id,
-      name: dbUser?.name || userName,
-      preferences: dbUser?.preferences,
-      role: 'developer',
-    };
-
-    return true;
+    throw new UnauthorizedException('Authentication required.');
   }
 }

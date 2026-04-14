@@ -315,8 +315,8 @@ server.tool(
     const res = (resolution ?? 'fixed') as 'fixed' | 'wontfix' | 'bydesign' | 'duplicate' | 'external';
     const success = await zentao.resolveBug(bugId, res);
     const textMsg = success
-      ? `✅ 缺陷 ${bugId} 已成功标记为已解决（${res}）`
-      : `❌ 解决缺陷 ${bugId} 失败，请检查权限或缺陷状态`;
+      ? `✓ 缺陷 ${bugId} 已成功标记为已解决（${res}）`
+      : `✗ 解决缺陷 ${bugId} 失败，请检查权限或缺陷状态`;
     return {
       content: [{
         type: 'text' as const,
@@ -385,12 +385,12 @@ server.tool(
     const res = await zentao.createStory(productId, { title, spec, pri, estimate });
     if (!res.success) {
       return {
-        content: [{ type: 'text' as const, text: `❌ 创建需求失败：${JSON.stringify(res.error)}` }],
+        content: [{ type: 'text' as const, text: `✗ 创建需求失败：${JSON.stringify(res.error)}` }],
         isError: true,
       };
     }
     return {
-      content: [{ type: 'text' as const, text: `✅ 需求创建成功！\n\n${JSON.stringify(res.data, null, 2)}` }],
+      content: [{ type: 'text' as const, text: `✓ 需求创建成功！\n\n${JSON.stringify(res.data, null, 2)}` }],
     };
   },
 );
@@ -519,6 +519,18 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write('[mcp-zentao] ZenTao MCP Server started via stdio\n');
+
+  // Graceful shutdown on parent disconnect or signal
+  const shutdown = () => {
+    process.stderr.write('[mcp-zentao] Shutting down...\n');
+    process.exit(0);
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+
+  // Also exit when stdin closes (parent disconnected the pipe)
+  process.stdin.on('end', shutdown);
+  process.stdin.resume(); // keep stdin open until parent closes it
 }
 
 main().catch((err: Error) => {

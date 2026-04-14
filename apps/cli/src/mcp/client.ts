@@ -31,11 +31,13 @@ export class McpClientManager {
    * Load MCP config from config file
    */
   async loadConfig(configPath?: string) {
+    const uclawRoot = findUclawRoot(process.cwd());
     const pathsToTry = [
       configPath,
       path.join(process.cwd(), '.mcp.json'),
       path.join(process.cwd(), '.claude', 'mcp.json'),
       path.join(process.cwd(), '.uclaw', 'mcp.json'),
+      uclawRoot ? path.join(uclawRoot, '.uclaw', 'mcp.json') : null,
       // Fallback to gateway mcp.config.json
       path.resolve(process.cwd(), 'apps/gateway/mcp.config.json'),
     ].filter(Boolean) as string[];
@@ -44,6 +46,13 @@ export class McpClientManager {
       if (fs.existsSync(p!)) {
         const raw = fs.readFileSync(p!, 'utf-8');
         this.config = JSON.parse(raw);
+        // Resolve ${UCLAW_ROOT} in paths
+        if (uclawRoot && this.config) {
+          this.config.mcpServers = this.config.mcpServers.map((s: McpServerEntry) => ({
+            ...s,
+            args: s.args.map(a => a.replace(/\$\{UCLAW_ROOT\}/g, uclawRoot)),
+          }));
+        }
         console.log(`[MCP] Loaded config from: ${p}`);
         return;
       }
@@ -157,17 +166,39 @@ export class McpClientManager {
    * Disconnect all MCP servers
    */
   async disconnectAll() {
+    const serverIds = Array.from(this.clients.keys());
+    process.stderr.write(`[MCP] Disconnecting ${serverIds.length} servers: ${serverIds.join(', ')}\n`);
+
     for (const [serverId, client] of this.clients) {
       try {
+        process.stderr.write(`[MCP] Closing server: ${serverId}...\n`);
         await client.close();
-      } catch {
-        // ignore
+        process.stderr.write(`[MCP] Closed server: ${serverId}\n`);
+      } catch (err: any) {
+        process.stderr.write(`[MCP] Error closing ${serverId}: ${err.message}\n`);
       }
     }
     this.clients.clear();
+    process.stderr.write('[MCP] All servers disconnected\n');
   }
 }
 
 function replaceEnvVars(str: string, env: NodeJS.ProcessEnv): string {
   return str.replace(/\$\{(\w+)\}/g, (_, key) => env[key] || '');
+}
+
+/**
+ * Find the UClaw project root by walking up the directory tree
+ */
+function findUclawRoot(startDir: string): string | null {
+  let current = startDir;
+  while (true) {
+    if (fs.existsSync(path.join(current, 'pnpm-workspace.yaml')) && fs.existsSync(path.join(current, 'agent'))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
 }

@@ -1,5 +1,8 @@
 import { io } from 'socket.io-client';
 import * as fs from 'node:fs/promises';
+import * as fsSync from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import inquirer from 'inquirer';
@@ -13,18 +16,57 @@ interface DaemonOptions {
 }
 
 /**
+ * Resolve API Key from:
+ * 1. UCLAW_API_KEY environment variable
+ * 2. ~/.uclaw/credentials.json
+ */
+async function resolveApiKey(): Promise<string | null> {
+  // Priority 1: Environment variable
+  if (process.env.UCLAW_API_KEY) {
+    return process.env.UCLAW_API_KEY;
+  }
+
+  // Priority 2: Credentials file
+  const credPath = path.join(os.homedir(), '.uclaw', 'credentials.json');
+  try {
+    const raw = fsSync.readFileSync(credPath, 'utf-8');
+    const creds = JSON.parse(raw);
+    return creds.apiKey || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Run the daemon mode - connects to Gateway and awaits RPC requests
  */
 export async function runDaemon(options: DaemonOptions) {
-  console.log(chalk.green('[UClaw Daemon]') + ` Identity: ${chalk.bold(options.userId)}`);
+  // Resolve actual userId: env override > API Key > git config
+  const effectiveUserId = process.env.UCLAW_WORK_ID || process.env.UCLAW_USER_ID || options.userId;
+  const apiKey = await resolveApiKey();
+
+  console.log(chalk.green('[UClaw Daemon]') + ` Identity: ${chalk.bold(effectiveUserId)}`);
   console.log(chalk.green('[UClaw Daemon]') + ' Connecting to Gateway (http://localhost:3000)...');
 
+  if (apiKey) {
+    console.log(chalk.green('[UClaw Daemon]') + ' Auth: Using API Key');
+  } else {
+    console.log(chalk.yellow('[UClaw Daemon]') + ' Auth: No API Key found. Set UCLAW_API_KEY or run `uclaw login`');
+  }
+
   const socket = io('http://localhost:3000', {
-    query: { userId: options.userId },
+    query: { userId: effectiveUserId },
+    auth: {
+      token: apiKey || undefined,
+    },
+    extraHeaders: apiKey ? {
+      'x-api-key': apiKey,
+      'Authorization': `Bearer ${apiKey}`,
+    } : {},
   });
 
   socket.on('connect', () => {
-    console.log(chalk.green('✅ [SUCCESS]') + ` Connected as node: ${options.userId}`);
+    console.log(chalk.green('✓ [SUCCESS]') + ` Connected as node: ${effectiveUserId}`);
   });
 
   socket.on('rpc_request', async (data: RPCMessage) => {
@@ -105,11 +147,11 @@ export async function runDaemon(options: DaemonOptions) {
   });
 
   socket.on('disconnect', () => {
-    console.log(chalk.red('❌ Disconnected from Gateway.'));
+    console.log(chalk.red('✗ Disconnected from Gateway.'));
   });
 
   socket.on('connect_error', (err) => {
-    console.error(chalk.red('❌ Connection Error:'), err.message);
+    console.error(chalk.red('✗ Connection Error:'), err.message);
   });
 
   // Keep process alive

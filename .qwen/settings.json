@@ -47,7 +47,10 @@
       "Bash(mkdir *)",
       "Bash(timeout *)",
       "Bash(true)",
-      "Bash(gtimeout *)"
+      "Bash(gtimeout *)",
+      "Bash(kill *)",
+      "Bash(wait *)",
+      "Bash(xargs *)"
     ]
   },
   "$version": 3

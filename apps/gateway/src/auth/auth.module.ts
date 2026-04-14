@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SsoAuthGuard } from './sso.guard';
 import { UserService } from './user.service';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { ApiKeyService } from './api-key.service';
+import { OAuthService } from './oauth.service';
+import { OAuthController } from './oauth.controller';
 
 @Module({
   imports: [
+    ConfigModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -21,16 +23,14 @@ import { JwtStrategy } from './jwt.strategy';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, OAuthController],
   providers: [
     UserService,
     AuthService,
+    ApiKeyService,
+    OAuthService,
     JwtStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: SsoAuthGuard, // 保持 SSO Guard 兼容性，内含自动影子同步逻辑
-    },
   ],
-  exports: [UserService, AuthService],
+  exports: [UserService, AuthService, ApiKeyService, JwtModule],
 })
 export class AuthModule {}

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
@@ -10,6 +11,7 @@ import { SkillRegistryModule } from './skill-registry/skill-registry.module';
 import { MCPServerModule } from './mcp-server/mcp-server.module';
 import { ApprovalModule } from './skill/approval.module';
 import { ProxyModule } from './proxy/proxy.module';
+import { SsoAuthGuard } from './auth/sso.guard';
 
 /**
  * AppModule
@@ -19,7 +21,7 @@ import { ProxyModule } from './proxy/proxy.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule, // ← 导入全局数据库模块
+    PrismaModule, // ← 全局数据库模块
     AuthModule,   // 内部包含 UserService
     ChatModule,
     UserModule,   // 对外暴露用户中心接口
@@ -31,6 +33,11 @@ import { ProxyModule } from './proxy/proxy.module';
     ProxyModule, // 图片代理
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: SsoAuthGuard, // 全局认证守卫
+    },
+  ],
 })
 export class AppModule {}

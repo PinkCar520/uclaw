@@ -24,6 +24,7 @@ model User {
   credentials     UserCredential[]
   sessions        Session[]
   skillInstallations SkillInstallation[]
+  apiKeys         ApiKey[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -40,11 +41,33 @@ model UserPreference {
   defaultModel String @default("deepseek-v3")
   language     String @default("zh-CN")
   theme        String @default("system")
-  
+
   // 存储常用 Prompt、工作流偏好等
-  config       Json?  
+  config       Json?
 
   @@map("user_preferences")
+}
+
+// API Key 管理（用于 CLI / 第三方应用认证）
+model ApiKey {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  key         String   @unique  // uclaw_sk_ 前缀的 API Key
+  name        String   // Key 名称/备注，如 "CLI Daemon", "VSCode Extension"
+  permissions String[] @default(["read", "write", "execute"]) // 权限范围
+  lastUsedAt  DateTime? // 最后使用时间
+  expiresAt   DateTime? // 过期时间（NULL = 永不过期）
+  revoked     Boolean  @default(false) // 是否已撤销
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([key])
+  @@index([revoked])
+  @@map("api_keys")
 }
 
 // 外部系统凭证（如禅道、GitLab Token）

@@ -128,7 +128,7 @@ async function runSingleQuery(options: ReplOptions) {
     if (streamedText.length > 0) process.stdout.write('\n');
   } catch (err: any) {
     spinner.stop();
-    console.error(chalk.red(`\n❌ Error: ${err.message}`));
+    console.error(chalk.red(`\n✗ Error: ${err.message}`));
     if (process.env.DEBUG) console.error(err.stack);
   }
 }
@@ -246,7 +246,7 @@ async function runReadlineRepl(options: ReplOptions) {
         messages.push({ role: 'assistant', content: result.text });
       } catch (err: any) {
         spinner.stop();
-        console.error(chalk.red(`\n❌ Error: ${err.message}`));
+        console.error(chalk.red(`\n✗ Error: ${err.message}`));
       }
 
       prompt();
@@ -270,7 +270,7 @@ function handleCommand(
 
   switch (command) {
     case 'help':
-      console.log(chalk.bold('\n📖 Available Commands:'));
+      console.log(chalk.bold('\n▤ Available Commands:'));
       console.log('  /help              - Show this help');
       console.log('  /clear             - Clear conversation history');
       console.log('  /model [name]      - Switch model');
@@ -286,7 +286,7 @@ function handleCommand(
       const models = modelRouter.listModels();
       if (args) console.log(chalk.gray(`Selected model: ${args}`));
       else {
-        console.log(chalk.bold('\n🤖 Available Models:'));
+        console.log(chalk.bold('\n▸ Available Models:'));
         for (const m of models) console.log(`  ${m.id} (${m.provider})`);
       }
       break;
@@ -294,18 +294,18 @@ function handleCommand(
     case 'skills':
       if (skills.length === 0) console.log(chalk.yellow('No skills loaded'));
       else {
-        console.log(chalk.bold('\n🎯 Available Skills:'));
+        console.log(chalk.bold('\n◎ Available Skills:'));
         for (const s of skills) console.log(`  ${chalk.green(s.manifest.name)} - ${s.manifest.description}`);
       }
       break;
     case 'tools':
-      console.log(chalk.bold('\n🔧 Available Tools:'));
+      console.log(chalk.bold('\n⚙ Available Tools:'));
       console.log('  bash, file_read, file_write, file_edit, grep, glob');
       break;
     case 'mcp':
       if (mcpTools.length === 0) console.log(chalk.yellow('No MCP tools available'));
       else {
-        console.log(chalk.bold('\n🔌 MCP Tools:'));
+        console.log(chalk.bold('\n▨ MCP Tools:'));
         for (const t of mcpTools) console.log(`  ${chalk.green(t.name)} - ${t.description}`);
       }
       break;

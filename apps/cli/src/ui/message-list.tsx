@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import type { ModelMessage } from 'ai';
 import { ToolCallDisplay } from './tool-call-display.js';
+
+// Spinner animation frames for "thinking" state
+const SPINNERS = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+// Blinking cursor for typing animation
+const CURSOR = '▊';
 
 interface MessageListProps {
   messages: ModelMessage[];
@@ -24,6 +30,27 @@ export function MessageList({
   commandType,
   error,
 }: MessageListProps) {
+  const [spinnerFrame, setSpinnerFrame] = useState(0);
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  // Spinner animation
+  useEffect(() => {
+    if (!isThinking) return;
+    const interval = setInterval(() => {
+      setSpinnerFrame(prev => (prev + 1) % SPINNERS.length);
+    }, 80);
+    return () => clearInterval(interval);
+  }, [isThinking]);
+
+  // Cursor blink animation
+  useEffect(() => {
+    if (!streamingText && !isThinking) return;
+    const interval = setInterval(() => {
+      setCursorVisible(prev => !prev);
+    }, 530);
+    return () => clearInterval(interval);
+  }, [streamingText, isThinking]);
+
   const maxMessages = Math.min(messages.length, 20);
   const displayMessages = messages.slice(-maxMessages);
 
@@ -34,9 +61,14 @@ export function MessageList({
         if (msg.role === 'user') {
           return (
             <Box key={i} flexDirection="column" marginBottom={1}>
-              <Text bold color="green">
-                {`❯ ${msg.content as string}`}
-              </Text>
+              <Box>
+                <Text bold color="green">
+                  {'❯ '}
+                </Text>
+                <Text bold>
+                  {msg.content as string}
+                </Text>
+              </Box>
             </Box>
           );
         }
@@ -50,6 +82,7 @@ export function MessageList({
 
           return (
             <Box key={i} flexDirection="column" marginBottom={1}>
+              <Text bold color="cyan">{'▸ '}</Text>
               <Text wrap="wrap">{content}</Text>
             </Box>
           );
@@ -63,43 +96,54 @@ export function MessageList({
         <ToolCallDisplay toolCalls={toolCalls} toolResults={toolResults} />
       )}
 
-      {/* Streaming text */}
+      {/* Streaming text with typing cursor */}
       {streamingText && (
         <Box flexDirection="column" marginBottom={1}>
-          <Text wrap="wrap">{streamingText}</Text>
+          <Box>
+            <Text bold color="cyan">{'▸ '}</Text>
+            <Text wrap="wrap">
+              {streamingText}
+            </Text>
+            <Text bold color="cyan">{cursorVisible ? CURSOR : ' '}</Text>
+          </Box>
         </Box>
       )}
 
-      {/* Thinking indicator */}
+      {/* Thinking indicator with spinner */}
       {isThinking && !streamingText && toolCalls.length === 0 && (
         <Box marginBottom={1}>
-          <Text color="cyan">{'⠋ Thinking...'}</Text>
+          <Text bold color="cyan">
+            {`${SPINNERS[spinnerFrame]} Thinking...`}
+          </Text>
         </Box>
       )}
 
       {/* Command output */}
       {commandOutput && (
         <Box flexDirection="column" marginBottom={1}>
-          <Text
-            color={
-              commandType === 'error'
-                ? 'yellow'
-                : commandType === 'help'
-                  ? 'white'
-                  : 'gray'
-            }
-          >
-            {commandOutput}
-          </Text>
+          <Box>
+            <Text bold
+              color={
+                commandType === 'error'
+                  ? 'yellow'
+                  : commandType === 'help'
+                    ? 'white'
+                    : 'green'
+              }
+            >
+              {commandOutput}
+            </Text>
+          </Box>
         </Box>
       )}
 
       {/* Error */}
       {error && (
         <Box flexDirection="column" marginBottom={1}>
-          <Text color="red">{`❌ Error: ${error}`}</Text>
+          <Text bold color="red">{`✗ ${error}`}</Text>
         </Box>
       )}
     </Box>
   );
 }
+

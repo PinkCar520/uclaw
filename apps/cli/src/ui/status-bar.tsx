@@ -10,28 +10,42 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ userId, workspace, model, skills }: StatusBarProps) {
+  const providerColor = model.includes('qwen') || model.includes('deepseek')
+    ? 'magenta'
+    : model.includes('Gemma')
+      ? 'blue'
+      : 'cyan';
+
   return (
     <Box flexDirection="column" paddingBottom={1}>
       <Box>
         <Text bold color="cyan">
-          {' 🐼 UClaw AI'}
-        </Text>
-      </Box>
-      <Box>
-        <Text dimColor>
-          {`User: ${userId} | Model: ${model} | Skills: ${skills.length} | `}
-        </Text>
-        <Text dimColor color="gray">
-          {workspace}
-        </Text>
-      </Box>
-      <Box>
-        <Text dimColor>
-          {'Type your query or /help for commands'}
+          {'🦞 UClaw AI'}
         </Text>
       </Box>
       <Box>
         <Text>
+          {`User: ${userId}  `}
+        </Text>
+        <Text bold color={providerColor}>
+          {model}
+        </Text>
+        <Text>
+          {`  Skills: ${skills.length}`}
+        </Text>
+      </Box>
+      <Box>
+        <Text color="gray">
+          {workspace.split('/').slice(-2).join('/')}
+        </Text>
+      </Box>
+      <Box>
+        <Text color="gray">
+          {'Type your query or /help for commands'}
+        </Text>
+      </Box>
+      <Box>
+        <Text color="gray">
           {'─'.repeat(60)}
         </Text>
       </Box>

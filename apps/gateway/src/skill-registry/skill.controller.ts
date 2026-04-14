@@ -1,6 +1,9 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req, HttpCode, HttpStatus, SetMetadata } from '@nestjs/common';
 import { SkillService, CreateSkillDto, UpdateSkillDto } from './skill.service';
 import { SkillImportService, ImportSkillDto } from './skill-import.service';
+import { IS_PUBLIC_KEY } from '../auth/sso.guard';
+
+const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 @Controller('api/skills')
 export class SkillController {
@@ -13,6 +16,7 @@ export class SkillController {
    * GET /api/skills
    * 获取技能列表，支持筛选
    */
+  @Public()
   @Get()
   async getSkills(
     @Query('category') category?: string,
@@ -33,6 +37,7 @@ export class SkillController {
    * GET /api/skills/stats
    * 获取技能统计信息
    */
+  @Public()
   @Get('stats')
   async getStats() {
     const stats = await this.skillService.getStats();
@@ -43,6 +48,7 @@ export class SkillController {
    * GET /api/skills/:id
    * 获取技能详情
    */
+  @Public()
   @Get(':id')
   async getSkill(@Param('id') id: string) {
     const skill = await this.skillService.getSkillById(id);
@@ -110,6 +116,7 @@ export class SkillController {
    * GET /api/skills/:id/install/status
    * 获取安装状态
    */
+  @Public()
   @Get(':id/install/status')
   async getInstallStatus(@Param('id') id: string, @Req() req: any) {
     const userId = req.user?.dbId;

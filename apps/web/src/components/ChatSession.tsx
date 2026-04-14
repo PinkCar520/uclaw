@@ -117,31 +117,36 @@ const MarkdownComponents = {
       );
     }
     return (
-      <div className="relative group my-3 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-[#1E1E1E]">
-          <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
-            {lang || 'code'}
-          </span>
+      <div className="relative group my-3 bg-[#1E1E1E] rounded-2xl overflow-hidden shadow-2xl shadow-black/20">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-white/50">
+              {lang || 'code'}
+            </span>
+          </div>
+          <CopyCodeButton code={codeStr} />
         </div>
-        <div className="relative">
+        
+        {/* Code Content */}
+        <div className="overflow-hidden">
           {lang ? (
             <SyntaxHighlighter
               language={lang}
               style={vscDarkPlus}
-              customStyle={{ margin: 0, padding: '16px', fontSize: '13px', lineHeight: '1.6' }}
+              customStyle={{ margin: 0, padding: '12px 16px', fontSize: '13px', lineHeight: '1.5', background: 'transparent' }}
               showLineNumbers={codeStr.split('\n').length > 3}
               wrapLines={true}
             >
               {codeStr}
             </SyntaxHighlighter>
           ) : (
-            <pre className="overflow-x-auto bg-[#282828] px-4 py-4 text-[13px] leading-relaxed m-0">
+            <pre className="overflow-x-auto px-4 py-3 text-[13px] leading-relaxed m-0 bg-transparent">
               <code className={`font-mono text-[#E8E8E8] ${className || ''}`} {...props}>
                 {children}
               </code>
             </pre>
           )}
-          <CopyCodeButton code={codeStr} />
         </div>
       </div>
     );
@@ -153,7 +158,8 @@ import {
   ArrowDown, Sparkles, Copy, RotateCcw, Check,
   Plus, FileText, X as CloseIcon, Image as ImageIcon,
   ChevronDown, Paperclip, ArrowRight, ArrowUp, Terminal, Cpu, Database, BadgeCheck, Globe, Square,
-  ThumbsUp, ThumbsDown, AlertCircle, Pencil
+  ThumbsUp, ThumbsDown, AlertCircle, Pencil,
+  Search, Code2, ListTodo, Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReducedMotion } from '../lib/useReducedMotion';
@@ -326,7 +332,7 @@ export function ChatSession({
       // AI SDK v6: usage 通过 messageMetadata 机制从后端传递，存储在 message.metadata 中
       const metadata = message?.metadata;
       const usage = metadata?.usage;
-      
+
       if (usage) {
         // 将 usage 合并到当前最后一条 assistant 消息中
         setMessages((prev: any[]) => {
@@ -957,10 +963,10 @@ export function ChatSession({
                   {/* Suggested Prompts */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      { icon: '🔍', label: t('chat.suggestions.bug_query', '查询缺陷详情'), prompt: '帮我查询缺陷 BUG-1 的详细信息' },
-                      { icon: '🛠️', label: t('chat.suggestions.fix_suggestion', '修复代码问题'), prompt: '分析一下当前项目的代码质量问题并给出修复建议' },
-                      { icon: '📋', label: t('chat.suggestions.create_task', '创建任务计划'), prompt: '帮我制定一个项目任务计划' },
-                      { icon: '🚀', label: t('chat.suggestions.pipeline_check', '检查流水线状态'), prompt: '查看当前流水线的构建状态' },
+                      { icon: Search, label: t('chat.suggestions.bug_query', '查询缺陷详情'), prompt: '帮我查询缺陷 BUG-1 的详细信息' },
+                      { icon: Code2, label: t('chat.suggestions.fix_suggestion', '修复代码问题'), prompt: '分析一下当前项目的代码质量问题并给出修复建议' },
+                      { icon: ListTodo, label: t('chat.suggestions.create_task', '创建任务计划'), prompt: '帮我制定一个项目任务计划' },
+                      { icon: Rocket, label: t('chat.suggestions.pipeline_check', '检查流水线状态'), prompt: '查看当前流水线的构建状态' },
                     ].map((s, i) => (
                       <button
                         key={i}
@@ -970,7 +976,7 @@ export function ChatSession({
                         }}
                         className="flex items-center gap-3 p-4 rounded-[16px] bg-white border border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:shadow-[0_4px_16px_rgba(236,91,20,0.08)] transition-all text-left group"
                       >
-                        <span className="text-xl shrink-0">{s.icon}</span>
+                        <s.icon className="w-5 h-5 text-[#EC5B14] shrink-0" />
                         <span className="text-sm font-medium text-[#1C1B1B] group-hover:text-[#EC5B14] transition-colors">
                           {s.label}
                         </span>

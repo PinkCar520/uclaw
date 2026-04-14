@@ -76,7 +76,7 @@ const builtInSkills = [
 ];
 
 async function main() {
-  console.log('🌱 Seeding built-in skills...');
+  console.log('▸ Seeding built-in skills...');
 
   for (const skill of builtInSkills) {
     const existing = await prisma.skill.findUnique({ where: { slug: skill.slug } });
@@ -85,10 +85,10 @@ async function main() {
       continue;
     }
     await prisma.skill.create({ data: skill });
-    console.log(`  ✅ Created ${skill.slug}`);
+    console.log(`  ✓ Created ${skill.slug}`);
   }
 
-  console.log('🎉 Seed completed!');
+  console.log('✓ Seed completed!');
 }
 
 main()

@@ -42,7 +42,7 @@ export function createBashTool() {
               uiType: 'code_block',
               props: {
                 command: input.command,
-                output: '⚠️ Command blocked by security filter',
+                output: '⚠ Command blocked by security filter',
                 status: 'error' as const,
                 language: 'bash',
               },

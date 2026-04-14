@@ -1,5 +1,6 @@
 import type { UIKit, UIComponentType } from '../types/ui-protocol';
 import type { ComponentType, ReactElement } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 // ──────────────────────────────────────────────
 // UI Registry — 运行时注册中心
@@ -45,7 +46,10 @@ export function renderUIKit(
 function UnknownUIFallback({ uiKit }: { uiKit: UIKit }) {
   return (
     <div className="my-3 p-4 rounded-xl bg-amber-50 border border-amber-200 text-[12px] text-amber-700">
-      <p className="font-bold mb-1">⚠️ 未知的 UI 组件类型: {uiKit.uiType}</p>
+      <div className="flex items-center gap-2 mb-1">
+        <AlertTriangle className="w-4 h-4" />
+        <p className="font-bold">未知的 UI 组件类型: {uiKit.uiType}</p>
+      </div>
       <pre className="text-[10px] font-mono overflow-auto max-h-32 mt-2 opacity-70">
         {JSON.stringify(uiKit, null, 2)}
       </pre>

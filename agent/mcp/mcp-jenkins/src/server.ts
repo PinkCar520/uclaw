@@ -143,10 +143,10 @@ server.tool(
   async () => {
     const jobs = await jenkins.listJobs();
     const textContent = jobs.map((job) => {
-      const status = job.color === 'blue' ? '✅ 成功' :
-                     job.color === 'red' ? '❌ 失败' :
+      const status = job.color === 'blue' ? '✓ 成功' :
+                     job.color === 'red' ? '✗ 失败' :
                      job.color === 'yellow' ? '⏳ 运行中' :
-                     job.color === 'aborted' ? '⚠️ 中止' : '⏸️ 禁用';
+                     job.color === 'aborted' ? '⚠ 中止' : '⏸ 禁用';
       return `- ${job.fullName}: ${status}${
         job.lastBuild ? ` (最新: #${job.lastBuild.number})` : ''
       }`;
@@ -199,10 +199,10 @@ server.tool(
         isError: true,
       };
     }
-    const statusText = build.status === 'success' ? '✅ 成功' :
-                       build.status === 'failure' ? '❌ 失败' :
+    const statusText = build.status === 'success' ? '✓ 成功' :
+                       build.status === 'failure' ? '✗ 失败' :
                        build.status === 'running' ? '⏳ 运行中' :
-                       build.status === 'queued' ? '📤 排队中' : '⚠️ 已中止';
+                       build.status === 'queued' ? '▸ 排队中' : '⚠ 已中止';
     const textSummary = `构建 ${jobName} #${build.number}: ${statusText}\n开始时间: ${build.startTime}\n耗时: ${build.duration ? `${build.duration / 1000}秒` : '进行中'}`;
     return {
       content: [{ type: 'text' as const, text: textSummary }],
@@ -224,12 +224,12 @@ server.tool(
     const result = await jenkins.triggerBuild(jobName, params);
     if (!result.success) {
       return {
-        content: [{ type: 'text' as const, text: `❌ 触发构建失败: ${jobName}` }],
+        content: [{ type: 'text' as const, text: `✗ 触发构建失败: ${jobName}` }],
         isError: true,
       };
     }
     return {
-      content: [{ type: 'text' as const, text: `✅ 成功触发构建: ${jobName} #${result.buildNumber}` }],
+      content: [{ type: 'text' as const, text: `✓ 成功触发构建: ${jobName} #${result.buildNumber}` }],
     };
   },
 );
@@ -267,11 +267,11 @@ server.tool(
     const success = await jenkins.approveDeployment(buildNumber, approved, comment);
     if (!success) {
       return {
-        content: [{ type: 'text' as const, text: `❌ 审批失败: 部署 #${buildNumber}` }],
+        content: [{ type: 'text' as const, text: `✗ 审批失败: 部署 #${buildNumber}` }],
         isError: true,
       };
     }
-    const action = approved ? '✅ 已批准' : '❌ 已拒绝';
+    const action = approved ? '✓ 已批准' : '✗ 已拒绝';
     return {
       content: [{ type: 'text' as const, text: `${action}部署 #${buildNumber}${comment ? `\n审批意见: ${comment}` : ''}` }],
     };
@@ -285,6 +285,15 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write('[mcp-jenkins] Jenkins MCP Server started via stdio\n');
+
+  const shutdown = () => {
+    process.stderr.write('[mcp-jenkins] Shutting down...\n');
+    process.exit(0);
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+  process.stdin.on('end', shutdown);
+  process.stdin.resume();
 }
 
 main().catch((err: Error) => {

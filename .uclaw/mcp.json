@@ -1,0 +1,40 @@
+{
+  "mcpServers": [
+    {
+      "id": "zentao",
+      "name": "ZenTao Bug Management",
+      "command": "node",
+      "args": ["${UCLAW_ROOT}/agent/mcp/mcp-zentao/dist/server.js"],
+      "env": {
+        "ZENTAO_BASE_URL": "${ZENTAO_BASE_URL}",
+        "ZENTAO_API_TOKEN": "${ZENTAO_API_TOKEN}"
+      },
+      "enabled": true,
+      "description": "禅道缺陷管理与需求管理工具集"
+    },
+    {
+      "id": "jenkins",
+      "name": "Jenkins CI/CD",
+      "command": "node",
+      "args": ["${UCLAW_ROOT}/agent/mcp/mcp-jenkins/dist/server.js"],
+      "env": {
+        "JENKINS_BASE_URL": "${JENKINS_BASE_URL}",
+        "JENKINS_TOKEN": "${JENKINS_TOKEN}"
+      },
+      "enabled": true,
+      "description": "Jenkins 构建触发、日志查看与部署审批工具集"
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab Repository",
+      "command": "node",
+      "args": ["${UCLAW_ROOT}/agent/mcp/mcp-gitlab/dist/server.js"],
+      "env": {
+        "GITLAB_BASE_URL": "${GITLAB_BASE_URL}",
+        "GITLAB_TOKEN": "${GITLAB_TOKEN}"
+      },
+      "enabled": true,
+      "description": "GitLab 项目管理、MR 操作与 Code Review 工具集"
+    }
+  ]
+}

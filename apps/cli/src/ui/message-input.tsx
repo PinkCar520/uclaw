@@ -21,21 +21,22 @@ export function MessageInput({ isWaiting, isThinking, onSubmit }: MessageInputPr
   return (
     <Box flexDirection="column">
       <Box>
-        <Text>
+        <Text color="gray">
           {'─'.repeat(60)}
         </Text>
       </Box>
       <Box>
-        <Text bold color="green">
+        <Text bold color={isWaiting ? 'green' : 'gray'}>
           {'uclaw❯ '}
         </Text>
         <TextInput
           value={inputValue}
           onChange={setInputValue}
           onSubmit={handleSubmit}
-          placeholder={isThinking ? 'Thinking...' : 'Type your query...'}
+          placeholder={isThinking ? '⠋ Working...' : 'Type your query or /help'}
         />
       </Box>
     </Box>
   );
 }
+

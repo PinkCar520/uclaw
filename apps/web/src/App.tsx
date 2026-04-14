@@ -27,7 +27,15 @@ function AppContent() {
   const { pathname } = useLocation();
   const { id: sessionIdFromUrl } = useParams<{ id?: string }>();
 
-  const [activeTab, setActiveTab] = useState('chat');
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem('uclaw_active_tab');
+    return saved || 'chat';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('uclaw_active_tab', activeTab);
+  }, [activeTab]);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {

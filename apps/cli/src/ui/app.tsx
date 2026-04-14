@@ -113,7 +113,7 @@ export function InkApp(props: InkAppProps) {
     switch (command) {
       case 'help':
         setCommandOutput(
-          '📖 Available Commands:\n' +
+          '▤ Available Commands:\n' +
           '  /help              - Show this help\n' +
           '  /clear             - Clear conversation history\n' +
           '  /model [name]      - Switch model\n' +
@@ -136,14 +136,14 @@ export function InkApp(props: InkAppProps) {
           const exists = models.some(m => m.id === args);
           if (exists) {
             setSelectedModel(args);
-            setCommandOutput(`✅ Selected model: ${args}`);
+            setCommandOutput(`✓ Selected model: ${args}`);
           } else {
-            setCommandOutput(`❌ Model not found: ${args}`);
+            setCommandOutput(`✗ Model not found: ${args}`);
             setCommandType('error');
           }
         } else {
           const modelList = models.map(m => `  ${m.id} (${m.provider})`).join('\n');
-          setCommandOutput(`🤖 Available Models:\n${modelList}`);
+          setCommandOutput(`▸ Available Models:\n${modelList}`);
         }
         setCommandType('model');
         break;
@@ -153,14 +153,14 @@ export function InkApp(props: InkAppProps) {
           setCommandOutput('No skills loaded');
         } else {
           const skillList = props.skills.map(s => `  ${s.manifest.name} - ${s.manifest.description}`).join('\n');
-          setCommandOutput(`🎯 Available Skills:\n${skillList}`);
+          setCommandOutput(`◎ Available Skills:\n${skillList}`);
         }
         setCommandType('skills');
         break;
 
       case 'tools':
         setCommandOutput(
-          '🔧 Available Tools:\n' +
+          '⚙ Available Tools:\n' +
           '  bash              - Execute shell commands\n' +
           '  file_read         - Read file contents\n' +
           '  file_write        - Create/overwrite files\n' +
@@ -176,7 +176,7 @@ export function InkApp(props: InkAppProps) {
           setCommandOutput('No MCP tools available');
         } else {
           const toolList = props.mcpTools.map(t => `  ${t.name} - ${t.description}`).join('\n');
-          setCommandOutput(`🔌 MCP Tools:\n${toolList}`);
+          setCommandOutput(`▨ MCP Tools:\n${toolList}`);
         }
         setCommandType('mcp');
         break;
@@ -302,6 +302,8 @@ export async function runInkApp(options: { userId: string; workspace: string }) 
 
   await waitUntilExit();
   await mcpManager.disconnectAll();
+  // Force exit to clean up any lingering event loop references (Ink/React timers, etc.)
+  process.exit(0);
 }
 
 function findSkillsDir(startDir: string): string | null {

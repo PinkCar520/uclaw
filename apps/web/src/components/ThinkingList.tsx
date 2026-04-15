@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { Check, Loader2, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../lib/utils';
-
-export interface ThinkingStep {
-  label: string;
-  status: 'done' | 'active' | 'pending';
-}
+import type { ThinkingStep } from '../lib/chat-utils';
 
 export interface ThinkingListProps {
   steps: ThinkingStep[];

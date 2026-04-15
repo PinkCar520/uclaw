@@ -1,0 +1,55 @@
+import React from 'react';
+import { Sparkles } from 'lucide-react';
+
+interface EmptyStateProps {
+  t: any;
+  setLocalInput: (val: string) => void;
+  onFormSubmit: () => void;
+}
+
+export function EmptyState({
+  t,
+  setLocalInput,
+  onFormSubmit
+}: EmptyStateProps) {
+  const suggestions = [
+    { icon: '🔍', label: t('chat.suggestions.bug_query', '查询缺陷详情'), prompt: '帮我查询缺陷 BUG-1 的详细信息' },
+    { icon: '🛠️', label: t('chat.suggestions.fix_suggestion', '修复代码问题'), prompt: '分析一下当前项目的代码质量问题并给出修复建议' },
+    { icon: '📋', label: t('chat.suggestions.create_task', '创建任务计划'), prompt: '帮我制定一个项目任务计划' },
+    { icon: '🚀', label: t('chat.suggestions.pipeline_check', '检查流水线状态'), prompt: '查看当前流水线的构建状态' },
+  ];
+
+  return (
+    <div className="flex flex-col mt-4 md:mt-10 w-full min-w-0">
+      <div className="flex w-full min-w-0 flex-col items-start gap-4 overflow-hidden rounded-[24px] border border-transparent bg-[#f6f3f2] p-5 md:flex-row md:gap-6 md:p-8 mb-6">
+        <div className="w-10 h-10 md:w-12 md:h-12 rounded-[12px] bg-white flex items-center justify-center shrink-0 shadow-sm text-[#EC5B14]">
+          <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+        </div>
+        <div className="w-full min-w-0">
+          <h3 className="mb-2 break-words text-lg font-bold font-display text-[#1C1B1B] cursor-default md:text-xl">{t('chat.empty_state.title')}</h3>
+          <p className="max-w-xl break-words text-sm leading-relaxed text-[#716B67] md:text-base">
+            {t('chat.empty_state.desc')}
+          </p>
+        </div>
+      </div>
+      {/* Suggested Prompts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {suggestions.map((s, i) => (
+          <button
+            key={i}
+            onClick={() => {
+              setLocalInput(s.prompt);
+              setTimeout(() => onFormSubmit(), 0);
+            }}
+            className="flex items-center gap-3 p-4 rounded-[16px] bg-white border border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 hover:shadow-[0_4px_16px_rgba(236,91,20,0.08)] transition-all text-left group"
+          >
+            <span className="text-xl shrink-0">{s.icon}</span>
+            <span className="text-sm font-medium text-[#1C1B1B] group-hover:text-[#EC5B14] transition-colors">
+              {s.label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

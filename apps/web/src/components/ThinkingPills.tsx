@@ -1,12 +1,7 @@
 import { Search, Users, Sparkles, FileText, Database, Shield, Printer, GitBranch } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '../lib/utils';
-
-export interface ThinkingStep {
-  label: string;
-  status: 'done' | 'active' | 'pending';
-  icon?: string;
-}
+import type { ThinkingStep } from '../lib/chat-utils';
 
 export interface ThinkingPillsProps {
   steps: ThinkingStep[];

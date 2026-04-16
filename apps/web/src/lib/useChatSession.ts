@@ -36,11 +36,13 @@ export function useChatSession({
     initializedRef.current = false;
   }, [sessionId]);
 
-  const { messages, sendMessage, status, reload, setMessages, stop, error } = (useChat as any)({
+  const { messages, sendMessage, status, setMessages, stop, error } = (useChat as any)({
     id: sessionId ?? 'new',
     initialMessages: initialMessages,
     api: '/api/chat',
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    headers: {
+      'Authorization': `Bearer ${token || localStorage.getItem('uclaw_auth_token')}`
+    },
     body: {
       modelId: selectedModelId,
       search: isSearchMode,
@@ -118,7 +120,6 @@ export function useChatSession({
     messages,
     sendMessage,
     status,
-    reload,
     setMessages,
     stop,
     error,

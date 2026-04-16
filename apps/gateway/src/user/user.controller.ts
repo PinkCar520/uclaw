@@ -3,6 +3,7 @@ import { UserService } from '../auth/user.service';
 import { SsoAuthGuard } from '../auth/sso.guard';
 import { PrismaClient } from '@prisma/client';
 import { Inject } from '@nestjs/common';
+import { RpcGateway } from '../chat/rpc.gateway';
 
 @Controller('api/user')
 @UseGuards(SsoAuthGuard)
@@ -10,7 +11,21 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     @Inject('PRISMA_CLIENT') private prisma: PrismaClient,
+    private readonly rpcGateway: RpcGateway,
   ) {}
+
+  /**
+   * GET /api/user/node-status
+   * 返回当前用户的本地 CLI 节点在线状态
+   */
+  @Get('node-status')
+  async getNodeStatus(@Req() req: any) {
+    const isOnline = this.rpcGateway.isUserOnline(req.user.workId);
+    return {
+      success: true,
+      isOnline,
+    };
+  }
 
   /**
    * GET /api/user/profile

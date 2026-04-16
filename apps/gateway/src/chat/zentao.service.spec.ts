@@ -1,10 +1,13 @@
 import { ZentaoService } from './zentao.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('ZentaoService', () => {
   let service: ZentaoService;
+  let configService: ConfigService;
 
   beforeEach(() => {
-    service = new ZentaoService();
+    configService = { get: jest.fn() } as any;
+    service = new ZentaoService(configService);
     service.onModuleInit();
   });
 

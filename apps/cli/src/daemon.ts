@@ -53,6 +53,8 @@ export async function runDaemon(options: DaemonOptions) {
     let uiHint: string = 'text';
 
     try {
+      const { sessionId } = data.params || {};
+
       // 1. Path Security Check
       const targetPath = data.params?.path || data.params?.dir;
       if (targetPath) {
@@ -91,15 +93,51 @@ export async function runDaemon(options: DaemonOptions) {
           // Audit Bash
           const audit = security.auditCommand(data.params.command);
           if (!audit.allowed) throw new Error(`Command Denied: ${audit.reason}`);
+          
           if (audit.riskLevel === 'HIGH') {
-            const { confirmed } = await inquirer.prompt([{
-              type: 'confirm',
-              name: 'confirmed',
-              message: `[Security] Authorize "${data.params.command}"?`,
-              default: false,
-            }]);
-            if (!confirmed) throw new Error('Denied.');
+            let confirmed = false;
+            
+            if (sessionId) {
+              // Remote Approval via Gateway -> Web UI
+              console.log(chalk.yellow('[Security]') + ` High risk command detected. Requesting remote approval via session ${sessionId}...`);
+              confirmed = await new Promise((resolve) => {
+                socket.emit('request_approval', { 
+                  sessionId, 
+                  toolName: 'bash', 
+                  args: { command: data.params.command } 
+                });
+                
+                const onResolved = (res: any) => {
+                  if (res.error) {
+                    console.error(chalk.red('[Approval Error]'), res.error);
+                    resolve(false);
+                  } else {
+                    resolve(res.approved);
+                  }
+                };
+                
+                socket.once('approval_resolved', onResolved);
+                // 5 minute timeout for remote approval
+                setTimeout(() => {
+                  socket.off('approval_resolved', onResolved);
+                  resolve(false);
+                }, 300000);
+              });
+            } else {
+              // Local Fallback (Terminal Prompt)
+              const response = await inquirer.prompt([{
+                type: 'confirm',
+                name: 'confirmed',
+                message: `[Security] Authorize "${data.params.command}"?`,
+                default: false,
+              }]);
+              confirmed = response.confirmed;
+            }
+            
+            if (!confirmed) throw new Error('Denied by user.');
+            console.log(chalk.green('✓ [APPROVED]') + ` Executing: ${data.params.command}`);
           }
+          
           const { stdout, stderr } = await execAsync(data.params.command);
           result = stdout || stderr;
           break;

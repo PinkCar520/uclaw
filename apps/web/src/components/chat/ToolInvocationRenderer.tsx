@@ -13,6 +13,7 @@ interface ToolInvocationRendererProps {
   getLocalizedName: any;
   sendMessage: (msg: any) => Promise<void>;
   setPreviewAttachment: (attachment: any) => void;
+  onExtract?: (data: { title: string; content: string; language: string }) => void;
 }
 
 export function ToolInvocationRenderer({
@@ -20,7 +21,8 @@ export function ToolInvocationRenderer({
   t,
   getLocalizedName,
   sendMessage,
-  setPreviewAttachment
+  setPreviewAttachment,
+  onExtract
 }: ToolInvocationRendererProps) {
   const result = part.output || part.result;
   const toolName = part.toolName || part.type?.replace('tool-', '') || '';
@@ -71,6 +73,7 @@ export function ToolInvocationRenderer({
             { lineNumber: 26, type: 'context', content: "return await fetch(url, { headers: { authHeader } });" },
           ]}
           onApply={() => sendMessage({ content: 'Apply fix to GitLab', role: 'user' })}
+          onExtract={onExtract}
         />
       );
     }
@@ -96,6 +99,7 @@ export function ToolInvocationRenderer({
         {...result}
         onConfirm={() => sendMessage({ content: 'Y', role: 'user' })}
         onCancel={() => sendMessage({ content: 'N', role: 'user' })}
+        onExtract={onExtract}
       />
     );
   }

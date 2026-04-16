@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ThinkingList } from './ThinkingList';
 import { DiffViewer } from './DiffViewer';
 import { TypingCursor, BrailleSpinner } from './chat/ChatHelpers';
-import { MarkdownComponents } from './chat/MarkdownConfig';
 import { parseReasoningToSteps, getFriendlyToolName, beautifyModelName, type ThinkingStep } from '../lib/chat-utils';
 import { useChatSession } from '../lib/useChatSession';
 import { useChatInput } from '../lib/useChatInput';
@@ -11,6 +10,8 @@ import { ToolInvocationRenderer, ToolInvocationBadge } from './chat/ToolInvocati
 import { ChatMessage } from './chat/ChatMessage';
 import { IntegrationsPanel } from './chat/IntegrationsPanel';
 import { EmptyState } from './chat/EmptyState';
+import { CopyCodeButton, MarkdownComponents, CodeBlock } from './chat/MarkdownConfig';
+
 
 
 import { useChat } from '@ai-sdk/react';
@@ -26,8 +27,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '../lib/utils';
 import { useSkillCatalog } from '../lib/useSkillCatalog';
 import { UIRenderer } from './UIRenderer';
@@ -97,7 +96,7 @@ export function ChatSession({
 
   // ── Hooks ──
   const {
-    messages, sendMessage, status, reload, setMessages, stop, error,
+    messages, sendMessage, status, setMessages, stop, error,
     isLoading, isStopped, setIsStopped, totalUsage, handleStop,
     sessionIdRef, titleGeneratedRef
   } = useChatSession({
@@ -121,7 +120,16 @@ export function ChatSession({
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<any>(null);
-  const [activeCapsule, setActiveCapsule] = useState<{ toolCallId: string; uiKit: any; } | null>(null);
+  const [activeCapsule, setActiveCapsule] = useState<{ 
+    toolCallId?: string; 
+    uiKit?: any; 
+    artifact?: {
+      type: 'code' | 'web';
+      title: string;
+      content: string;
+      language?: string;
+    }
+  } | null>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -201,9 +209,9 @@ export function ChatSession({
     setMessages(newMessages);
     try {
       await sendMessage({
-        content: userMsg.content,
+        content: (userMsg as any).content,
         role: 'user',
-        experimental_attachments: userMsg.experimental_attachments
+        experimental_attachments: (userMsg as any).experimental_attachments
       } as any);
     } catch (err) {
       console.error('Regenerate failed:', err);
@@ -223,9 +231,9 @@ export function ChatSession({
     setMessages(messages.slice(0, lastUserIdx));
     try {
       await sendMessage({
-        content: userMsg.content,
+        content: (userMsg as any).content,
         role: 'user',
-        experimental_attachments: userMsg.experimental_attachments,
+        experimental_attachments: (userMsg as any).experimental_attachments,
       } as any, {
         body: {
           modelId: selectedModelId,
@@ -287,7 +295,12 @@ export function ChatSession({
     if (!sessionId) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/chat/approvals/${sessionId}`);
+        const activeToken = token || localStorage.getItem('uclaw_auth_token');
+        const res = await fetch(`/api/chat/approvals/${sessionId}`, {
+          headers: {
+            'Authorization': `Bearer ${activeToken}`
+          }
+        });
         const data = await res.json();
         if (data.success && data.data?.length > 0) {
           setPendingApproval(data.data[0]);
@@ -302,7 +315,10 @@ export function ChatSession({
     try {
       await fetch(`/api/chat/approvals/${pendingApproval.id}/respond`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status }),
       });
       setPendingApproval(null);
@@ -421,6 +437,7 @@ export function ChatSession({
                               sendMessage={sendMessage}
                               branchIndex={branchIndex}
                               isStopped={isStopped}
+                              onExtract={(artifact) => setActiveCapsule({ artifact: { ...artifact, type: 'code' } })}
                             />
                           ))}
 
@@ -442,7 +459,7 @@ export function ChatSession({
                                   {error.message || t('chat.error.message', 'Something went wrong while generating the response. Please try again.')}
                                 </p>
                                 <button
-                                    onClick={() => reload()}
+                                    onClick={() => handleRetry()}
                                     className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 active:scale-[0.98] transition-all"
                                 >
                                   <RotateCcw className="w-3.5 h-3.5" />
@@ -516,10 +533,12 @@ export function ChatSession({
               >
                 <div className="px-4 py-3 border-b border-[#E8E4E2]/60 flex items-center justify-between bg-[#F6F3F2]/50">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-[#1C1B1B]">交互胶囊</span>
+                    <span className="font-bold text-sm text-[#1C1B1B]">
+                      {activeCapsule.artifact ? '代码组件' : '交互胶囊'}
+                    </span>
                     <span className="text-[10px] text-[#716B67] bg-[#E8E4E2] px-1.5 py-0.5 rounded-full">
-                  {activeCapsule.uiKit?.uiType}
-                </span>
+                      {activeCapsule.artifact ? activeCapsule.artifact.language : activeCapsule.uiKit?.uiType}
+                    </span>
                   </div>
                   <button
                       onClick={() => setActiveCapsule(null)}
@@ -528,26 +547,44 @@ export function ChatSession({
                     <CloseIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  <UIRenderer
-                      uiKit={activeCapsule.uiKit}
-                      onAction={(actionId, payload) => {
-                        if (actionId === 'approve_request') {
-                          sendMessage({ content: `APPROVE:${(payload as any).requestId}`, role: 'user' });
-                        } else if (actionId === 'reject_request') {
-                          sendMessage({ content: `REJECT:${(payload as any).requestId}`, role: 'user' });
-                        } else if (actionId === 'create_zentao_task') {
-                          const d = payload as any;
-                          sendMessage({ content: `Create ZenTao task for ${d.bugId}: assignee=${d.assignee}`, role: 'user' });
-                        } else if (actionId === 'open_bug_detail') {
-                          console.log('[Capsule] Open bug detail:', (payload as any).id);
-                        } else if (actionId === 'view_logs') {
-                          console.log('[Capsule] View pipeline logs:', (payload as any).pipelineId);
-                        } else if (actionId === 'retry_pipeline') {
-                          sendMessage({ content: `Retry pipeline ${(payload as any).pipelineId}`, role: 'user' });
-                        }
-                      }}
-                  />
+                <div className="flex-1 overflow-y-auto bg-white">
+                  {activeCapsule.artifact ? (
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-center justify-between px-6 py-4 border-b border-[#F6F3F2]">
+                        <h3 className="text-[15px] font-bold text-[#1C1B1B]">{activeCapsule.artifact.title}</h3>
+                        <CopyCodeButton code={activeCapsule.artifact.content} />
+                      </div>
+                      <div className="flex-1 bg-[#0d0d0d] overflow-auto">
+                        <CodeBlock 
+                          language={activeCapsule.artifact.language} 
+                          value={activeCapsule.artifact.content} 
+                          minimal={true}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <UIRenderer
+                          uiKit={activeCapsule.uiKit}
+                          onAction={(actionId, payload) => {
+                            if (actionId === 'approve_request') {
+                              sendMessage({ content: `APPROVE:${(payload as any).requestId}`, role: 'user' });
+                            } else if (actionId === 'reject_request') {
+                              sendMessage({ content: `REJECT:${(payload as any).requestId}`, role: 'user' });
+                            } else if (actionId === 'create_zentao_task') {
+                              const d = payload as any;
+                              sendMessage({ content: `Create ZenTao task for ${d.bugId}: assignee=${d.assignee}`, role: 'user' });
+                            } else if (actionId === 'open_bug_detail') {
+                              console.log('[Capsule] Open bug detail:', (payload as any).id);
+                            } else if (actionId === 'view_logs') {
+                              console.log('[Capsule] View pipeline logs:', (payload as any).pipelineId);
+                            } else if (actionId === 'retry_pipeline') {
+                              sendMessage({ content: `Retry pipeline ${(payload as any).pipelineId}`, role: 'user' });
+                            }
+                          }}
+                      />
+                    </div>
+                  )}
                 </div>
               </motion.div>
           ) : previewAttachment ? (
@@ -572,7 +609,7 @@ export function ChatSession({
                   ) : (
                       <div className="p-4">
                         <div className="prose prose-slate prose-xs max-w-none text-[13px]">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents() as any}>
                             {(() => {
                               try {
                                 if (previewAttachment.url.startsWith('data:')) {

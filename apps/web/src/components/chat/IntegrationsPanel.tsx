@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Database, BadgeCheck } from 'lucide-react';
+import { Cpu, Database, BadgeCheck, GitBranch } from 'lucide-react';
 
 interface IntegrationsPanelProps {
   t: any;
@@ -22,7 +22,7 @@ export function IntegrationsPanel({
         <div className="space-y-3">
           <div className="p-4 bg-white/70 rounded-xl border border-[#E8E4E2]/60 flex items-center justify-between group cursor-pointer hover:ring-2 hover:ring-[#EC5B14]/20 transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-[8px] bg-[#1C1B1B] flex items-center justify-center text-white font-bold text-xs">GL</div>
+              <div className="w-8 h-8 rounded-[8px] bg-[#1C1B1B] flex items-center justify-center text-white font-bold text-xs"><GitBranch className="w-4 h-4" /></div>
               <div>
                 <p className="text-sm font-bold text-[#1C1B1B]">GitLab</p>
                 <p className="text-[11px] text-[#716B67]">2 {t('chat.integrations.pending_mrs')}</p>

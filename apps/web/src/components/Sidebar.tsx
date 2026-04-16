@@ -26,6 +26,7 @@ import {
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { GlobalSearchModal } from './GlobalSearchModal';
+import { NodeStatusIndicator } from './NodeStatusIndicator';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -474,14 +475,20 @@ export function Sidebar({
             )}
             title={user?.name || 'Alex Rivera'}
           >
-            <img
-              src={user?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuA0oS2KtsdNSGQoheV6v31oxAq-NhwZzQ47xg8__EJhv8OqGKGnZL3wep9OPHmM8x2Ik6mpZYLUp_nlIoldi6DXVNzDnTDsq10ls1jkUj-t_evdmGKwkn_t5xfFRgHK6-mmcStkVS-zdI45IF3rmBL3mH9KmAB8N9AvKqU-Dv45N0-NNrOIrD2ZlsGh9MmfkPMjEPcNRAJQVNa20KRYE9eY-Svv7Taq6vVmmqM9HxckuxqA9UWUSYJjawCeP6JhTrR_2ym5Y9kmaeo"}
-              alt="profile"
-              className="w-8 h-8 rounded-full border border-[#E8E4E2] shrink-0 object-cover"
-            />
+            <div className="relative">
+              <img
+                src={user?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuA0oS2KtsdNSGQoheV6v31oxAq-NhwZzQ47xg8__EJhv8OqGKGnZL3wep9OPHmM8x2Ik6mpZYLUp_nlIoldi6DXVNzDnTDsq10ls1jkUj-t_evdmGKwkn_t5xfFRgHK6-mmcStkVS-zdI45IF3rmBL3mH9KmAB8N9AvKqU-Dv45N0-NNrOIrD2ZlsGh9MmfkPMjEPcNRAJQVNa20KRYE9eY-Svv7Taq6vVmmqM9HxckuxqA9UWUSYJjawCeP6JhTrR_2ym5Y9kmaeo"}
+                alt="profile"
+                className="w-8 h-8 rounded-full border border-[#E8E4E2] shrink-0 object-cover"
+              />
+              {isCollapsed && <NodeStatusIndicator token={localStorage.getItem('uclaw_auth_token')} isCollapsed={true} />}
+            </div>
             {!isCollapsed && (
               <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-sm font-bold text-[#1C1B1B] truncate">{user?.name || 'Alex Rivera'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-[#1C1B1B] truncate">{user?.name || 'Alex Rivera'}</span>
+                  <NodeStatusIndicator token={localStorage.getItem('uclaw_auth_token')} isCollapsed={false} />
+                </div>
                 <span className="text-[10px] text-[#716B67] truncate uppercase tracking-widest font-bold mt-0.5">{user?.department || t('sidebar.admin')}</span>
               </div>
             )}

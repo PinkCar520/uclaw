@@ -67,7 +67,7 @@ export class ChatService {
     });
   }
 
-  private getTools() {
+  private getTools(currentUserId: string, sessionId?: string) {
     return {
       getBugInfo: tool({
         description: '获取指定 Bug ID 的详细信息，结果将以卡片形式展示',
@@ -122,11 +122,12 @@ export class ChatService {
       local_file_read: tool({
         description: '读取开发者本地工作站的文件内容',
         inputSchema: z.object({
-          userId: z.string().describe('目标用户的 ID'),
+          userId: z.string().optional().describe('目标用户的 ID'),
           path: z.string().describe('文件相对路径'),
         }),
         execute: async ({ userId, path }) => {
-          const result = await this.rpcGateway.sendToCli(userId, 'read_file', { path });
+          const targetUserId = userId || currentUserId;
+          const result = await this.rpcGateway.sendToCli(targetUserId, 'read_file', { path });
           return { status: 'Success', path, content: result };
         },
       }),
@@ -134,14 +135,15 @@ export class ChatService {
       local_file_edit: tool({
         description: '通过精准匹配旧代码块并替换为新代码块来修改本地文件。比全量写入更安全可靠。',
         inputSchema: z.object({
-          userId: z.string().describe('目标用户的 ID'),
+          userId: z.string().optional().describe('目标用户的 ID'),
           path: z.string().describe('文件相对路径'),
           oldString: z.string().describe('要被替换的原始代码块（必须完全匹配，包括空格和缩进）'),
           newString: z.string().describe('替换后的新代码块'),
         }),
         execute: async ({ userId, path, oldString, newString }) => {
           try {
-            const result = await this.rpcGateway.sendToCli(userId, 'local_file_edit', { path, oldString, newString });
+            const targetUserId = userId || currentUserId;
+            const result = await this.rpcGateway.sendToCli(targetUserId, 'local_file_edit', { path, oldString, newString, sessionId });
             return { status: 'Success', path, result };
           } catch (err: any) {
             return { status: 'Error', message: err.message };
@@ -152,10 +154,11 @@ export class ChatService {
       local_git_status: tool({
         description: '获取开发者本地工作区的 Git 状态（查看改动文件、当前分支等）',
         inputSchema: z.object({
-          userId: z.string().describe('目标用户的 ID'),
+          userId: z.string().optional().describe('目标用户的 ID'),
         }),
         execute: async ({ userId }) => {
-          const result = await this.rpcGateway.sendToCli(userId, 'local_git', { action: 'status' });
+          const targetUserId = userId || currentUserId;
+          const result = await this.rpcGateway.sendToCli(targetUserId, 'local_git', { action: 'status' });
           return { status: 'Success', ...result };
         },
       }),
@@ -163,12 +166,13 @@ export class ChatService {
       local_bash: tool({
         description: '在开发者本地工作站执行 Shell 指令。适用于运行测试、编译、列出目录等。',
         inputSchema: z.object({
-          userId: z.string().describe('目标用户的 ID'),
+          userId: z.string().optional().describe('目标用户的 ID (可选，默认为当前用户)'),
           command: z.string().describe('要执行的完整 Shell 指令'),
         }),
         execute: async ({ userId, command }) => {
           try {
-            const result = await this.rpcGateway.sendToCli(userId, 'bash', { command });
+            const targetUserId = userId || currentUserId;
+            const result = await this.rpcGateway.sendToCli(targetUserId, 'bash', { command, sessionId });
             return { status: 'Success', output: result };
           } catch (err: any) {
             return { status: 'Error', message: err.message };
@@ -206,19 +210,19 @@ export class ChatService {
     try {
       const modelMessages = await convertToModelMessages(messages);
       
-      // Log received attachments for debugging/verification
       const attachmentCount = messages.reduce((count, m) => count + (m.experimental_attachments?.length || 0), 0);
       if (attachmentCount > 0) {
         console.log(`[Gateway] Received ${attachmentCount} total attachments across history.`);
       }
       
       const onlineClis = this.rpcGateway.getOnlineUsers();
-      const currentUserId = req?.user?.id || 'Anonymous';
+      const currentUserId = req?.user?.workId || 'Anonymous';
+      const sessionId = req?.body?.sessionId;
 
       // Load MCP tools dynamically
       const mcpTools = await this.mcpManager.getAITools();
       const allTools = {
-        ...this.getTools(),
+        ...this.getTools(currentUserId, sessionId),
         ...mcpTools,
       };
 
@@ -248,10 +252,9 @@ export class ChatService {
     try {
       const onlineClis = this.rpcGateway.getOnlineUsers();
 
-      // Load MCP tools dynamically
       const mcpTools = await this.mcpManager.getAITools();
       const allTools = {
-        ...this.getTools(),
+        ...this.getTools(userId),
         ...mcpTools,
       };
 

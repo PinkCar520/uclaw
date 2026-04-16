@@ -32,13 +32,14 @@ export function useChatInput({
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const uploadFile = useCallback(async (file: File): Promise<{ name: string; contentType: string; url: string }> => {
+    const activeToken = token || localStorage.getItem('uclaw_auth_token');
     const formData = new FormData();
     formData.append('file', file);
     const res = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
       headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(activeToken ? { 'Authorization': `Bearer ${activeToken}` } : {})
       }
     });
     if (!res.ok) throw new Error(`Failed to upload file: ${res.statusText}`);
@@ -73,9 +74,13 @@ export function useChatInput({
     setSelectedFiles([]);
 
     try {
+      const activeToken = token || localStorage.getItem('uclaw_auth_token');
       const attachments = filesToUpload.length > 0 ? await Promise.all(filesToUpload.map(uploadFile)) : undefined;
       const userMessage = { content: val, role: 'user', experimental_attachments: attachments };
       await sendMessage(userMessage as any, {
+        headers: {
+          'Authorization': `Bearer ${activeToken}`
+        },
         body: {
           modelId: selectedModelId,
           search: isSearchMode,

@@ -18,12 +18,6 @@ export default defineConfig({
         proxyTimeout: 60000,
         // 增加一些稳定性配置，防止某些环境下的重试行为
         xfwd: true,
-        // 在代理层面强制注入 Mock Token，解决 SDK 无法传 Header 的问题
-        headers: {
-          'x-sso-token': 'mock-dev-token-xyz567',
-          'x-user-id': 'mock-dev-user',
-          'x-user-name': 'Mock Dev User',
-        }
       },
       '/public': {
         target: 'http://127.0.0.1:3000',

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RpcGateway } from './rpc.gateway';
+import { ApprovalModule } from '../skill/approval.module';
 
 /**
  * RpcModule
@@ -9,6 +10,7 @@ import { RpcGateway } from './rpc.gateway';
  * 同时被 ChatModule 和 SkillModule 导入。
  */
 @Module({
+  imports: [ApprovalModule],
   providers: [RpcGateway],
   exports: [RpcGateway],
 })

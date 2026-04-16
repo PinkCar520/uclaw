@@ -7,9 +7,12 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import type { RPCResponse } from '@uclaw/core';
+import { ApprovalService } from '../skill/approval.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class RpcGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  constructor(private readonly approvalService: ApprovalService) {}
+
   @WebSocketServer()
   server!: Server;
 
@@ -59,6 +62,34 @@ export class RpcGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('request_approval')
+  async handleRequestApproval(client: Socket, payload: { sessionId: string; toolName: string; args: any }) {
+    console.log(`[RpcGateway] Received approval request from CLI: ${payload.toolName} (Session: ${payload.sessionId})`);
+    
+    try {
+      const requestId = await this.approvalService.createRequest({
+        sessionId: payload.sessionId,
+        toolName: payload.toolName,
+        args: payload.args,
+      });
+
+      // Poll for status or wait
+      const approved = await this.approvalService.waitForApproval(requestId, 5 * 60 * 1000); // 5 min timeout
+      
+      client.emit('approval_resolved', {
+        requestId,
+        approved,
+      });
+      console.log(`[RpcGateway] Approval ${requestId} resolved: ${approved ? 'APPROVED' : 'DENIED'}`);
+    } catch (err: any) {
+      console.error(`[RpcGateway] Error handling approval request:`, err.message);
+      client.emit('approval_resolved', {
+        approved: false,
+        error: err.message
+      });
+    }
+  }
+
   // 下发指令到特定用户的 CLI 并等待返回结果
   async sendToCli(userId: string, method: string, params: any): Promise<any> {
     const socketId = this.clients.get(userId);
@@ -84,5 +115,9 @@ export class RpcGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   getOnlineUsers(): string[] {
     return Array.from(this.clients.keys());
+  }
+
+  isUserOnline(userId: string): boolean {
+    return this.clients.has(userId);
   }
 }

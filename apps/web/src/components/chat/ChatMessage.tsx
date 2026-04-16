@@ -48,6 +48,7 @@ interface ChatMessageProps {
   sendMessage: (msg: any) => Promise<void>;
   branchIndex: Record<string, number>;
   isStopped: boolean;
+  onExtract?: (data: { title: string; content: string; language: string }) => void;
 }
 
 export const ChatMessage = React.memo(({
@@ -76,6 +77,7 @@ export const ChatMessage = React.memo(({
   sendMessage,
   branchIndex,
   isStopped,
+  onExtract,
 }: ChatMessageProps) => {
   const isAssistant = m.role === 'assistant';
   const isUser = m.role === 'user';
@@ -172,7 +174,7 @@ export const ChatMessage = React.memo(({
                     {textParts.map((part: any, i: number) => (
                       <div key={i} className="prose prose-slate prose-sm max-w-none">
                         {part.type === 'text' && (
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents(onExtract) as any}>
                             {part.text}
                           </ReactMarkdown>
                         )}
@@ -199,6 +201,7 @@ export const ChatMessage = React.memo(({
                           getLocalizedName={getLocalizedName}
                           sendMessage={sendMessage}
                           setPreviewAttachment={setPreviewAttachment}
+                          onExtract={onExtract}
                         />
                       );
                     })}
@@ -235,7 +238,7 @@ export const ChatMessage = React.memo(({
               </div>
             ) : (
               <div className="prose prose-slate prose-sm max-w-none relative">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>{m.content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents(onExtract) as any}>{m.content}</ReactMarkdown>
                 {isStreaming && <TypingCursor />}
                 {isStreaming && (
                   <div className="mt-1">

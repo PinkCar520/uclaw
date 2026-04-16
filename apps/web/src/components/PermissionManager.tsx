@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  Shield, Plus, Trash2, Save, RotateCcw,
+  Shield, Plus, Trash2, Save, RotateCcw, Check,
   CheckCircle2, XCircle, AlertCircle, Unlock,
   Settings2, Info, Play, Ban, HelpCircle, Eye
 } from 'lucide-react';
@@ -389,9 +389,9 @@ export function PermissionManager({ token }: { token?: string | null }) {
                   />
                   <button
                     onClick={() => setEditingRule(null)}
-                    className="px-2 py-1 bg-green-600 text-white rounded text-xs font-bold"
+                    className="px-2 py-1 bg-green-600 text-white rounded text-xs font-bold flex items-center justify-center"
                   >
-                    ✓
+                    <Check className="w-3 h-3" />
                   </button>
                 </>
               ) : (

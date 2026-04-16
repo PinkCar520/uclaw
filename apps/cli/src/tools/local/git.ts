@@ -66,7 +66,10 @@ export class GitTool extends LocalTool<GitParams, any> {
 
       return {
         success: true,
-        data: stdout,
+        data: {
+          raw: stdout,
+          command: command
+        },
         uiHint: 'git'
       };
     } catch (err: any) {

@@ -1,3 +1,4 @@
+import { api } from '../lib/api-client';
 import React, { useState, useEffect } from 'react';
 import { Monitor, Circle } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -23,15 +24,8 @@ export function NodeStatusIndicator({ token, isCollapsed }: NodeStatusIndicatorP
 
     const checkStatus = async () => {
       try {
-        const res = await fetch('/api/user/node-status', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setIsOnline(data.isOnline);
-        }
+        const data = await api.get<any>('/api/user/node-status');
+        setIsOnline(data.isOnline);
       } catch (err) {
         console.error('[NodeStatus] Failed to fetch status:', err);
       }

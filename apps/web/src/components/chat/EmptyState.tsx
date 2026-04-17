@@ -21,17 +21,6 @@ export function EmptyState({
 
   return (
     <div className="flex flex-col mt-4 md:mt-10 w-full min-w-0">
-      <div className="flex w-full min-w-0 flex-col items-start gap-4 overflow-hidden rounded-[24px] border border-transparent bg-[#f6f3f2] p-5 md:flex-row md:gap-6 md:p-8 mb-6">
-        <div className="w-10 h-10 md:w-12 md:h-12 rounded-[12px] bg-white flex items-center justify-center shrink-0 shadow-sm text-[#EC5B14]">
-          <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
-        </div>
-        <div className="w-full min-w-0">
-          <h3 className="mb-2 break-words text-lg font-bold font-display text-[#1C1B1B] cursor-default md:text-xl">{t('chat.empty_state.title')}</h3>
-          <p className="max-w-xl break-words text-sm leading-relaxed text-[#716B67] md:text-base">
-            {t('chat.empty_state.desc')}
-          </p>
-        </div>
-      </div>
       {/* Suggested Prompts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {suggestions.map((s, i) => (

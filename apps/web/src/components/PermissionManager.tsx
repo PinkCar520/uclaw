@@ -7,7 +7,7 @@ import {
   Settings2, Info, Play, Ban, HelpCircle, Eye
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { getAuthHeaders } from '../lib/api';
+import { api } from '../lib/api-client';
 
 // ──────────────────────────────────────────────
 // Types
@@ -82,9 +82,7 @@ export function PermissionManager({ token }: { token?: string | null }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/permissions/settings', { headers: getAuthHeaders(token) });
-      if (!res.ok) throw new Error(t('permissions.error_fetch'));
-      const data = await res.json();
+      const data = await api.get<any>('/api/permissions/settings');
       setSettings({
         mode: data.mode || 'default',
         maxMcpOutputTokens: data.maxMcpOutputTokens || 25000,
@@ -104,12 +102,7 @@ export function PermissionManager({ token }: { token?: string | null }) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/permissions/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders(token) },
-        body: JSON.stringify(settings),
-      });
-      if (!res.ok) throw new Error(t('permissions.error_fetch'));
+      await api.post('/api/permissions/settings', settings);
       await fetchSettings();
     } catch (err: any) {
       setError(err.message);
@@ -121,10 +114,7 @@ export function PermissionManager({ token }: { token?: string | null }) {
   const testEvaluate = async () => {
     if (!testTool.trim()) return;
     try {
-      const res = await fetch(`/api/permissions/evaluate?toolName=${encodeURIComponent(testTool)}`, {
-        headers: getAuthHeaders(token)
-      });
-      const data = await res.json();
+      const data = await api.get<any>(`/api/permissions/evaluate?toolName=${encodeURIComponent(testTool)}`);
       setTestResult(data.action);
     } catch {
       setTestResult(null);

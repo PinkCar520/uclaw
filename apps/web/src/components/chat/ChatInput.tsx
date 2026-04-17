@@ -62,7 +62,7 @@ export function ChatInput({
   return (
     <div className="pt-2 pb-4 md:pb-8 px-4 md:px-8 bg-gradient-to-t from-[#FCF9F8] via-[#FCF9F8] to-transparent z-10 w-full mt-auto">
       <div className="max-w-[800px] mx-auto relative">
-        <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 ring-[#1C1B1B]/5 transition-all focus-within:outline-none focus-within:ring-2 focus-within:ring-[#EC5B14]/40 focus-within:shadow-[0_10px_40px_-10px_rgba(236,91,20,0.2)]">
+        <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 ring-[#1C1B1B]/5 transition-all focus-within:outline-none">
           <AnimatePresence>
             {selectedFiles.length > 0 && (
               <motion.div 

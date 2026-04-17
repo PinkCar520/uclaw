@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getAuthHeaders } from './api';
+import { api } from './api-client';
 
 export interface SkillCatalogEntry {
   id: string;
@@ -9,8 +9,7 @@ export interface SkillCatalogEntry {
   locales: Record<string, { displayName?: string; description?: string }> | null;
 }
 
-// Module-level cache to ensure we only fetch this once per session 
-// (or across multiple ChatSession mountings)
+// Module-level cache to ensure we only fetch this once per session
 let globalCatalogCache: SkillCatalogEntry[] | null = null;
 let isFetching = false;
 let fetchPromise: Promise<SkillCatalogEntry[]> | null = null;
@@ -29,18 +28,14 @@ export function useSkillCatalog() {
 
     if (!isFetching) {
       isFetching = true;
-      const headers = getAuthHeaders(localStorage.getItem('uclaw_auth_token'));
-      fetchPromise = fetch('/api/skills/catalog', { headers })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch catalog');
-          return res.json();
-        })
-        .then((data: SkillCatalogEntry[]) => {
-          globalCatalogCache = data;
-          setCatalog(data);
+      fetchPromise = api.get<any>('/api/skills/catalog')
+        .then((data) => {
+          const catalogData = Array.isArray(data) ? data : (data.data || []);
+          globalCatalogCache = catalogData;
+          setCatalog(catalogData);
           setIsLoading(false);
           isFetching = false;
-          return data;
+          return catalogData;
         })
         .catch(err => {
           console.error('[useSkillCatalog]', err);
@@ -60,9 +55,7 @@ export function useSkillCatalog() {
     const entry = catalog.find(c => c.id === skillId || c.name === skillId);
     if (!entry) return fallbackName || skillId;
 
-    // Determine target locale (e.g., 'zh' from 'zh-CN')
     const targetLocale = i18n.language ? i18n.language.split('-')[0] : 'en';
-    
     const localized = entry.locales?.[targetLocale];
     return localized?.displayName || fallbackName || entry.name;
   };

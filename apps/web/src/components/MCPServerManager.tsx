@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
-import { getAuthHeaders } from '../lib/api';
+import { api } from '../lib/api-client';
 
 interface MCPServer {
   id: string;
@@ -106,11 +106,10 @@ export function MCPServerManager({ token }: { token?: string | null }) {
 
   const fetchServers = async () => {
     try {
-      const res = await fetch('/api/mcp-servers', { headers: getAuthHeaders(token) });
-      const data = await res.json();
+      const data = await api.get<any>('/api/mcp-servers');
       setServers(data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch MCP servers:', err);
+    } catch (err: any) {
+      console.error('Failed to fetch MCP servers:', err.message);
     } finally {
       setLoading(false);
     }
@@ -121,19 +120,15 @@ export function MCPServerManager({ token }: { token?: string | null }) {
     setCheckingHealth(true);
     setSpinKey((k) => k + 1);
     try {
-      const res = await fetch('/api/mcp-servers/health/all', { 
-        method: 'POST',
-        headers: getAuthHeaders(token)
-      });
-      const data = await res.json();
+      const data = await api.post<any>('/api/mcp-servers/health/all');
       if (data.success) {
         await fetchServers();
         showToast('Health check completed', 'success');
       } else {
         showToast('Health check failed', 'error');
       }
-    } catch (err) {
-      console.error('Health check failed:', err);
+    } catch (err: any) {
+      console.error('Health check failed:', err.message);
       showToast('Health check failed', 'error');
     } finally {
       setCheckingHealth(false);
@@ -145,19 +140,15 @@ export function MCPServerManager({ token }: { token?: string | null }) {
     setSyncing(true);
     setSyncSpinKey((k) => k + 1);
     try {
-      const res = await fetch('/api/mcp-servers/sync', { 
-        method: 'POST',
-        headers: getAuthHeaders(token)
-      });
-      const data = await res.json();
+      const data = await api.post<any>('/api/mcp-servers/sync');
       if (data.success) {
         await fetchServers();
         showToast(data.data?.message || 'Sync completed', 'success');
       } else {
         showToast('Sync failed', 'error');
       }
-    } catch (err) {
-      console.error('Sync failed:', err);
+    } catch (err: any) {
+      console.error('Sync failed:', err.message);
       showToast('Sync failed', 'error');
     } finally {
       setSyncing(false);
@@ -175,12 +166,7 @@ export function MCPServerManager({ token }: { token?: string | null }) {
         payload.skillPath = importUrl;
       }
 
-      const res = await fetch('/api/skills/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders(token) },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const data = await api.post<any>('/api/skills/import', payload);
       if (data.success) {
         showToast(data.data?.message || 'Import completed successfully', 'success');
         setShowImportModal(false);
@@ -188,8 +174,8 @@ export function MCPServerManager({ token }: { token?: string | null }) {
       } else {
         showToast(data.error || 'Import failed', 'error');
       }
-    } catch (err) {
-      console.error('Import failed:', err);
+    } catch (err: any) {
+      console.error('Import failed:', err.message);
       showToast('Import failed', 'error');
     }
   };
@@ -197,26 +183,19 @@ export function MCPServerManager({ token }: { token?: string | null }) {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this MCP server?')) return;
     try {
-      await fetch(`/api/mcp-servers/${id}`, { 
-        method: 'DELETE',
-        headers: getAuthHeaders(token)
-      });
+      await api.delete(`/api/mcp-servers/${id}`);
       setServers((prev) => prev.filter((s) => s.id !== id));
-    } catch (err) {
-      console.error('Delete failed:', err);
+    } catch (err: any) {
+      console.error('Delete failed:', err.message);
     }
   };
 
   const handleToggleEnabled = async (id: string, enabled: boolean) => {
     try {
-      await fetch(`/api/mcp-servers/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders(token) },
-        body: JSON.stringify({ enabled }),
-      });
+      await api.put(`/api/mcp-servers/${id}`, { enabled });
       setServers((prev) => prev.map((s) => (s.id === id ? { ...s, enabled } : s)));
-    } catch (err) {
-      console.error('Toggle failed:', err);
+    } catch (err: any) {
+      console.error('Toggle failed:', err.message);
     }
   };
 
@@ -249,27 +228,16 @@ export function MCPServerManager({ token }: { token?: string | null }) {
     };
 
     try {
-      const headers = { 'Content-Type': 'application/json', ...getAuthHeaders(token) };
       if (editingId) {
-        const res = await fetch(`/api/mcp-servers/${editingId}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
+        const data = await api.put<any>(`/api/mcp-servers/${editingId}`, payload);
         setServers((prev) => prev.map((s) => (s.id === editingId ? data.data : s)));
       } else {
-        const res = await fetch('/api/mcp-servers', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
+        const data = await api.post<any>('/api/mcp-servers', payload);
         setServers((prev) => [...prev, data.data]);
       }
       setShowForm(false);
-    } catch (err) {
-      console.error('Save failed:', err);
+    } catch (err: any) {
+      console.error('Save failed:', err.message);
     }
   };
 

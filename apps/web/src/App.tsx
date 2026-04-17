@@ -20,7 +20,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { AuthPage } from './components/AuthPage';
 import { useConversations } from './lib/useConversations';
 import { cn } from './lib/utils';
-import { getAuthHeaders } from './lib/api';
+import { api } from './lib/api-client';
 
 function AppContent() {
   const { t } = useTranslation();
@@ -131,31 +131,26 @@ function AppContent() {
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const res = await fetch('/api/chat/models', {
-          headers: getAuthHeaders(token)
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const data = Array.isArray(json) ? json : (json.models || []);
+        const json = await api.get<any>('/api/chat/models');
+        const data = Array.isArray(json) ? json : (json.models || []);
 
-          const iconMap: Record<string, any> = {
-            'Sparkles': Sparkles,
-            'Cloud': Cloud,
-            'Cpu': Cpu,
-            'Zap': Sparkles, // fallback for Zap icon
-          };
-          const formattedModels = data.map((m: any) => ({
-            ...m,
-            icon: iconMap[m.icon] || Sparkles
-          }));
+        const iconMap: Record<string, any> = {
+          'Sparkles': Sparkles,
+          'Cloud': Cloud,
+          'Cpu': Cpu,
+          'Zap': Sparkles, // fallback for Zap icon
+        };
+        const formattedModels = data.map((m: any) => ({
+          ...m,
+          icon: iconMap[m.icon] || Sparkles
+        }));
 
-          setModels(formattedModels);
+        setModels(formattedModels);
 
-          if (formattedModels.length > 0) {
-            const exists = formattedModels.some((m: any) => m.id === selectedModelId);
-            if (!selectedModelId || !exists) {
-              setSelectedModelId(formattedModels[0].id);
-            }
+        if (formattedModels.length > 0) {
+          const exists = formattedModels.some((m: any) => m.id === selectedModelId);
+          if (!selectedModelId || !exists) {
+            setSelectedModelId(formattedModels[0].id);
           }
         }
       } catch (err) {

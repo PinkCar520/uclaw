@@ -1,5 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import { useRef, useEffect, useMemo, useState } from 'react';
+import { authFetch } from './api-client';
 
 interface UseChatSessionProps {
   sessionId: string | null;
@@ -40,15 +41,7 @@ export function useChatSession({
     id: sessionId ?? 'new',
     initialMessages: initialMessages,
     api: '/api/chat',
-    // 强制每次请求（包括重试）都动态构造 Headers
-    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-      const activeToken = localStorage.getItem('uclaw_auth_token');
-      const headers = new Headers(init?.headers);
-      if (activeToken) {
-        headers.set('Authorization', `Bearer ${activeToken}`);
-      }
-      return fetch(input, { ...init, headers });
-    },
+    fetch: authFetch,
     body: {
       modelId: selectedModelId,
       search: isSearchMode,

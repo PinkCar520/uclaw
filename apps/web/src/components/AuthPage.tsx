@@ -7,6 +7,7 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation, Trans } from 'react-i18next';
+import { api } from '../lib/api-client';
 
 interface AuthPageProps {
   onLoginSuccess: (token: string, user: any) => void;
@@ -34,17 +35,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
       : { email, password, name };
 
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || t('auth.error_failed'));
-      }
-
+      const data = await api.post<any>(endpoint, body);
       onLoginSuccess(data.access_token, data.user);
     } catch (err: any) {
       setError(err.message);

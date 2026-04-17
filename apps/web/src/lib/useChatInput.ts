@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { api } from './api-client';
 
 interface UseChatInputProps {
   sendMessage: (message: any, options?: any) => Promise<void>;
@@ -32,20 +33,16 @@ export function useChatInput({
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const uploadFile = useCallback(async (file: File): Promise<{ name: string; contentType: string; url: string }> => {
-    const activeToken = token || localStorage.getItem('uclaw_auth_token');
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        ...(activeToken ? { 'Authorization': `Bearer ${activeToken}` } : {})
-      }
-    });
-    if (!res.ok) throw new Error(`Failed to upload file: ${res.statusText}`);
-    const data = await res.json();
-    return { name: file.name, contentType: file.type || 'application/octet-stream', url: data.url };
-  }, [token]);
+    
+    const data = await api.post<any>('/api/upload', formData);
+    return { 
+      name: file.name, 
+      contentType: file.type || 'application/octet-stream', 
+      url: data.url 
+    };
+  }, []);
 
   const onFormSubmit = useCallback(async (e?: any) => {
     if (e) e.preventDefault();

@@ -8,7 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import { PermissionManager } from './PermissionManager';
-import { getAuthHeaders } from '../lib/api';
+import { api } from '../lib/api-client';
 
 export function UserCenter({ token, onLogout }: { token: string | null; onLogout?: () => void }) {
   const { t, i18n } = useTranslation();
@@ -25,15 +25,12 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/user/profile', {
-        headers: getAuthHeaders(token)
-      });
-      const data = await res.json();
+      const data = await api.get<any>('/api/user/profile');
       if (data.success) {
         setUserProfile(data.profile);
       }
-    } catch (e) {
-      console.error('Failed to fetch profile:', e);
+    } catch (err: any) {
+      console.error('Failed to fetch profile:', err.message);
     } finally {
       setIsLoading(false);
     }
@@ -42,37 +39,22 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
   const updatePreferences = async (updates: any) => {
     setSaveStatus('saving');
     try {
-      const res = await fetch('/api/user/preferences', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(token)
-        },
-        body: JSON.stringify(updates)
-      });
-      if (res.ok) {
-        setSaveStatus('success');
-        fetchProfile(); // Refresh
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      }
-    } catch (e) {
+      await api.patch('/api/user/preferences', updates);
+      setSaveStatus('success');
+      fetchProfile(); // Refresh
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err: any) {
       setSaveStatus('idle');
+      console.error('Failed to update preferences:', err.message);
     }
   };
 
   const addCredential = async (systemType: string, tokenVal: string, username: string) => {
     try {
-      await fetch('/api/user/credentials', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(token)
-        },
-        body: JSON.stringify({ systemType, token: tokenVal, username })
-      });
+      await api.post('/api/user/credentials', { systemType, token: tokenVal, username });
       fetchProfile();
-    } catch (e) {
-      console.error('Failed to add credential');
+    } catch (err: any) {
+      console.error('Failed to add credential:', err.message);
     }
   };
 

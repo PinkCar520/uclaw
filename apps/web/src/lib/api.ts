@@ -1,41 +1,14 @@
 /**
- * API Request Utility
- * Centralizes authentication and base fetch logic.
+ * 🔄 旧版 API 桥接层
+ * 建议逐步迁移至使用 ./api-client.ts
  */
+import { api, authFetch, request } from './api-client';
 
-export function getAuthHeaders(token?: string | null): Record<string, string> {
-  const headers: Record<string, string> = {};
-  
-  // 优先使用传入的 token，否则从 localStorage 实时获取
-  const activeToken = token || localStorage.getItem('uclaw_auth_token');
-  
-  if (activeToken) {
-    headers['Authorization'] = `Bearer ${activeToken}`;
-  }
-  
-  const uid = localStorage.getItem('uclaw_user_id');
-  if (uid) {
-    headers['X-User-Id'] = uid;
-  }
-  
-  return headers;
-}
+export { api, authFetch, request };
 
 /**
- * Enhanced fetch wrapper that automatically adds auth headers
+ * 为了兼容旧代码中的 apiFetch 调用
  */
-export async function apiFetch(
-  url: string,
-  options: RequestInit = {},
-  token?: string | null
-): Promise<Response> {
-  const headers = {
-    ...getAuthHeaders(token),
-    ...(options.headers as Record<string, string> || {}),
-  };
-
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+export async function apiFetch(url: string, options: RequestInit = {}, token?: string | null) {
+  return request(url, options);
 }

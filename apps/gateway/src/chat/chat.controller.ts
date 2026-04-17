@@ -146,30 +146,9 @@ export class ChatController {
     console.log(`[Gateway] Agent Reply to UpChat (${message.senderId}): ${replyText}`);
     // 真实生产环境：this.imHandler.sendReply(message.chatId, { text: replyText });
   }
+/**
+ * POST /api/chat/generate-title
 
-  /**
-   * POST /api/chat/open-ide
-   * 直接唤起本地 IDE
-   */
-  @Public()
-  @Post('open-ide')
-  async openIde(@Body() body: { userId: string }) {
-    const { userId } = body;
-    if (!userId) return { success: false, error: 'User ID is required' };
-    
-    try {
-      // 尝试多种常见的 IDE 唤起命令，优先使用 VS Code
-      // 对于 macOS, 'code .' 是标准；'open .' 是打开文件夹。
-      await this.rpcGateway.sendToCli(userId, 'bash', { 
-        command: 'code . || open .' 
-      });
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
-  }
-
-  @Post('generate-title')
   async generateTitle(@Body() body: any) {
     const { message, modelId } = body;
     if (!message) return { success: false, error: 'Message is required' };

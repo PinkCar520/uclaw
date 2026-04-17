@@ -7,7 +7,7 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useTranslation } from 'react-i18next';
-import { getAuthHeaders } from '../lib/api';
+import { api } from '../lib/api-client';
 
 type Category = 'all' | 'pm' | 'cicd' | 'vc' | 'communication' | 'data_science';
 
@@ -75,14 +75,12 @@ export function SkillLibrary({ token }: { token?: string | null }) {
 
     const fetchData = async () => {
       const start = Date.now();
-      const headers = getAuthHeaders(token);
       try {
-        const [skillsRes, statsRes] = await Promise.all([
-          fetch(`/api/skills${activeFilter !== 'all' ? `?category=${activeFilter}` : ''}`, { headers }),
-          fetch('/api/skills/stats', { headers }),
+        const [skillsData, statsData] = await Promise.all([
+          api.get<any>(`/api/skills${activeFilter !== 'all' ? `?category=${activeFilter}` : ''}`),
+          api.get<any>('/api/skills/stats'),
         ]);
-        const skillsData = await skillsRes.json();
-        const statsData = await statsRes.json();
+        
         setSkills(skillsData.data || []);
         setStats(statsData.data || { total: 0, newThisWeek: 0 });
 
@@ -91,20 +89,19 @@ export function SkillLibrary({ token }: { token?: string | null }) {
         const statusResults = await Promise.all(
           skillIds.map(async (id: string) => {
             try {
-              const res = await fetch(`/api/skills/${id}/install/status`, { headers });
-              const data = await res.json();
+              const data = await api.get<any>(`/api/skills/${id}/install/status`);
               return { id, installed: data.data?.installed };
             } catch {
               return { id, installed: false };
             }
           }),
         );
-        const installed = new Set(statusResults.filter((r) => r.installed).map((r) => r.id));
+        const installed = new Set(statusResults.filter((r: any) => r.installed).map((r: any) => r.id));
         setInstalledIds(installed);
       } catch (err) {
         console.error('Failed to fetch skills:', err);
       } finally {
-        // 保证骨架屏至少显示 300ms，让用户看到过渡动画
+        // 保证骨架屏至少显示 300ms
         const elapsed = Date.now() - start;
         const remaining = Math.max(0, 300 - elapsed);
         await new Promise((resolve) => setTimeout(resolve, remaining));
@@ -120,11 +117,7 @@ export function SkillLibrary({ token }: { token?: string | null }) {
     setInstallingId(skillId);
 
     try {
-      const res = await fetch(`/api/skills/${skillId}/install`, { 
-        method: 'POST',
-        headers: getAuthHeaders(token)
-      });
-      const data = await res.json();
+      const data = await api.post<any>(`/api/skills/${skillId}/install`);
       if (data.success) {
         setInstalledIds((prev) => new Set([...prev, skillId]));
       }
@@ -142,11 +135,7 @@ export function SkillLibrary({ token }: { token?: string | null }) {
     setInstallingId(skillId);
 
     try {
-      const res = await fetch(`/api/skills/${skillId}/install`, { 
-        method: 'DELETE',
-        headers: getAuthHeaders(token)
-      });
-      const data = await res.json();
+      const data = await api.delete<any>(`/api/skills/${skillId}/install`);
       if (data.success) {
         setInstalledIds((prev) => {
           const next = new Set(prev);

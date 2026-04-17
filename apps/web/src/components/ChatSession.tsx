@@ -12,8 +12,7 @@ import { IntegrationsPanel } from './chat/IntegrationsPanel';
 import { ActiveContextPanel } from './chat/ActiveContext';
 import { EmptyState } from './chat/EmptyState';
 import { CopyCodeButton, MarkdownComponents, CodeBlock } from './chat/MarkdownConfig';
-
-
+import { api } from '../lib/api-client';
 
 import { useChat } from '@ai-sdk/react';
 import {
@@ -315,13 +314,7 @@ export function ChatSession({
     if (!sessionId) return;
     const interval = setInterval(async () => {
       try {
-        const activeToken = token || localStorage.getItem('uclaw_auth_token');
-        const res = await fetch(`/api/chat/approvals/${sessionId}`, {
-          headers: {
-            'Authorization': `Bearer ${activeToken}`
-          }
-        });
-        const data = await res.json();
+        const data = await api.get<any>(`/api/chat/approvals/${sessionId}`);
         if (data.success && data.data?.length > 0) {
           setPendingApproval(data.data[0]);
         }
@@ -333,17 +326,10 @@ export function ChatSession({
   const handleApprovalResponse = async (status: 'approved' | 'denied') => {
     if (!pendingApproval) return;
     try {
-      await fetch(`/api/chat/approvals/${pendingApproval.id}/respond`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status }),
-      });
+      await api.post(`/api/chat/approvals/${pendingApproval.id}/respond`, { status });
       setPendingApproval(null);
-    } catch (err) {
-      console.error('Approval response failed:', err);
+    } catch (err: any) {
+      console.error('Approval response failed:', err.message);
     }
   };
 
@@ -420,11 +406,12 @@ export function ChatSession({
                       </div>
                     </div>
                 ) : messages.length === 0 ? (
-                    <EmptyState
-                      t={t}
-                      setLocalInput={setLocalInput}
-                      onFormSubmit={onFormSubmit}
-                    />
+                  /* 还原 EmptyState 在此处的渲染，但逻辑改为判断 messages */
+                  <EmptyState
+                    t={t}
+                    setLocalInput={setLocalInput}
+                    onFormSubmit={onFormSubmit}
+                  />
                 ) : (
                     <div key="chat-messages" className="flex flex-col w-full">
                       {Array.from(new Map(messages.map((m: any) => [m.id || m.createdAt || Math.random(), m])).values())
@@ -651,27 +638,17 @@ export function ChatSession({
                 <ActiveContextPanel 
                   context={{
                     ...(activeContext?.payload || {}),
-                    modelInfo: { name: activeDisplayName, latency: '~240ms' },
+                    modelInfo: { 
+                      name: activeDisplayName || 'Qwen3.5 Omni Flash 2026 03 15'
+                    },
+                    usage: {
+                      totalTokens: totalUsage.totalTokens || 0
+                    },
+                    complianceMode: '严格模式',
                     suggestions: activeContext?.payload?.suggestions || ['Run Unit Tests', 'Check Lint', 'Git Status']
                   }}
                   onAction={async (action) => {
-                    if (action === 'open_ide') {
-                      try {
-                        const activeToken = token || localStorage.getItem('uclaw_auth_token');
-                        await fetch('/api/chat/open-ide', {
-                          method: 'POST',
-                          headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${activeToken}`
-                          },
-                          body: JSON.stringify({ userId: user?.workId }),
-                        });
-                      } catch (err) {
-                        console.error('Failed to open IDE:', err);
-                      }
-                    } else {
-                      sendMessage({ content: action, role: 'user' });
-                    }
+                    sendMessage({ content: action, role: 'user' });
                   }}
                 />
                 <div className="border-t border-[#E8E4E2]/60 bg-[#F6F3F2]/30">

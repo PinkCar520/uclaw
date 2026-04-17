@@ -7,7 +7,7 @@
  * - 不使用 IndexedDB，无本地状态
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { apiFetch, getAuthHeaders } from './api';
+import { api } from './api-client';
 
 export interface ConversationSummary {
   id: string;
@@ -47,10 +47,6 @@ export function useConversations({
   useEffect(() => { onAuthExpiredRef.current = onAuthExpired; }, [onAuthExpired]);
   useEffect(() => { onUserProfileRef.current = onUserProfile; }, [onUserProfile]);
 
-  const authHeaders = useCallback((): Record<string, string> => {
-    return getAuthHeaders(token);
-  }, [token]);
-
   // ── 初始化：拉取用户信息 + 会话列表 ─────────────────────────────
   useEffect(() => {
     if (!token) {
@@ -61,15 +57,11 @@ export function useConversations({
     const init = async () => {
       // 拉取用户资料
       try {
-        const res = await apiFetch('/api/user/profile', {}, token);
-        const data = await res.json();
+        const data = await api.get<any>('/api/user/profile');
         if (data.success) {
           onUserProfileRef.current(data.profile);
-        } else if (res.status === 401) {
-          onAuthExpiredRef.current();
-          return;
         }
-      } catch {
+      } catch (err) {
         console.error('[useConversations] Failed to fetch user profile');
       }
 
@@ -86,17 +78,15 @@ export function useConversations({
 
   // ── 刷新会话列表 ──────────────────────────────────────────────
   const refreshConversations = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await apiFetch('/api/sessions', {}, token);
-      const data = await res.json();
+      const data = await api.get<any>('/api/sessions');
       if (data.success && Array.isArray(data.data)) {
         setConversations(data.data);
       }
     } catch (err) {
       console.error('[useConversations] Failed to refresh conversations:', err);
     }
-  }, [token]);
+  }, []);
 
   // ── 路由变化：拉取当前会话消息（刷新恢复的关键）────────────────
   useEffect(() => {
@@ -114,13 +104,7 @@ export function useConversations({
     const loadMessages = async () => {
       setIsLoadingMessages(true);
       try {
-        const res = await apiFetch(`/api/sessions/${sessionId}/messages`, {}, token);
-        if (!res.ok) {
-          console.error(`[useConversations] Failed to load messages for session ${sessionId}`);
-          setCurrentMessages([]);
-          return;
-        }
-        const data = await res.json();
+        const data = await api.get<any>(`/api/sessions/${sessionId}/messages`);
         if (data.success && Array.isArray(data.data)) {
           setCurrentMessages(data.data);
         }
@@ -152,14 +136,8 @@ export function useConversations({
    * 创建新会话 — 服务端创建，返回 sessionId
    */
   const createSession = useCallback(async (): Promise<string | null> => {
-    if (!token) return null;
     try {
-      const res = await apiFetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel: 'web', title: t('sidebar.new_chat') }),
-      }, token);
-      const data = await res.json();
+      const data = await api.post<any>('/api/sessions', { channel: 'web', title: t('sidebar.new_chat') });
       if (data.success && data.data?.id) {
         const newId = data.data.id;
         justCreatedSessionIdRef.current = newId; // 标记刚创建的会话
@@ -180,7 +158,7 @@ export function useConversations({
       console.error('[useConversations] Failed to create session:', err);
     }
     return null;
-  }, [token, authHeaders, t]);
+  }, [t]);
 
   /**
    * 导航到新对话（空白）
@@ -204,16 +182,12 @@ export function useConversations({
     // 乐观更新
     setConversations(prev => prev.map(c => c.id === id ? { ...c, title: newTitle } : c));
     try {
-      await apiFetch(`/api/sessions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle }),
-      }, token);
+      await api.patch(`/api/sessions/${id}`, { title: newTitle });
     } catch (err) {
       console.error('[useConversations] Rename failed, refreshing:', err);
       await refreshConversations();
     }
-  }, [token, refreshConversations]);
+  }, [refreshConversations]);
 
   /**
    * 删除会话（DELETE，乐观更新）
@@ -221,15 +195,13 @@ export function useConversations({
   const handleDeleteConversations = useCallback(async (ids: string[]) => {
     setConversations(prev => prev.filter(c => !ids.includes(c.id)));
     await Promise.allSettled(
-      ids.map(id =>
-        apiFetch(`/api/sessions/${id}`, { method: 'DELETE' }, token)
-      )
+      ids.map(id => api.delete(`/api/sessions/${id}`))
     );
     // 若当前打开的会话被删除，返回首页
     if (sessionId && ids.includes(sessionId)) {
       navigate('/');
     }
-  }, [token, sessionId, navigate]);
+  }, [sessionId, navigate]);
 
   /**
    * 流完成后刷新侧边栏（获取服务端写入的最新标题/消息数）

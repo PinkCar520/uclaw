@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { SkillOrchestrator } from '../skill/skill.orchestrator';
 import { SkillLoader } from '../skill/skill.loader';
+import { RpcGateway } from './rpc.gateway';
 import { UpChatHandler } from '@uclaw/mcp-im';
 import type { SkillContext } from '@uclaw/core';
 import { IS_PUBLIC_KEY } from '../auth/sso.guard';
@@ -107,7 +108,6 @@ export class ChatController {
     };
 
     await this.skillOrchestrator.streamResponse(messages, res, ctx, modelId, sessionId);
-
   }
 
   /**
@@ -146,9 +146,13 @@ export class ChatController {
     console.log(`[Gateway] Agent Reply to UpChat (${message.senderId}): ${replyText}`);
     // 真实生产环境：this.imHandler.sendReply(message.chatId, { text: replyText });
   }
-/**
- * POST /api/chat/generate-title
 
+  /**
+   * POST /api/chat/generate-title
+   * 为对话生成摘要标题
+   */
+  @Public()
+  @Post('generate-title')
   async generateTitle(@Body() body: any) {
     const { message, modelId } = body;
     if (!message) return { success: false, error: 'Message is required' };
@@ -157,4 +161,3 @@ export class ChatController {
     return { success: true, title };
   }
 }
-

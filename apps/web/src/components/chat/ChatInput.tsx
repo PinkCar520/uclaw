@@ -62,7 +62,7 @@ export function ChatInput({
   return (
     <div className="pt-2 pb-4 md:pb-8 px-4 md:px-8 bg-gradient-to-t from-[#FCF9F8] via-[#FCF9F8] to-transparent z-10 w-full mt-auto">
       <div className="max-w-[800px] mx-auto relative">
-        <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 ring-[#1C1B1B]/5 transition-all focus-within:outline-none">
+        <div className="bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 ring-[#1C1B1B]/5 transition-all">
           <AnimatePresence>
             {selectedFiles.length > 0 && (
               <motion.div 
@@ -96,7 +96,7 @@ export function ChatInput({
                 }
               }}
               placeholder={t('chat.placeholder', 'Ask anything...')}
-              className="w-full bg-transparent border-none focus:ring-0 text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] py-3 px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed"
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] py-3 px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed"
               rows={1}
             />
           </div>

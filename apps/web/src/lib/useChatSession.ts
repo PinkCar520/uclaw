@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { authFetch } from './api-client';
 
 interface UseChatSessionProps {
@@ -109,16 +109,35 @@ export function useChatSession({
     }
     return { promptTokens: inputTokens, completionTokens: outputTokens, totalTokens: inputTokens + outputTokens };
   }, [messages]);
+const handleStop = () => {
+  setIsStopped(true);
+  stop();
+};
 
-  const handleStop = () => {
-    setIsStopped(true);
-    stop();
-  };
+// 🛡️ 加固版发送函数：确保每次调用都带上最新的 Token 和 Body 配置
+const safeSendMessage = useCallback(async (message: any, options: any = {}) => {
+  const activeToken = localStorage.getItem('uclaw_auth_token');
+  return sendMessage(message, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${activeToken}`
+    },
+    body: {
+      ...options.body,
+      modelId: selectedModelId,
+      search: isSearchMode,
+      knowledge: isKnowledgeMode,
+      sessionId: sessionId,
+    }
+  });
+}, [sendMessage, selectedModelId, isSearchMode, isKnowledgeMode, sessionId]);
 
-  return {
-    messages,
-    sendMessage,
-    status,
+return {
+  messages,
+  sendMessage: safeSendMessage, // 导出加固后的版本
+  status,
+...
     setMessages,
     stop,
     error,

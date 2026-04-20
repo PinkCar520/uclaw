@@ -59,9 +59,9 @@ services:
         max-size: "100m"
         max-file: "3"
 
-  # 用户中心持久化核心 (影子用户, 偏好, 会话漫游)
+  # 用户中心持久化核心 (支持 Vector 检索)
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: uclaw-postgres
     restart: always
     environment:
@@ -77,6 +77,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # 可观测性中心 (Tracing / Jaeger)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: uclaw-jaeger
+    restart: always
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # 禅道 Web 服务 (集成测试环境)
   zentao:

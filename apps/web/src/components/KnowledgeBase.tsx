@@ -1,15 +1,82 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Database, Cloud, UploadCloud, ArrowRight,
   FileText, Table as TableIcon, Webhook,
-  Sparkles
+  Sparkles, Trash2, RefreshCw, Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { api } from '../lib/api-client';
 
 export function KnowledgeBase() {
   const { t } = useTranslation();
+  
+  // Logic State
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({ activeSources: 124, totalChunks: 0, dataIndexedMb: '4.2' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [docsRes, statsRes] = await Promise.all([
+        api.get<any>('/api/rag/documents'),
+        api.get<any>('/api/rag/stats')
+      ]);
+      if (docsRes.success) setDocuments(docsRes.data);
+      if (statsRes.success) {
+        setStats({
+          activeSources: statsRes.data.activeSources || 0,
+          dataIndexedMb: statsRes.data.dataIndexedMb || '0.00'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch RAG data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post<any>('/api/upload/rag', formData);
+      if (res.success) {
+        await fetchData();
+      }
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Upload failed: ' + (err as any).message);
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+    try {
+      const res = await api.delete<any>(`/api/rag/documents/${id}`);
+      if (res.success) {
+        await fetchData();
+      }
+    } catch (err) {
+      console.error('Delete failed:', err);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#FCF9F8] font-sans text-[#1C1B1B] p-10 relative pb-32">
       <div className="max-w-7xl mx-auto space-y-12 w-full">
@@ -21,6 +88,12 @@ export function KnowledgeBase() {
             <p className="text-[#716B67] text-lg">{t('knowledge_base.subtitle')}</p>
           </div>
           <div className="flex gap-3">
+            <button 
+                onClick={fetchData}
+                className="p-2 hover:bg-white/50 rounded-full transition-colors"
+            >
+                <RefreshCw className={cn("w-5 h-5 text-[#716B67]", isLoading && "animate-spin")} />
+            </button>
             <div className="px-4 py-2 bg-[#ffdbce] text-[#783112] rounded-lg text-sm font-semibold flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#EC5B14] animate-pulse"></span>
               {t('knowledge_base.status.healthy')}
@@ -36,7 +109,7 @@ export function KnowledgeBase() {
             <div className="bg-white p-6 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#716B67] mb-1">{t('knowledge_base.stats.active_sources')}</p>
-                <h3 className="text-3xl font-display font-bold">124</h3>
+                <h3 className="text-3xl font-display font-bold">{stats.activeSources}</h3>
               </div>
               <div className="w-12 h-12 rounded-lg bg-[#EC5B14]/10 flex items-center justify-center">
                 <Database className="text-[#EC5B14] w-6 h-6" />
@@ -46,7 +119,7 @@ export function KnowledgeBase() {
             <div className="bg-white p-6 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-[#716B67] mb-1">{t('knowledge_base.stats.data_indexed')}</p>
-                <h3 className="text-3xl font-display font-bold">4.2 <span className="text-lg font-medium text-[#716B67]">{t('knowledge_base.stats.unit_tb')}</span></h3>
+                <h3 className="text-3xl font-display font-bold">{stats.dataIndexedMb} <span className="text-lg font-medium text-[#716B67]">{t('knowledge_base.stats.unit_mb')}</span></h3>
               </div>
               <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
                 <Cloud className="text-blue-600 w-6 h-6" />
@@ -56,7 +129,19 @@ export function KnowledgeBase() {
           </div>
 
           {/* Ingest Area */}
-          <div className="md:col-span-8 bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-8 flex flex-col items-center justify-center border-2 border-dashed border-[#E8E4E2] hover:border-[#EC5B14]/40 group hover:bg-[#FCF9F8] transition-all cursor-pointer">
+          <div className="md:col-span-8 bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-8 flex flex-col items-center justify-center border-2 border-dashed border-[#E8E4E2] hover:border-[#EC5B14]/40 group hover:bg-[#FCF9F8] transition-all cursor-pointer relative overflow-hidden">
+            {isUploading && (
+                <div className="absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
+                    <Loader2 className="w-10 h-10 text-[#EC5B14] animate-spin mb-2" />
+                    <p className="font-bold text-[#EC5B14]">Indexing...</p>
+                </div>
+            )}
+            <input 
+                type="file" 
+                className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                onChange={handleFileUpload}
+                accept=".txt,.md,.json,.js,.ts,.py"
+            />
             <div className="w-16 h-16 rounded-full bg-[#F6F3F2] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                <UploadCloud className="text-[#EC5B14] w-8 h-8" />
             </div>
@@ -66,7 +151,7 @@ export function KnowledgeBase() {
           </div>
         </section>
 
-        {/* Recent Projects Section */}
+        {/* Recent Projects Section (RESTORED) */}
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-2xl font-display font-bold tracking-tight">{t('knowledge_base.projects.title')}</h3>
@@ -153,7 +238,7 @@ export function KnowledgeBase() {
           </div>
         </section>
 
-        {/* Knowledge Assets Table & Sidebar Segment */}
+        {/* Knowledge Assets Table & Sidebar Segment (RESTORED) */}
         <section className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           <div className="lg:col-span-3 bg-white rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-8 overflow-hidden">
@@ -166,58 +251,54 @@ export function KnowledgeBase() {
                     <th className="pb-4 font-bold">{t('knowledge_base.assets.table.type')}</th>
                     <th className="pb-4 font-bold">{t('knowledge_base.assets.table.last_synced')}</th>
                     <th className="pb-4 font-bold text-right">{t('knowledge_base.assets.table.status')}</th>
+                    <th className="pb-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F6F3F2]">
                   
-                  <tr className="group hover:bg-[#FCF9F8] transition-colors cursor-default">
-                    <td className="py-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                         <FileText className="text-[#EC5B14] w-4 h-4" />
-                      </div>
-                      <span className="font-semibold text-sm">global_tax_compliance_2023.pdf</span>
-                    </td>
-                    <td className="py-4 text-[#716B67] text-sm">{t('knowledge_base.assets.types.pdf')}</td>
-                    <td className="py-4 text-[#716B67] text-sm">Oct 12, 14:30</td>
-                    <td className="py-4 text-right">
-                      <span className="px-2.5 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase tracking-widest">{t('knowledge_base.assets.status.indexed')}</span>
-                    </td>
-                  </tr>
+                  {documents.length === 0 && !isLoading && (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-[#716B67] italic font-medium uppercase tracking-tight">
+                        {t('knowledge_base.assets.status.empty') || 'No documents indexed yet.'}
+                      </td>
+                    </tr>
+                  )}
 
-                  <tr className="group hover:bg-[#FCF9F8] transition-colors cursor-default">
-                    <td className="py-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                         <TableIcon className="text-blue-500 w-4 h-4" />
-                      </div>
-                      <span className="font-semibold text-sm">customer_retention_data_v2</span>
-                    </td>
-                    <td className="py-4 text-[#716B67] text-sm">{t('knowledge_base.assets.types.sql')}</td>
-                    <td className="py-4 text-[#716B67] text-sm">Oct 12, 09:15</td>
-                    <td className="py-4 text-right">
-                      <span className="px-2.5 py-1 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full uppercase tracking-widest">{t('knowledge_base.assets.status.syncing')}</span>
-                    </td>
-                  </tr>
-
-                  <tr className="group hover:bg-[#FCF9F8] transition-colors cursor-default">
-                    <td className="py-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                         <Webhook className="text-purple-500 w-4 h-4" />
-                      </div>
-                      <span className="font-semibold text-sm">Salesforce_Connector_Production</span>
-                    </td>
-                    <td className="py-4 text-[#716B67] text-sm">{t('knowledge_base.assets.types.api')}</td>
-                    <td className="py-4 text-[#716B67] text-sm">Oct 11, 23:45</td>
-                    <td className="py-4 text-right">
-                      <span className="px-2.5 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase tracking-widest">{t('knowledge_base.assets.status.indexed')}</span>
-                    </td>
-                  </tr>
+                  {documents.map((doc) => (
+                    <tr key={doc.id} className="group hover:bg-[#FCF9F8] transition-colors cursor-default">
+                      <td className="py-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                           <FileText className="text-[#EC5B14] w-4 h-4" />
+                        </div>
+                        <span className="font-semibold text-sm">{doc.title}</span>
+                      </td>
+                      <td className="py-4 text-[#716B67] text-sm uppercase">{doc.title.split('.').pop()}</td>
+                      <td className="py-4 text-[#716B67] text-sm">{new Date(doc.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4 text-right">
+                        <span className={cn(
+                            "px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest",
+                            doc.status === 'indexed' ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                        )}>
+                            {doc.status === 'indexed' ? t('knowledge_base.assets.status.indexed') : t('knowledge_base.assets.status.syncing')}
+                        </span>
+                      </td>
+                      <td className="py-4 text-right">
+                        <button 
+                          onClick={() => handleDelete(doc.id)}
+                          className="p-1.5 text-[#716B67] hover:text-red-500 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
 
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* AI Insights Sidebar */}
+          {/* AI Insights Sidebar (RESTORED) */}
           <div className="space-y-6">
             
             <div className="bg-gradient-to-br from-[#cc4900] to-[#EC5B14] p-6 rounded-[16px] text-white shadow-lg shadow-[#EC5B14]/20 relative overflow-hidden group">

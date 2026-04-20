@@ -1,3 +1,4 @@
+import './tracing/otel-sdk'; // Must be first for auto-instrumentation
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { json, urlencoded } from 'express';

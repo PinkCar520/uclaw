@@ -86,18 +86,40 @@ export function useChatSession({
       const sid = sessionIdRef.current;
       if (sid) {
         await onStreamFinished(sid);
+        // 清空 SDK 内部的增量消息列表，因为此时它们已经通过 initialMessages -> fullTree -> activeMessages 同步到了 UI
+        setMessages([]); 
       }
     }
   });
 
   // 当 SDK 的 messages 发生变化（流式过程中），同步更新到 UI 列表
-  // 注意：流式中的 SDK messages 只包含当前最新的一轮，或者全量，取决于 SDK 配置
-  // 这里的策略是：在非流式状态下，UI 使用 activeMessages；流式状态下，临时合并 SDK 的增量
+  // 这里的策略是：在流式过程中，为了避免历史消息重复或 ID 冲突导致的闪烁，
+  // 我们在有增量消息时，优先展示增量消息（因为 SDK 的 messages 通常包含了当前对话上下文）
+  // 或者，如果 SDK messages 只是当前这一轮，则合并。
+  // 为了彻底解决闪烁：
+  // 1. 在 streaming/submitting 期间，合并展示。
+  // 2. 在 idle 且 messages 还有值时，说明正在等待/进行服务端刷新，此时继续展示合并列表。
+  // 3. 但由于 ID 可能不同，我们需要在 ChatSession.tsx 中更稳健地去重，或者在这里去重。
   const displayMessages = useMemo(() => {
+    // 1. 流式过程中，直接合并展示，此时 messages ID 是 chat-xxx 临时 ID，与历史不冲突
     if (status === 'streaming' || status === 'submitting') {
-      return messages; // 流式时直接使用 SDK 维护的列表
+      return [...activeMessages, ...messages];
     }
-    return activeMessages; // 闲置时使用计算出的树路径
+
+    // 2. 传输结束但 messages 还没来得及清空（等待 refresh 完成的瞬间）
+    if (messages.length > 0) {
+      // 此时 activeMessages 可能已经通过 refresh 拿到了最新数据。
+      // 我们过滤掉已经在 activeMessages 中存在的流式消息（通过内容匹配）以防重复
+      const filtered = messages.filter((m: any) => {
+        return !activeMessages.some(am => 
+          am.role === m.role && am.content === m.content && m.content.length > 0
+        );
+      });
+      return [...activeMessages, ...filtered];
+    }
+
+    // 3. 闲置状态，使用树路径
+    return activeMessages;
   }, [status, messages, activeMessages]);
 
   const isLoading = status === 'streaming' || status === 'submitting';
@@ -111,22 +133,31 @@ export function useChatSession({
     prevIsLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  // Initial messages loading - 将全量消息存入树
+  // Sync initialMessages to fullTree
   useEffect(() => {
-    if ((!initializedRef.current || fullTree.length === 0) && initialMessages.length > 0) {
-      initializedRef.current = true;
+    if (initialMessages.length > 0) {
       setFullTree(initialMessages);
-      titleGeneratedRef.current = true;
       
-      // 默认选中最后一条消息所在的路径
       const sorted = [...initialMessages].sort((a, b) => 
         new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
       );
-      if (sorted[0]) {
-        setCurrentLeafId(sorted[0].id);
+      const latestMessage = sorted[0];
+
+      if (!initializedRef.current || !currentLeafId) {
+        initializedRef.current = true;
+        titleGeneratedRef.current = true;
+        if (latestMessage) {
+            setCurrentLeafId(latestMessage.id);
+        }
+      } else {
+        // 如果 initialMessages 发生了实质性更新（通常是流式结束后的 refresh），
+        // 且当前 leaf 就在这堆消息中，尝试跟随到最新的叶子
+        if (latestMessage && latestMessage.id !== currentLeafId) {
+           setCurrentLeafId(latestMessage.id);
+        }
       }
     }
-  }, [initialMessages, fullTree.length]);
+  }, [initialMessages]);
 
   const totalUsage = useMemo(() => {
     let inputTokens = 0;

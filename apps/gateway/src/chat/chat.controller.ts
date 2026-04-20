@@ -15,7 +15,6 @@ export class ChatController {
   private imHandler = new UpChatHandler();
 
   constructor(
-    private readonly chatService: ChatService,
     private readonly skillOrchestrator: SkillOrchestrator,
     private readonly skillLoader: SkillLoader,
     private readonly rpcGateway: RpcGateway,
@@ -105,6 +104,10 @@ export class ChatController {
       source: 'web',
       userMessage,
       workspacePath: body.workspacePath,
+      // @ts-ignore
+      search: body.search,
+      // @ts-ignore
+      knowledge: body.knowledge,
     };
 
     await this.skillOrchestrator.streamResponse(messages, res, ctx, modelId, sessionId);

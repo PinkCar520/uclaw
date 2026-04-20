@@ -1,0 +1,8 @@
+{
+    "rules": [
+        {
+            "action": "softAsk",
+            "pattern": "local_file_read"
+        }
+    ]
+}

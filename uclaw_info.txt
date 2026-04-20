@@ -1,0 +1,1 @@
+UClaw 银行 AI 助手的版本是 v2.5，它采用了全新的 SkillOrchestrator 编排引擎。

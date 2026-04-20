@@ -376,13 +376,13 @@ export class MCPClientManager implements OnModuleInit, OnModuleDestroy {
         async (request) => {
           this.logger.log(`[Sampling:${resolvedConfig.id}] Received sampling request`);
           
-          const { ChatService } = await import('../chat/chat.service.js');
-          const chatService = this.moduleRef.get(ChatService, { strict: false });
+          const { SkillOrchestrator } = await import('../skill/skill.orchestrator.js');
+          const orchestrator = this.moduleRef.get(SkillOrchestrator, { strict: false });
 
-          if (!chatService) throw new Error('ChatService not available');
+          if (!orchestrator) throw new Error('SkillOrchestrator not available');
 
           const prompt = request.params.messages.map((m: any) => m.content.type === 'text' ? m.content.text : '').join('\n');
-          const responseText = await chatService.generateChatText('system-sampling', prompt);
+          const responseText = await orchestrator.textResponse('system-sampling', prompt, 'cli');
 
           return {
             role: 'assistant',

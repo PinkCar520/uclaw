@@ -9,6 +9,9 @@ import { PermissionService } from './permission.service';
 import { RpcGateway } from '../chat/rpc.gateway';
 import { SessionService } from '../session/session.service';
 import { ApprovalService } from './approval.service';
+import { TracingService } from '../tracing/tracing.service';
+import { RAGService } from '../rag/rag.service';
+import { ZentaoService } from '../zentao/zentao.service';
 import { z } from 'zod';
 import type { SkillContext } from '@uclaw/core';
 
@@ -29,6 +32,9 @@ export class SkillOrchestrator {
     private rpcGateway: RpcGateway,
     private sessionService: SessionService,
     private approvalService: ApprovalService,
+    private tracingService: TracingService,
+    private ragService: RAGService,
+    private zentaoService: ZentaoService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -131,15 +137,29 @@ export class SkillOrchestrator {
   // ──────────────────────────────────────────────
   private async buildSystemPrompt(ctx: SkillContext): Promise<string> {
     const onlineClis = this.rpcGateway.getOnlineUsers();
-
-    let prompt = `你是银行内网 AI 助手 UClaw。
+    const promptPath = this.configService.get<string>('SYSTEM_PROMPT_PATH') || 'agent/prompts/system_prompt.md';
+    
+    let basePrompt = `你是银行内网 AI 助手 UClaw。
 当前登录用户工号: ${ctx.userId}
 当前在线的本地 CLI 节点: ${onlineClis.join(', ') || '无'}
 
 你可以调用 MCP 工具以及直接操作开发者本地工作站的文件和 Git 仓库。
 拿到工具执行结果后，请用中文进行通俗易懂的总结。`;
 
+    try {
+      const fullPath = require('path').resolve(process.cwd(), promptPath);
+      if (require('fs').existsSync(fullPath)) {
+        basePrompt = require('fs').readFileSync(fullPath, 'utf-8');
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to load prompt from ${promptPath}, using fallback.`);
+    }
+
     const catalogXml = await this.skillLoader.buildCatalogXml();
+    let prompt = basePrompt
+        .replace('{{currentUserId}}', ctx.userId)
+        .replace('{{onlineClis}}', onlineClis.join(', ') || '无');
+        
     prompt += `\n\n以下 Skills 提供了特定任务的专项指令。当用户的请求与某个 Skill 的描述匹配时，请调用 activate_skill 工具加载该 Skill 的完整指令。\n\n${catalogXml}`;
 
     const guide = await this.skillLoader.loadAiguide(ctx.workspacePath);
@@ -157,6 +177,56 @@ export class SkillOrchestrator {
     const currentUserId = ctx.userId;
 
     const atomicTools = {
+      getBugInfo: tool({
+        description: '获取指定 Bug ID 的详细信息，结果将以卡片形式展示',
+        inputSchema: z.object({
+          bugId: z.string().describe('缺陷的 ID，如 BUG-2048'),
+        }),
+        execute: async ({ bugId }) => {
+          const bug = await this.zentaoService.getBugInfo(bugId);
+          if (!bug) {
+            return { found: false, message: `未找到 BUG-${bugId}` };
+          }
+          return {
+            found: true,
+            bugId: bug.id,
+            ui: {
+              uiType: 'bug_card',
+              props: {
+                id: bug.id,
+                title: bug.title,
+                status: bug.status,
+                assignee: bug.assignee,
+                severity: bug.severity,
+                description: bug.description,
+                createdAt: bug.createdAt,
+              },
+            },
+          };
+        },
+      }),
+
+      searchBugs: tool({
+        description: '根据关键词在禅道中搜索缺陷',
+        inputSchema: z.object({
+          query: z.string().describe('搜索关键词'),
+        }),
+        execute: async ({ query }) => {
+          return await this.zentaoService.searchBugs(query);
+        },
+      }),
+
+      resolveBug: tool({
+        description: '在禅道中将指定的 Bug 标记为已解决（Resolved）',
+        inputSchema: z.object({
+          bugId: z.string().describe('缺陷的 ID，如 BUG-5'),
+        }),
+        execute: async ({ bugId }) => {
+          const success = await this.zentaoService.resolveBug(bugId);
+          return { status: success ? 'Success' : 'Error', bugId };
+        },
+      }),
+
       local_file_read: tool({
         description: '读取开发者本地工作站的文件内容',
         inputSchema: z.object({
@@ -181,6 +251,28 @@ export class SkillOrchestrator {
               progress: 100
             }
           };
+        },
+      }),
+
+      rag_search: tool({
+        description: '在 UClaw 知识库（RAG）中搜索相关文档。适用于回答银行业务规则、系统使用说明、代码库规范等问题。',
+        inputSchema: z.object({
+          query: z.string().describe('搜索关键词或语义查询'),
+          limit: z.number().optional().default(5).describe('返回结果条数'),
+        }),
+        execute: async ({ query, limit }) => {
+          return await this.tracingService.traceCall('RAG Search', { query, limit }, async (span) => {
+            const results = await this.ragService.searchSimilarity(query, limit);
+            span.setAttribute('results_count', results.length);
+            return {
+              status: 'Success',
+              results: results.map(r => ({
+                title: r.title,
+                content: r.content,
+                score: r.distance,
+              }))
+            };
+          });
         },
       }),
 
@@ -327,122 +419,164 @@ export class SkillOrchestrator {
   }
 
   async streamResponse(messages: any[], res: Response, ctx: SkillContext, modelId?: string, sessionId?: string): Promise<void> {
-    try {
-      this.logger.log(`[Orchestrator] streamResponse session=${sessionId} messages=${messages?.length}`);
-      
-      let newUserMsgId: string | undefined;
+    const isSearchMode = (ctx as any).search === true;
+    const isKnowledgeMode = (ctx as any).knowledge === true;
 
-      if (sessionId && Array.isArray(messages)) {
-        const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-        if (lastUserMsg) {
-          const userContent = typeof lastUserMsg.content === 'string' ? lastUserMsg.content : '';
-          newUserMsgId = await this.sessionService.addMessage(sessionId, {
-            role: 'user',
-            content: userContent,
-            parentId: (lastUserMsg as any).parentId,
-            parts: lastUserMsg.parts,
-            attachments: lastUserMsg.experimental_attachments,
-          });
-        }
-      }
+    return await this.tracingService.traceCall('streamResponse', { 
+      sessionId, 
+      userId: ctx.userId,
+      isSearch: isSearchMode,
+      isKnowledge: isKnowledgeMode
+    }, async (span) => {
+      try {
+        this.logger.log(`[Orchestrator] streamResponse session=${sessionId} messages=${messages?.length}`);
+        
+        let newUserMsgId: string | undefined;
 
-      // Robustly ensure messages have parts for the SDK
-      const sanitizedMessages = (messages || []).map(m => {
-        if (!m) return { role: 'user', content: '', parts: [] };
-        let parts = m.parts;
-        if (!parts && typeof m.content === 'string') {
-          parts = [{ type: 'text', text: m.content }];
-        }
-        return { ...m, parts: parts || [] };
-      });
-
-      const modelMessages = await convertToModelMessages(sanitizedMessages);
-      const [systemPrompt, tools] = await Promise.all([this.buildSystemPrompt(ctx), this.buildTools(ctx, sessionId)]);
-
-      const allParts: any[] = [];
-      let fullText = '';
-
-      const result = streamText({
-        model: this.getModel(modelId),
-        messages: modelMessages,
-        toolChoice: 'auto',
-        stopWhen: stepCountIs(10),
-        system: systemPrompt,
-        tools,
-        onStepFinish: (event) => {
-          const { text, toolCalls, toolResults } = event;
-          
-          // 1. 记录文本
-          if (text) { 
-            fullText += text; 
-            allParts.push({ type: 'text', text }); 
+        if (sessionId && Array.isArray(messages)) {
+          const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+          if (lastUserMsg) {
+            const userContent = typeof lastUserMsg.content === 'string' ? lastUserMsg.content : '';
+            newUserMsgId = await this.sessionService.addMessage(sessionId, {
+              role: 'user',
+              content: userContent,
+              parentId: (lastUserMsg as any).parentId,
+              parts: lastUserMsg.parts,
+              attachments: lastUserMsg.experimental_attachments,
+            });
           }
+        }
 
-          // 2. 闭环审计逻辑：确保每一个 toolCall 都有对应的结果进入 allParts
-          const handledCallIds = new Set<string>();
+        // Robustly ensure messages have parts for the SDK
+        const sanitizedMessages = (messages || []).map(m => {
+          if (!m) return { role: 'user', content: '', parts: [] };
+          let parts = m.parts;
+          if (!parts && typeof m.content === 'string') {
+            parts = [{ type: 'text', text: m.content }];
+          }
+          return { ...m, parts: parts || [] };
+        });
 
-          // 先处理已经有真实结果的调用
-          if (toolResults && Array.isArray(toolResults)) {
-            for (const tr of toolResults) {
-              const part = { 
-                type: 'tool-invocation', 
-                toolCallId: tr.toolCallId, 
-                toolName: tr.toolName, 
-                args: tr.input, 
-                result: tr.output 
-              };
-              allParts.push(part);
-              handledCallIds.add(tr.toolCallId);
+        // --- RAG Context Injection ---
+        if (isSearchMode || isKnowledgeMode) {
+          const lastUserText = ctx.userMessage;
+          if (lastUserText) {
+            const contextResults = await this.ragService.searchSimilarity(lastUserText, 3);
+            if (contextResults.length > 0) {
+              const contextText = contextResults
+                .map(r => `[Document: ${r.title}]\n${r.content}`)
+                .join('\n\n');
+              
+              const ragPrompt = `以下是来自 UClaw 知识库的相关背景资料，请结合这些信息回答用户问题：\n\n${contextText}`;
+              
+              const lastIdx = sanitizedMessages.length - 1;
+              if (lastIdx >= 0 && sanitizedMessages[lastIdx].role === 'user') {
+                sanitizedMessages[lastIdx].content = `${ragPrompt}\n\n用户问题：${sanitizedMessages[lastIdx].content}`;
+                // Also update parts if they exist
+                if (sanitizedMessages[lastIdx].parts) {
+                    sanitizedMessages[lastIdx].parts = [{ type: 'text', text: sanitizedMessages[lastIdx].content }];
+                }
+              }
+              span.setAttribute('rag_context_injected', true);
             }
           }
+        }
 
-          // 补全审计：如果某些 toolCalls 丢失了结果（如异常中断），补全占位符防止 SDK 报错
-          if (toolCalls && Array.isArray(toolCalls)) {
-            for (const tc of toolCalls) {
-              if (!handledCallIds.has(tc.toolCallId)) {
-                this.logger.warn(`[Orchestrator] Missing result for tool call ${tc.toolCallId} (${tc.toolName}). Injecting placeholder.`);
-                allParts.push({
-                  type: 'tool-invocation',
-                  toolCallId: tc.toolCallId,
-                  toolName: tc.toolName,
-                  args: (tc as any).args,
-                  result: { error: 'Execution was interrupted or failed to return a valid result.' }
-                });
+        const modelMessages = await convertToModelMessages(sanitizedMessages);
+        const [systemPrompt, tools] = await Promise.all([this.buildSystemPrompt(ctx), this.buildTools(ctx, sessionId)]);
+
+        const allParts: any[] = [];
+        let fullText = '';
+
+        const result = streamText({
+          model: this.getModel(modelId),
+          messages: modelMessages,
+          toolChoice: 'auto',
+          stopWhen: stepCountIs(10),
+          system: systemPrompt,
+          tools,
+          onStepFinish: (event) => {
+            const { text, toolCalls, toolResults } = event;
+            
+            // 1. 记录文本
+            if (text) { 
+              fullText += text; 
+              allParts.push({ type: 'text', text }); 
+            }
+
+            // 2. 闭环审计逻辑：确保每一个 toolCall 都有对应的结果进入 allParts
+            const handledCallIds = new Set<string>();
+
+            // 先处理已经有真实结果的调用
+            if (toolResults && Array.isArray(toolResults)) {
+              for (const tr of toolResults) {
+                const part = { 
+                  type: 'tool-invocation', 
+                  toolCallId: tr.toolCallId, 
+                  toolName: tr.toolName, 
+                  args: tr.input, 
+                  result: tr.output 
+                };
+                allParts.push(part);
+                handledCallIds.add(tr.toolCallId);
               }
             }
-          }
-        },
-        onFinish: async ({ totalUsage }) => {
-          // 修改持久化逻辑：只要有文本或者有工具调用记录 (allParts)，就必须保存
-          if (sessionId && (fullText || allParts.length > 0)) {
-            try {
-              const usage = totalUsage ? { 
-                inputTokens: totalUsage.inputTokens ?? 0, 
-                outputTokens: totalUsage.outputTokens ?? 0, 
-                totalTokens: totalUsage.totalTokens ?? 0 
-              } : undefined;
-              
-              await this.sessionService.addMessage(sessionId, { 
-                role: 'assistant', 
-                content: fullText || '', // 允许内容为空，只要 parts 有数据
-                parentId: newUserMsgId, // 指向刚创建的 User 消息
-                parts: allParts, 
-                usage 
-              });
-              this.logger.log(`[Orchestrator] Persisted assistant reply. Parts count: ${allParts.length}`);
-            } catch (dbErr: any) {
-              this.logger.error(`[Orchestrator] Failed to persist message: ${dbErr.message}`);
-            }
-          }
-        },
-      });
 
-      result.pipeUIMessageStreamToResponse(res);
-    } catch (err: any) {
-      this.logger.error(`Stream error: ${err.message}`);
-      if (err.stack) this.logger.error(err.stack);
-      if (!res.headersSent) res.status(500).send(err.message);
-    }
+            // 补全审计：如果某些 toolCalls 丢失了结果（如异常中断），补全占位符防止 SDK 报错
+            if (toolCalls && Array.isArray(toolCalls)) {
+              for (const tc of toolCalls) {
+                if (!handledCallIds.has(tc.toolCallId)) {
+                  this.logger.warn(`[Orchestrator] Missing result for tool call ${tc.toolCallId} (${tc.toolName}). Injecting placeholder.`);
+                  allParts.push({
+                    type: 'tool-invocation',
+                    toolCallId: tc.toolCallId,
+                    toolName: tc.toolName,
+                    args: (tc as any).args,
+                    result: { error: 'Execution was interrupted or failed to return a valid result.' }
+                  });
+                }
+              }
+            }
+          },
+          onFinish: async ({ totalUsage }: any) => {
+            if (totalUsage) {
+                span.setAttribute('total_tokens', totalUsage.totalTokens || 0);
+                span.setAttribute('prompt_tokens', totalUsage.inputTokens || 0);
+                span.setAttribute('completion_tokens', totalUsage.outputTokens || 0);
+            }
+
+            // 修改持久化逻辑：只要有文本或者有工具调用记录 (allParts)，就必须保存
+            if (sessionId && (fullText || allParts.length > 0)) {
+              try {
+                const usage = totalUsage ? { 
+                  inputTokens: totalUsage.inputTokens ?? 0, 
+                  outputTokens: totalUsage.outputTokens ?? 0, 
+                  totalTokens: totalUsage.totalTokens ?? 0 
+                } : undefined;
+                
+                await this.sessionService.addMessage(sessionId, { 
+                  role: 'assistant', 
+                  content: fullText || '', // 允许内容为空，只要 parts 有数据
+                  parentId: newUserMsgId, // 指向刚创建的 User 消息
+                  parts: allParts, 
+                  usage 
+                });
+                this.logger.log(`[Orchestrator] Persisted assistant reply. Parts count: ${allParts.length}`);
+              } catch (dbErr: any) {
+                this.logger.error(`[Orchestrator] Failed to persist message: ${dbErr.message}`);
+              }
+            }
+          },
+        });
+
+        result.pipeUIMessageStreamToResponse(res);
+      } catch (err: any) {
+        this.logger.error(`Stream error: ${err.message}`);
+        span.recordException(err);
+        if (err.stack) this.logger.error(err.stack);
+        if (!res.headersSent) res.status(500).send(err.message);
+      }
+    });
   }
 
   async textResponse(userId: string, content: string, source: 'im' | 'cli' = 'im'): Promise<string> {

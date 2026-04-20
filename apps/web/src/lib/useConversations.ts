@@ -208,6 +208,24 @@ export function useConversations({
    */
   const onStreamFinished = useCallback(async (newSessionId: string) => {
     await refreshConversations();
+    
+    // 如果是新创建的会话（原来没 sessionId），标记它以避免 navigate 时触发 useEffect 拉取导致状态抖动
+    if (newSessionId && !sessionId) {
+        justCreatedSessionIdRef.current = newSessionId;
+    }
+
+    // 如果是当前正在查看的会话，刷新消息列表以同步服务端状态（如 parentId, ids 等）
+    if (newSessionId === sessionId || (!sessionId && newSessionId)) {
+        try {
+            const data = await api.get<any>(`/api/sessions/${newSessionId}/messages`);
+            if (data.success && Array.isArray(data.data)) {
+                setCurrentMessages(data.data);
+            }
+        } catch (err) {
+            console.error('[useConversations] Error refreshing messages after stream:', err);
+        }
+    }
+
     // 导航到该会话的 URL（若当前不是）
     if (newSessionId && !sessionId) {
       navigate(`/chat/${newSessionId}`, { replace: true });

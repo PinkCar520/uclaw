@@ -2,26 +2,19 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
-import { ZentaoService } from './zentao.service';
 import { RpcModule } from './rpc.module';
 import { SkillModule } from '../skill/skill.module';
-import { MCPModule } from '../mcp/mcp.module';
-import { PermissionModule } from '../skill/permission.module';
-import { ApprovalModule } from '../skill/approval.module';
 
 /**
  * ChatModule
  *
- * - 导入 RpcModule（提供 RpcGateway，供 ZentaoService 等使用）
- * - 导入 SkillModule（提供 SkillOrchestrator，供 ChatController 切换到新链路）
- * - 导入 MCPModule（提供 MCPClientManager，供 ChatService 使用）
- * - ChatService 继续保留，负责 models 列表等非 AI 核心逻辑
+ * 负责与本地 CLI 通信的基础设施及旧版模型列表接口。
+ * 核心 AI 编排逻辑已迁移到 SkillModule。
  */
 @Module({
-  imports: [ConfigModule, RpcModule, SkillModule, MCPModule, PermissionModule, ApprovalModule],
+  imports: [ConfigModule, RpcModule, SkillModule],
   controllers: [ChatController],
-  providers: [ChatService, ZentaoService],
+  providers: [ChatService],
   exports: [ChatService],
 })
 export class ChatModule {}
-

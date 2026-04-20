@@ -138,6 +138,9 @@ model Message {
   parts       Json?    // AI SDK UIMessage parts（含 tool-invocation 等）
   attachments Json?    // 附件列表（url, name, contentType）
   usage       Json?    // Token 用量 { inputTokens, outputTokens, totalTokens }
+  
+  // Tracing 关联
+  traceId     String?  // 关联的可观测性 Trace ID
 
   capsuleSnapshots CapsuleSnapshot[]
 
@@ -145,7 +148,87 @@ model Message {
 
   @@index([sessionId])
   @@index([parentId])
+  @@index([traceId])
   @@map("messages")
+}
+
+// RAG 知识库文档
+model Document {
+  id          String   @id @default(uuid())
+  title       String
+  sourceUrl   String?
+  sourceType  String   @default("file") // 'file', 'web', 'mcp'
+  status      String   @default("processing") // 'processing', 'indexed', 'failed'
+  userId      String?
+  
+  chunks      DocumentChunk[]
+  
+  metadata    Json?    // 原始元数据
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("documents")
+}
+
+// RAG 文档切片（支持向量检索）
+model DocumentChunk {
+  id          String   @id @default(uuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  content     String   @db.Text
+  index       Int      // 切片在原文档中的顺序
+  
+  // 向量存储：Prisma 目前用 Json 存储，查询时用原生 SQL 转换
+  // [1.2, 0.5, ...]
+  embedding   Json?    
+  
+  metadata    Json?    // 切片元数据
+
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+// 链路追踪 (Tracing)
+model Trace {
+  id          String   @id @default(uuid())
+  traceId     String   @unique
+  name        String   // Trace 名称 (e.g., "Chat Request")
+  userId      String?
+  sessionId   String?
+  
+  spans       Span[]
+  
+  duration    Int?     // 耗时 (ms)
+  status      String   @default("ok") // 'ok', 'error'
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("traces")
+}
+
+model Span {
+  id          String   @id @default(uuid())
+  traceId     String
+  trace       Trace    @relation(fields: [traceId], references: [traceId], onDelete: Cascade)
+  
+  spanId      String
+  parentSpanId String?
+  name        String   // Span 名称 (e.g., "Tool Call: zentao")
+  kind        String   @default("internal") // 'client', 'server', 'internal'
+  
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?
+  
+  attributes  Json?    // 标签与属性
+  events      Json?    // 日志事件
+
+  @@index([traceId])
+  @@map("spans")
 }
 
 // Capsule（交互胶囊）快照表

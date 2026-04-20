@@ -24,8 +24,12 @@ import { PermissionController } from './permission.controller';
  * Depends on RpcModule (not ChatModule) to avoid circular dependency.
  * Depends on SessionModule for Server-First message persistence.
  */
+import { TracingModule } from '../tracing/tracing.module';
+import { RAGModule } from '../rag/rag.module';
+import { ZentaoModule } from '../zentao/zentao.module';
+
 @Module({
-  imports: [MCPModule, RpcModule, SessionModule, ApprovalModule, PermissionModule],
+  imports: [MCPModule, RpcModule, SessionModule, ApprovalModule, PermissionModule, TracingModule, RAGModule, ZentaoModule],
   controllers: [SkillController, PermissionController],
   providers: [SkillOrchestrator, SkillLoader],
   exports: [SkillOrchestrator, SkillLoader],

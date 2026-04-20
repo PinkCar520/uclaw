@@ -12,6 +12,10 @@ import { MCPServerModule } from './mcp-server/mcp-server.module';
 import { ApprovalModule } from './skill/approval.module';
 import { ProxyModule } from './proxy/proxy.module';
 import { SsoAuthGuard } from './auth/sso.guard';
+import { TracingModule } from './tracing/tracing.module';
+import { RAGModule } from './rag/rag.module';
+import { ZentaoModule } from './zentao/zentao.module';
+import { SkillModule } from './skill/skill.module';
 
 /**
  * AppModule
@@ -22,12 +26,16 @@ import { SsoAuthGuard } from './auth/sso.guard';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule, // ← 全局数据库模块
+    TracingModule, // ← 全局链路追踪模块
+    RAGModule,     // ← 全局知识库/向量检索模块
+    ZentaoModule,  // ← 禅道集成模块
     AuthModule,   // 内部包含 UserService
     ChatModule,
     UserModule,   // 对外暴露用户中心接口
     UploadModule, // 文件上传模块
     SessionModule, // 会话漫游数据接口模块
     SkillRegistryModule, // 技能注册中心
+    SkillModule,  // ← Agent Skills 编排核心
     MCPServerModule, // MCP Server 管理
     ApprovalModule, // AGP 审批治理
     ProxyModule, // 图片代理

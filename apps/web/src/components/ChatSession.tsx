@@ -120,7 +120,7 @@ export function ChatSession({
   }, [data]);
 
   const {
-    localInput, setLocalInput, selectedFiles, setSelectedFiles,
+    localInput, setLocalInput, attachments, addFiles, removeFile,
     textAreaRef, onFormSubmit, uploadFile
   } = useChatInput({
     sendMessage, createSession, token, selectedModelId,
@@ -361,7 +361,7 @@ export function ChatSession({
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files) {
-      setSelectedFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+      addFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -506,8 +506,9 @@ export function ChatSession({
           <ChatInput
             localInput={localInput}
             setLocalInput={setLocalInput}
-            selectedFiles={selectedFiles}
-            setSelectedFiles={setSelectedFiles}
+            attachments={attachments}
+            addFiles={addFiles}
+            removeFile={removeFile}
             isModelDropdownOpen={isModelDropdownOpen}
             setIsModelDropdownOpen={setIsModelDropdownOpen}
             isSearchMode={isSearchMode}
@@ -523,6 +524,7 @@ export function ChatSession({
             textAreaRef={textAreaRef}
             t={t}
             lastUserMessage={messages.filter(m => m.role === 'user').pop()?.content}
+            setPreviewAttachment={setPreviewAttachment}
           />
 
         </div>

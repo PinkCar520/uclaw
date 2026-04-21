@@ -1,6 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { api } from './api-client';
 
+export interface PendingAttachment {
+  id: string;
+  file?: File;
+  name: string;
+  contentType: string;
+  url?: string;
+  isUploading: boolean;
+}
+
 interface UseChatInputProps {
   sendMessage: (message: any, options?: any) => Promise<void>;
   createSession: () => Promise<string | null>;
@@ -29,7 +38,7 @@ export function useChatInput({
   isLoading
 }: UseChatInputProps) {
   const [localInput, setLocalInput] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const uploadFile = useCallback(async (file: File): Promise<{ name: string; contentType: string; url: string }> => {
@@ -44,9 +53,38 @@ export function useChatInput({
     };
   }, []);
 
+  const addFiles = useCallback((files: File[]) => {
+    const newAtts = files.map(f => ({
+      id: Math.random().toString(36).substring(7),
+      file: f,
+      name: f.name,
+      contentType: f.type || 'application/octet-stream',
+      isUploading: true
+    }));
+    
+    setAttachments(prev => [...prev, ...newAtts]);
+
+    newAtts.forEach(async (att) => {
+      try {
+        const result = await uploadFile(att.file);
+        setAttachments(prev => prev.map(p => 
+          p.id === att.id ? { ...p, isUploading: false, url: result.url } : p
+        ));
+      } catch (err) {
+        console.error('Upload failed for', att.name, err);
+        setAttachments(prev => prev.filter(p => p.id !== att.id));
+      }
+    });
+  }, [uploadFile]);
+
+  const removeFile = useCallback((id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  }, []);
+
   const onFormSubmit = useCallback(async (e?: any) => {
     if (e) e.preventDefault();
-    if ((!localInput.trim() && selectedFiles.length === 0) || isLoading) return;
+    if (attachments.some(a => a.isUploading)) return;
+    if ((!localInput.trim() && attachments.length === 0) || isLoading) return;
 
     let activeSessionId = sessionIdRef.current;
     if (!activeSessionId) {
@@ -67,13 +105,18 @@ export function useChatInput({
     userScrolledUpRef.current = false;
     const val = localInput;
     setLocalInput('');
-    const filesToUpload = [...selectedFiles];
-    setSelectedFiles([]);
+    const filesToUpload = [...attachments];
+    setAttachments([]);
 
     try {
       const activeToken = token || localStorage.getItem('uclaw_auth_token');
-      const attachments = filesToUpload.length > 0 ? await Promise.all(filesToUpload.map(uploadFile)) : undefined;
-      const userMessage = { content: val, role: 'user', experimental_attachments: attachments };
+      const preparedAttachments = filesToUpload.length > 0 ? filesToUpload.map(a => ({
+        name: a.name,
+        contentType: a.contentType,
+        url: a.url!
+      })) : undefined;
+      
+      const userMessage = { content: val, role: 'user', experimental_attachments: preparedAttachments };
       await sendMessage(userMessage as any, {
         headers: {
           'Authorization': `Bearer ${activeToken}`
@@ -89,18 +132,17 @@ export function useChatInput({
       console.error(err);
       setIsLocalThinking(false);
       setLocalInput(val);
-      setSelectedFiles(filesToUpload);
+      setAttachments(filesToUpload);
     }
   }, [
     localInput, 
-    selectedFiles, 
+    attachments, 
     isLoading, 
     sessionIdRef, 
     setIsLocalThinking, 
     createSession, 
     navigate, 
     userScrolledUpRef, 
-    uploadFile, 
     sendMessage, 
     selectedModelId, 
     isSearchMode, 
@@ -118,8 +160,9 @@ export function useChatInput({
   return {
     localInput,
     setLocalInput,
-    selectedFiles,
-    setSelectedFiles,
+    attachments,
+    addFiles,
+    removeFile,
     textAreaRef,
     onFormSubmit,
     uploadFile

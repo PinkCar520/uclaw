@@ -18,8 +18,9 @@ import {
 interface ChatInputProps {
   localInput: string;
   setLocalInput: (val: string) => void;
-  selectedFiles: File[];
-  setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>;
+  attachments: any[];
+  addFiles: (files: File[]) => void;
+  removeFile: (id: string) => void;
   isModelDropdownOpen: boolean;
   setIsModelDropdownOpen: (val: boolean) => void;
   isSearchMode: boolean;
@@ -35,13 +36,15 @@ interface ChatInputProps {
   textAreaRef: React.RefObject<HTMLTextAreaElement | null>;
   t: any;
   lastUserMessage?: string;
+  setPreviewAttachment?: (attachment: any) => void;
 }
 
 export function ChatInput({
   localInput,
   setLocalInput,
-  selectedFiles,
-  setSelectedFiles,
+  attachments,
+  addFiles,
+  removeFile,
   isModelDropdownOpen,
   setIsModelDropdownOpen,
   isSearchMode,
@@ -57,6 +60,7 @@ export function ChatInput({
   textAreaRef,
   t,
   lastUserMessage,
+  setPreviewAttachment
 }: ChatInputProps) {
   const activeModel = models.find(m => m.id === selectedModelId) || models[0] || { name: 'Loading...', icon: Globe, color: 'text-slate-400' };
   const activeDisplayName = beautifyModelName(activeModel.name);
@@ -140,7 +144,7 @@ export function ChatInput({
     if (e.clipboardData.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
       const filesArray = Array.from(e.clipboardData.files);
-      setSelectedFiles(prev => [...prev, ...filesArray]);
+      addFiles(filesArray);
     }
   };
 
@@ -223,19 +227,43 @@ export function ChatInput({
           isFocused ? "ring-[#EC5B14]/30 shadow-[0_0_15px_rgba(236,91,20,0.15)]" : "ring-[#1C1B1B]/5"
         )}>
           <AnimatePresence>
-            {selectedFiles.length > 0 && (
+            {attachments.length > 0 && (
               <motion.div 
                 initial={{ height: 0, opacity: 0 }} 
                 animate={{ height: 'auto', opacity: 1 }} 
                 exit={{ height: 0, opacity: 0 }} 
                 className="flex flex-wrap gap-2 px-4 pt-3 pb-1"
               >
-                {selectedFiles.map((file, idx) => (
-                  <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-[#F6F3F2] rounded-xl border border-[#E8E4E2]/60 group relative transition-all hover:border-[#EC5B14]/30 shadow-sm">
-                    <FileText className="w-3.5 h-3.5 text-[#EC5B14]" />
-                    <span className="text-[11px] font-bold text-[#1C1B1B] max-w-[120px] truncate">{file.name}</span>
-                    <button onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white text-[#716B67] hover:text-red-500 transition-colors">
-                      <CloseIcon className="w-3 h-3" />
+                {attachments.map((file) => (
+                  <div key={file.id} className={cn(
+                    "flex items-center gap-2 px-3.5 py-2 rounded-xl border group relative transition-all",
+                    file.isUploading ? "bg-white/50 border-[#E8E4E2]/40" : "bg-[#F6F3F2] border-[#E8E4E2]/60 hover:border-[#EC5B14]/30 cursor-pointer hover:bg-white"
+                  )}
+                  onClick={() => {
+                    if (!file.isUploading && file.url && setPreviewAttachment) {
+                      setPreviewAttachment({ name: file.name, contentType: file.contentType, url: file.url });
+                    }
+                  }}>
+                    {file.isUploading ? (
+                      <div className="w-4 h-4 rounded-full border-2 border-[#E8E4E2] border-t-[#EC5B14] animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-[#EC5B14]" />
+                    )}
+                    <span className={cn(
+                      "text-[12px] font-bold max-w-[160px] truncate",
+                      file.isUploading ? "text-[#716B67] animate-pulse" : "text-[#1C1B1B]"
+                    )}>{file.name}</span>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        removeFile(file.id); 
+                        if (setPreviewAttachment) {
+                          setPreviewAttachment((prev: any) => prev?.name === file.name ? null : prev);
+                        }
+                      }} 
+                      className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[#E8E4E2] text-[#716B67] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all ml-1"
+                    >
+                      <CloseIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -309,7 +337,7 @@ export function ChatInput({
               placeholder={t('chat.placeholder', 'Ask anything...')}
               className={cn(
                 "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed transition-all duration-200",
-                selectedFiles.length > 0 ? "pt-1 pb-3" : "py-3"
+                attachments.length > 0 ? "pt-1 pb-3" : "py-3"
               )}
               rows={1}
             />
@@ -358,7 +386,7 @@ export function ChatInput({
                   input.type = 'file'; 
                   input.multiple = true; 
                   input.onchange = (e: any) => { 
-                    if (e.target.files) setSelectedFiles(prev => [...prev, ...Array.from(e.target.files as FileList)]); 
+                    if (e.target.files) addFiles(Array.from(e.target.files as FileList)); 
                   }; 
                   input.click(); 
                 }} 
@@ -398,7 +426,7 @@ export function ChatInput({
                 "w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden", 
                 isLoading 
                   ? "bg-[#1C1B1B] text-white shadow-sm" 
-                  : ((!localInput.trim() && selectedFiles.length === 0) ? "bg-[#eeece9] text-[#716B67]/40 cursor-not-allowed" : "bg-gradient-to-br from-[#a33800] to-[#cc4900] text-white shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-95")
+                  : ((!localInput.trim() && attachments.length === 0) ? "bg-[#eeece9] text-[#716B67]/40 cursor-not-allowed" : "bg-gradient-to-br from-[#a33800] to-[#cc4900] text-white shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-95")
               )}
             >
               <AnimatePresence mode="wait" initial={false}>

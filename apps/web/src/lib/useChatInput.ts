@@ -39,7 +39,34 @@ export function useChatInput({
 }: UseChatInputProps) {
   const [localInput, setLocalInput] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [ghostText, setGhostText] = useState<string>('');
+  const [isPredicting, setIsPredicting] = useState<boolean>(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!localInput.trim() || localInput.endsWith(' ')) {
+      setGhostText('');
+      return;
+    }
+
+    const handler = setTimeout(async () => {
+      setIsPredicting(true);
+      try {
+        const res = await api.post<any>('/api/chat/autocomplete', { prefix: localInput });
+        if (res && res.completion) {
+          setGhostText(res.completion);
+        } else {
+          setGhostText('');
+        }
+      } catch (e) {
+        setGhostText('');
+      } finally {
+        setIsPredicting(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(handler);
+  }, [localInput]);
 
   const uploadFile = useCallback(async (file: File): Promise<{ name: string; contentType: string; url: string }> => {
     const formData = new FormData();
@@ -165,6 +192,9 @@ export function useChatInput({
     removeFile,
     textAreaRef,
     onFormSubmit,
-    uploadFile
+    uploadFile,
+    ghostText,
+    setGhostText,
+    isPredicting
   };
 }

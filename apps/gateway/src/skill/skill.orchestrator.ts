@@ -41,35 +41,32 @@ export class SkillOrchestrator {
   // Model
   // ──────────────────────────────────────────────
   private getModel(modelId?: string) {
-    const vllmModels = (this.configService.get<string>('VLLM_MODEL_NAME') || 'qwen2.5-coder:7b').split(',').map(m => m.trim());
+    const vllmModels = (this.configService.get<string>('VLLM_MODEL_NAME') || '').split(',').map(m => m.trim()).filter(Boolean);
     const omlxModel = this.configService.get<string>('AI_GATEWAY_MODEL')?.trim();
-    
-    const allModels = [...vllmModels];
-    if (omlxModel && !allModels.includes(omlxModel)) {
-      allModels.push(omlxModel);
-    }
+    const cloudModels = (this.configService.get<string>('DASHSCOPE_MODEL_NAME') || '').split(',').map(m => m.trim()).filter(Boolean);
 
-    const selectedModel = (modelId && allModels.includes(modelId)) ? modelId : allModels[0];
+    const allModelIds = Array.from(new Set([...vllmModels, ...cloudModels, omlxModel].filter(Boolean)));
+    const selectedModel = (modelId && allModelIds.includes(modelId)) ? modelId : allModelIds[0];
+
+    if (!selectedModel) {
+      throw new Error('No models configured in environment.');
+    }
 
     let baseURL: string;
     let apiKey: string;
-    let providerLabel: string;
 
-    const isCloudModel = selectedModel.includes('deepseek') || selectedModel.includes('omni') || selectedModel.includes('qwen');
-    const isOmlxModel = omlxModel && selectedModel === omlxModel;
+    const isCloudModel = cloudModels.includes(selectedModel);
+    const isOmlxModel = omlxModel === selectedModel;
 
     if (isCloudModel) {
       baseURL = this.configService.get<string>('DASHSCOPE_API_BASE') || '';
       apiKey = this.configService.get<string>('DASHSCOPE_API_KEY') || '';
-      providerLabel = 'DashScope (Cloud)';
     } else if (isOmlxModel) {
       baseURL = this.configService.get<string>('AI_GATEWAY_BASE_URL') || '';
       apiKey = this.configService.get<string>('AI_GATEWAY_API_KEY') || 'unused';
-      providerLabel = 'oMLX (Local)';
     } else {
       baseURL = this.configService.get<string>('VLLM_API_BASE') || '';
       apiKey = this.configService.get<string>('VLLM_API_KEY') || 'ollama';
-      providerLabel = 'Ollama (Local)';
     }
 
     const provider = createOpenAI({
@@ -96,29 +93,27 @@ export class SkillOrchestrator {
    * 获取当前网关配置的模型列表
    */
   getAvailableModels() {
-    const vllmModels = (this.configService.get<string>('VLLM_MODEL_NAME') || 'qwen2.5-coder:7b').split(',').map(m => m.trim());
+    const vllmModels = (this.configService.get<string>('VLLM_MODEL_NAME') || '').split(',').map(m => m.trim()).filter(Boolean);
     const omlxModel = this.configService.get<string>('AI_GATEWAY_MODEL')?.trim();
+    const cloudModels = (this.configService.get<string>('DASHSCOPE_MODEL_NAME') || '').split(',').map(m => m.trim()).filter(Boolean);
 
-    const allModels = [...vllmModels];
-    if (omlxModel && !allModels.includes(omlxModel)) {
-      allModels.push(omlxModel);
-    }
+    const allModelIds = Array.from(new Set([...vllmModels, ...cloudModels, omlxModel].filter(Boolean)));
 
-    return allModels.map((modelId) => {
-      const isCloud = modelId.includes('deepseek') || modelId.includes('omni') || modelId.includes('qwen');
-      const isOmlx = omlxModel && modelId === omlxModel;
+    return allModelIds.map((modelId) => {
+      const isCloud = cloudModels.includes(modelId!);
+      const isOmlx = omlxModel === modelId;
       
-      let provider = 'Private Ollama';
-      let icon = 'Cpu';
+      let provider = 'Ollama (Local)';
+      let icon = 'Globe';
       let color = 'text-blue-500';
 
-      if (isCloud) {
-        provider = 'Alibaba Bailian';
-        icon = 'Cloud';
+      if (isOmlx) {
+        provider = 'oMLX (Local)';
+        icon = 'Sparkles';
         color = 'text-orange-500';
-      } else if (isOmlx) {
-        provider = 'Local oMLX';
-        icon = 'Zap';
+      } else if (isCloud) {
+        provider = 'DashScope (Cloud)';
+        icon = 'Cloud';
         color = 'text-purple-500';
       }
 
@@ -604,6 +599,57 @@ export class SkillOrchestrator {
     } catch (err: any) {
       this.logger.error(`Generate title error: ${err?.message || String(err)}`);
       return userContent.slice(0, 15);
+    }
+  }
+
+  /**
+   * AI 智能补全 (Ghost Text)
+   * 基于用户输入的前缀，预测并补全为更专业的 Prompt
+   */
+  async autocomplete(prefix: string): Promise<string> {
+    try {
+      // 动态从环境变量中收集所有已配置的模型候选
+      const vllmModels = (this.configService.get<string>('VLLM_MODEL_NAME') || '').split(',').map(m => m.trim()).filter(Boolean);
+      const omlxModel = this.configService.get<string>('AI_GATEWAY_MODEL')?.trim();
+      const cloudModels = (this.configService.get<string>('DASHSCOPE_MODEL_NAME') || '').split(',').map(m => m.trim()).filter(Boolean);
+
+      const candidates = [...vllmModels, ...cloudModels];
+      if (omlxModel) candidates.unshift(omlxModel);
+
+      if (candidates.length === 0) {
+        return ''; // 无模型配置时不执行补全
+      }
+
+      const fastModelId = candidates.find(m => 
+        m.toLowerCase().includes('llama') || 
+        m.toLowerCase().includes('3b') || 
+        m.toLowerCase().includes('flash') || 
+        m.toLowerCase().includes('coder')
+      ) || candidates[0];
+
+      const { text } = await generateText({        model: this.getModel(fastModelId),
+        system: `You are a Ghost-Text generator for a professional AI workspace.
+Your ONLY goal is to continue or refine the user's input text to make it a better prompt.
+
+CRITICAL RULES:
+1. NEVER answer the user's question.
+2. ONLY provide text that completes the user's thought or adds professional constraints.
+3. Start exactly where the user left off.
+4. Keep it under 12 words.
+5. If the input is already professional, return nothing.
+
+EXAMPLES:
+- User: "帮我看看这个合同" -> Completion: "，重点检查知识产权条款和违约责任。"
+- User: "uclaw是什么项目？" -> Completion: "，请从技术架构和法律AI产品的定位进行深度解析。"
+- User: "写一段代码" -> Completion: "实现一个基于 React 的高度自适应文本框。"`,
+        messages: [{ role: 'user', content: prefix }],
+        temperature: 0.1,
+      });
+
+      return text.trim();
+    } catch (err: any) {
+      this.logger.error(`Autocomplete error: ${err?.message || String(err)}`);
+      return '';
     }
   }
 }

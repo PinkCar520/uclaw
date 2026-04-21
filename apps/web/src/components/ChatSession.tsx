@@ -121,7 +121,7 @@ export function ChatSession({
 
   const {
     localInput, setLocalInput, attachments, addFiles, removeFile,
-    textAreaRef, onFormSubmit, uploadFile
+    textAreaRef, onFormSubmit, uploadFile, ghostText, setGhostText, isPredicting
   } = useChatInput({
     sendMessage, createSession, token, selectedModelId,
     isSearchMode, isKnowledgeMode, navigate,
@@ -195,8 +195,6 @@ export function ChatSession({
     }
   }, [messages]);
 
-  const activeModel = models.find(m => m.id === selectedModelId) || models[0] || { name: 'Loading...', icon: Sparkles, color: 'text-slate-400' };
-
   // ── Scroll Management ──
   const handleScroll = () => {
     if (scrollRef.current) {
@@ -229,21 +227,20 @@ export function ChatSession({
   };
 
   // ── Actions ──
-  const copyToClipboard = (m: any) => {
+  const copyToClipboard = useCallback((m: any) => {
     const text = Array.isArray(m.parts)
         ? m.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('\n')
         : m.content || '';
     navigator.clipboard.writeText(text);
     setCopiedId(m.id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, []);
 
-  const handleRegenerate = async (msgId: string) => {
+  const handleRegenerate = useCallback(async (msgId: string) => {
     if (isLoading) return;
     const currentMsg = fullTree.find(m => m.id === msgId);
     if (!currentMsg) return;
 
-    // 重新生成的逻辑：如果是 Assistant 消息，找到它的父节点（User 消息）
     const userMsgId = currentMsg.parentId;
     if (!userMsgId) return;
 
@@ -251,7 +248,6 @@ export function ChatSession({
     if (!userMsg) return;
 
     try {
-      // 核心：在【该用户消息的父节点】下重新发送同样的内容，产生平行分支
       await sendMessage({
         content: userMsg.content,
         role: 'user',
@@ -262,9 +258,9 @@ export function ChatSession({
     } catch (err) {
       console.error('Regenerate failed:', err);
     }
-  };
+  }, [isLoading, fullTree, sendMessage]);
 
-  const handleRetry = async () => {
+  const handleRetry = useCallback(async () => {
     if (messages.length === 0) return;
     const lastMsg = messages[messages.length - 1];
     if (lastMsg.role !== 'user') return;
@@ -280,19 +276,19 @@ export function ChatSession({
     } catch (err) {
       console.error('Retry failed:', err);
     }
-  };
+  }, [messages, sendMessage]);
 
-  const startEditing = (msgId: string, content: string) => {
+  const startEditing = useCallback((msgId: string, content: string) => {
     setEditingMessageId(msgId);
     setEditText(content);
-  };
+  }, []);
 
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setEditingMessageId(null);
     setEditText('');
-  };
+  }, []);
 
-  const submitEdit = async (msgId: string) => {
+  const submitEdit = useCallback(async (msgId: string) => {
     const trimmed = editText.trim();
     if (!trimmed) {
       cancelEdit();
@@ -302,7 +298,6 @@ export function ChatSession({
     if (!currentMsg) return;
 
     try {
-      // 核心：编辑消息等于在【该消息的父节点】下创建一个新的 User 消息分支
       await sendMessage({
         content: trimmed,
         role: 'user',
@@ -314,23 +309,9 @@ export function ChatSession({
       console.error('Edit submit failed:', err);
     }
     cancelEdit();
-  };
+  }, [editText, fullTree, sendMessage, cancelEdit]);
 
-  // ── Poll for approval requests ──
-  useEffect(() => {
-    if (!sessionId) return;
-    const interval = setInterval(async () => {
-      try {
-        const data = await api.get<any>(`/api/chat/approvals/${sessionId}`);
-        if (data.success && data.data?.length > 0) {
-          setPendingApproval(data.data[0]);
-        }
-      } catch (err) {}
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [sessionId]);
-
-  const handleApprovalResponse = async (status: 'approved' | 'denied') => {
+  const handleApprovalResponse = useCallback(async (status: 'approved' | 'denied') => {
     if (!pendingApproval) return;
     try {
       await api.post(`/api/chat/approvals/${pendingApproval.id}/respond`, { status });
@@ -338,32 +319,24 @@ export function ChatSession({
     } catch (err: any) {
       console.error('Approval response failed:', err.message);
     }
-  };
+  }, [pendingApproval]);
 
+  const onExtractArtifact = useCallback((artifact: any) => {
+    setActiveCapsule({ artifact: { ...artifact, type: 'code' } });
+  }, []);
 
-  // Reset stopped state only when new streaming starts (not when it just finished)
-  const prevIsLoadingRef = useRef(false);
-  useEffect(() => {
-    if (prevIsLoadingRef.current === false && isLoading) {
-      // New streaming session started
-      setIsStopped(false);
-    }
-    prevIsLoadingRef.current = isLoading;
-  }, [isLoading]);
+  const activeModel = useMemo(() => models.find(m => m.id === selectedModelId) || models[0] || { name: 'Loading...', icon: Sparkles, color: 'text-slate-400' }, [models, selectedModelId]);
+  const activeDisplayName = useMemo(() => beautifyModelName(activeModel.name), [activeModel]);
 
-  // BrailleSpinner 已提升到模块顶层，避免组件重新挂载导致 spinner 闪烁
-
-  const activeDisplayName = beautifyModelName(activeModel.name);
-
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = () => { setIsDragging(false); };
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, []);
+  const handleDragLeave = useCallback(() => { setIsDragging(false); }, []);
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files) {
       addFiles(Array.from(e.dataTransfer.files));
     }
-  };
+  }, [addFiles]);
 
   return (
       <div
@@ -453,7 +426,7 @@ export function ChatSession({
                               totalBranches={branchMetadata.totalBranches}
                               onBranchChange={onBranchChange}
                               isStopped={isStopped}
-                              onExtract={(artifact) => setActiveCapsule({ artifact: { ...artifact, type: 'code' } })}
+                              onExtract={onExtractArtifact}
                             />
                           ))}
 
@@ -504,29 +477,31 @@ export function ChatSession({
           </div>
 
           <ChatInput
-            localInput={localInput}
-            setLocalInput={setLocalInput}
-            attachments={attachments}
-            addFiles={addFiles}
-            removeFile={removeFile}
-            isModelDropdownOpen={isModelDropdownOpen}
-            setIsModelDropdownOpen={setIsModelDropdownOpen}
-            isSearchMode={isSearchMode}
-            setIsSearchMode={setIsSearchMode}
-            isKnowledgeMode={isKnowledgeMode}
-            setIsKnowledgeMode={setIsKnowledgeMode}
-            onFormSubmit={onFormSubmit}
-            handleStop={handleStop}
-            isLoading={isLoading}
-            models={models}
-            selectedModelId={selectedModelId}
-            setSelectedModelId={setSelectedModelId}
-            textAreaRef={textAreaRef}
-            t={t}
-            lastUserMessage={messages.filter(m => m.role === 'user').pop()?.content}
-            setPreviewAttachment={setPreviewAttachment}
+          localInput={localInput}
+          setLocalInput={setLocalInput}
+          attachments={attachments}
+          addFiles={addFiles}
+          removeFile={removeFile}
+          isModelDropdownOpen={isModelDropdownOpen}
+          setIsModelDropdownOpen={setIsModelDropdownOpen}
+          isSearchMode={isSearchMode}
+          setIsSearchMode={setIsSearchMode}
+          isKnowledgeMode={isKnowledgeMode}
+          setIsKnowledgeMode={setIsKnowledgeMode}
+          onFormSubmit={onFormSubmit}
+          handleStop={handleStop}
+          isLoading={isLoading}
+          models={models}
+          selectedModelId={selectedModelId}
+          setSelectedModelId={setSelectedModelId}
+          textAreaRef={textAreaRef}
+          t={t}
+          lastUserMessage={messages.filter(m => m.role === 'user').pop()?.content}
+          setPreviewAttachment={setPreviewAttachment}
+          ghostText={ghostText}
+          setGhostText={setGhostText}
+          isPredicting={isPredicting}
           />
-
         </div>
 
         {/* Approval Modal */}
@@ -651,7 +626,7 @@ export function ChatSession({
                   context={{
                     ...(activeContext?.payload || {}),
                     modelInfo: { 
-                      name: activeDisplayName || 'Qwen3.5 Omni Flash 2026 03 15'
+                      name: activeDisplayName
                     },
                     usage: {
                       totalTokens: totalUsage.totalTokens || 0

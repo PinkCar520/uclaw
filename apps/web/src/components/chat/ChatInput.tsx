@@ -37,9 +37,21 @@ interface ChatInputProps {
   t: any;
   lastUserMessage?: string;
   setPreviewAttachment?: (attachment: any) => void;
+  ghostText?: string;
+  setGhostText?: (val: string) => void;
+  isPredicting?: boolean;
 }
 
-export function ChatInput({
+const ICON_MAP: Record<string, any> = {
+  'Globe': Globe,
+  'Sparkles': Sparkles,
+  'Database': Database,
+  'Cpu': FileText,
+  'Zap': Sparkles,
+  'Cloud': Sparkles
+};
+
+export const ChatInput = React.memo(({
   localInput,
   setLocalInput,
   attachments,
@@ -60,10 +72,14 @@ export function ChatInput({
   textAreaRef,
   t,
   lastUserMessage,
-  setPreviewAttachment
-}: ChatInputProps) {
-  const activeModel = models.find(m => m.id === selectedModelId) || models[0] || { name: 'Loading...', icon: Globe, color: 'text-slate-400' };
+  setPreviewAttachment,
+  ghostText = '',
+  setGhostText = () => {},
+  isPredicting = false,
+}: ChatInputProps) => {
+  const activeModel = models.find(m => m.id === selectedModelId) || models[0] || { name: 'Loading...', icon: 'Globe', color: 'text-slate-400' };
   const activeDisplayName = beautifyModelName(activeModel.name);
+  const ActiveIcon = ICON_MAP[activeModel.icon] || Globe;
 
   const [isFocused, setIsFocused] = useState(false);
   const [mentionMenuOpen, setMentionMenuOpen] = useState(false);
@@ -133,6 +149,19 @@ export function ChatInput({
     }, 10);
   };
 
+  const ghostRef = React.useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const syncScroll = () => {
+      if (textAreaRef.current && ghostRef.current) {
+        ghostRef.current.scrollTop = textAreaRef.current.scrollTop;
+      }
+    };
+    const ta = textAreaRef.current;
+    ta?.addEventListener('scroll', syncScroll);
+    return () => ta?.removeEventListener('scroll', syncScroll);
+  }, [textAreaRef]);
+
   useLayoutEffect(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
@@ -152,7 +181,7 @@ export function ChatInput({
   const filteredSlash = SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes('/' + slashQuery.toLowerCase()));
 
   return (
-    <div className="pt-2 pb-4 md:pb-8 px-4 md:px-8 bg-gradient-to-t from-[#FCF9F8] via-[#FCF9F8] to-transparent z-10 w-full mt-auto">
+    <div className="pt-2 pb-4 md:pb-8 px-4 md:px-8 bg-gradient-to-t from-[#FCF9F8] via-[#FCF9F8] to-transparent z-10 w-full mt-auto font-sans">
       <div className="max-w-[800px] mx-auto relative">
         <AnimatePresence>
           {mentionMenuOpen && (
@@ -223,7 +252,7 @@ export function ChatInput({
         </AnimatePresence>
 
         <div className={cn(
-          "bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 transition-all duration-300",
+          "bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] ring-1 transition-all duration-300",
           isFocused ? "ring-[#EC5B14]/30 shadow-[0_0_15px_rgba(236,91,20,0.15)]" : "ring-[#1C1B1B]/5"
         )}>
           <AnimatePresence>
@@ -272,6 +301,17 @@ export function ChatInput({
           </AnimatePresence>
 
           <div className="relative flex flex-col">
+            <div 
+              ref={ghostRef}
+              className={cn(
+                "absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-auto text-[15px] px-4 leading-relaxed font-sans no-scrollbar border-none",
+                attachments.length > 0 ? "pt-1 pb-3" : "py-3"
+              )}
+            >
+              <span className="text-transparent border-none">{localInput}</span>
+              {ghostText && <span className="text-[#A8A4A1]/50 border-none">{ghostText}</span>}
+            </div>
+
             <textarea
               ref={textAreaRef}
               value={localInput}
@@ -299,6 +339,23 @@ export function ChatInput({
                 }
               }}
               onKeyDown={(e) => {
+                if (e.key === 'Tab' && ghostText) {
+                  e.preventDefault();
+                  setLocalInput(localInput + ghostText);
+                  setGhostText('');
+                  setTimeout(() => {
+                    if (textAreaRef.current) {
+                      const newLen = textAreaRef.current.value.length;
+                      textAreaRef.current.setSelectionRange(newLen, newLen);
+                    }
+                  }, 0);
+                  return;
+                }
+                
+                if (!['Shift', 'Control', 'Alt', 'Meta', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                  setGhostText('');
+                }
+
                 if (mentionMenuOpen && e.key === 'Escape') {
                   setMentionMenuOpen(false);
                   e.preventDefault();
@@ -334,13 +391,31 @@ export function ChatInput({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onPaste={handlePaste}
+              onScroll={() => {
+                if (ghostRef.current && textAreaRef.current) {
+                  ghostRef.current.scrollTop = textAreaRef.current.scrollTop;
+                }
+              }}
               placeholder={t('chat.placeholder', 'Ask anything...')}
               className={cn(
-                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed transition-all duration-200",
+                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed font-sans relative z-0",
                 attachments.length > 0 ? "pt-1 pb-3" : "py-3"
               )}
               rows={1}
             />
+
+            <AnimatePresence>
+              {ghostText && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute bottom-2 right-4 text-[10px] text-[#A8A4A1] px-2 py-0.5 rounded-md bg-[#F6F3F2] border border-[#E8E4E2]/60 pointer-events-none z-10 font-bold tracking-widest shadow-sm"
+                >
+                  [TAB] TO COMPLETE
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex items-center justify-between px-2 sm:px-4 pb-2">
@@ -348,7 +423,7 @@ export function ChatInput({
               <DropdownMenu open={isModelDropdownOpen} onOpenChange={setIsModelDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-[#716B67] hover:bg-[#eeece9] transition-all border border-transparent hover:border-[#E8E4E2]/40 shrink-0">
-                    <activeModel.icon className={cn("w-4 h-4 shrink-0", activeModel.color)} />
+                    <ActiveIcon className={cn("w-4 h-4 shrink-0", activeModel.color)} />
                     <span className="text-[10px] sm:text-[11px] font-bold tracking-tight max-w-[60px] sm:max-w-none truncate">{activeDisplayName}</span>
                     <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", isModelDropdownOpen ? "rotate-180" : "")} />
                   </button>
@@ -359,11 +434,12 @@ export function ChatInput({
                   <div className="max-h-[300px] overflow-y-auto no-scrollbar">
                     {models.map((m) => {
                       const displayName = beautifyModelName(m.name);
+                      const ModelIcon = ICON_MAP[m.icon] || Globe;
                       return (
                         <DropdownMenuItem key={m.id} onClick={() => setSelectedModelId(m.id)} className="flex items-center justify-between gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all mb-0.5 hover:bg-[#eeece9]">
                           <div className="flex items-center gap-3">
                             <div className={cn("flex items-center justify-center w-8 h-8", m.color)}>
-                              <m.icon className="w-5 h-5" />
+                              <ModelIcon className="w-5 h-5" />
                             </div>
                             <div className="flex flex-col">
                               <span className="text-[14px] font-bold text-[#1C1B1B]">{displayName}</span>
@@ -460,4 +536,4 @@ export function ChatInput({
       </div>
     </div>
   );
-}
+});

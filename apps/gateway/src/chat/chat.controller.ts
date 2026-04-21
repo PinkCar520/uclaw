@@ -163,4 +163,18 @@ export class ChatController {
     const title = await this.skillOrchestrator.generateTitle(message, modelId);
     return { success: true, title };
   }
+
+  /**
+   * POST /api/chat/autocomplete
+   * AI 智能补全 (Ghost Text)
+   */
+  @Public()
+  @Post('autocomplete')
+  async autocomplete(@Body() body: any) {
+    const { prefix } = body;
+    if (!prefix || prefix.length < 3) return { completion: '' };
+    
+    const completion = await this.skillOrchestrator.autocomplete(prefix);
+    return { completion };
+  }
 }

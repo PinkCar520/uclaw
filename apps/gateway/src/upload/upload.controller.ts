@@ -49,7 +49,15 @@ export class UploadController {
 
   @Post('rag')
   @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit for RAG text documents
+    storage: diskStorage({
+      destination: './public/uploads/rag',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        const ext = extname(file.originalname);
+        callback(null, `${uniqueSuffix}${ext}`);
+      },
+    }),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for RAG
   }))
   async uploadForRag(
     @UploadedFile() file: Express.Multer.File, 
@@ -58,7 +66,7 @@ export class UploadController {
   ) {
     if (!file) throw new BadRequestException('No file provided');
 
-    // RAG pipeline currently indexes plain-text/code-like documents only.
+    // Basic extension check before starting background task
     const allowedExtensions = [
       '.txt', '.md', '.json', '.csv',
       '.js', '.ts', '.jsx', '.tsx', '.py',
@@ -67,34 +75,35 @@ export class UploadController {
     ];
     const ext = extname(file.originalname).toLowerCase();
     if (!allowedExtensions.includes(ext)) {
+      // If we used diskStorage, we might want to delete the file here if it's invalid
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       throw new BadRequestException(
         `Unsupported file type "${ext || 'unknown'}". Allowed: ${allowedExtensions.join(', ')}`
       );
     }
 
     const userId = req.user?.workId || 'system';
-    const content = file.buffer.toString('utf-8');
 
-    return await this.tracingService.traceCall('RAG Indexing', { 
-      filename: file.originalname, 
+    // 1. Create the document record immediately with 'processing' status
+    const document = await this.ragService.createDocumentRecord({
+      title: file.originalname,
+      sourceUrl: file.path, // Store the local path for the background worker
+      projectId,
       userId,
-      projectId
-    }, async (span) => {
-      const documentId = await this.ragService.indexDocument(
-        file.originalname,
-        content,
-        projectId,
-        userId
-      );
-      
-      span.setAttribute('document_id', documentId);
-      span.setAttribute('content_length', content.length);
-
-      return {
-        success: true,
-        documentId,
-        message: `Successfully indexed ${file.originalname}`,
-      };
     });
+
+    // 2. Trigger background indexing (don't await)
+    // We use a safe wrapper to ensure errors don't crash the main thread
+    this.ragService.startAsyncIndexing(document.id, file.path).catch(err => {
+      console.error(`[Background Task Error] Failed to start indexing for ${document.id}:`, err);
+    });
+
+    // 3. Return immediately to the user
+    return {
+      success: true,
+      documentId: document.id,
+      status: 'processing',
+      message: 'File received and is being processed in the background',
+    };
   }
 }

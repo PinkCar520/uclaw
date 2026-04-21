@@ -67,16 +67,35 @@ export function KnowledgeBase({ projectId, onBack }: KnowledgeBaseProps) {
     try {
       const res = await api.post<any>('/api/upload/rag', formData);
       if (res.success) {
-        await fetchData();
+        // Claude Experience: Immediate feedback and stop loader
+        setIsUploading(false);
+        await fetchData(); 
+      } else {
+        setIsUploading(false);
+        alert(`Upload failed: ${res.message || 'Unknown error'}`);
       }
-    } catch (err) {
-      console.error('Upload failed:', err);
-      alert('Upload failed');
-    } finally {
+    } catch (err: any) {
       setIsUploading(false);
+      console.error('Upload failed:', err);
+      alert(`Upload failed: ${err.message || 'Network error'}`);
+    } finally {
       e.target.value = '';
     }
   };
+
+  // Smart Polling: Only poll when there are documents in 'processing' status
+  useEffect(() => {
+    const hasProcessing = documents.some(doc => doc.status === 'processing');
+    
+    if (hasProcessing) {
+      const interval = setInterval(() => {
+        // Silently refresh project data and documents
+        fetchData();
+      }, 3000); // Poll every 3 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [documents, fetchData]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this document?')) return;
@@ -216,9 +235,13 @@ export function KnowledgeBase({ projectId, onBack }: KnowledgeBaseProps) {
                       <td className="py-4 text-right">
                         <span className={cn(
                             "px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest",
-                            doc.status === 'indexed' ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                            doc.status === 'indexed' ? "bg-green-100 text-green-700" : 
+                            doc.status === 'failed' ? "bg-red-100 text-red-700" : 
+                            "bg-orange-100 text-orange-700"
                         )}>
-                            {doc.status === 'indexed' ? t('knowledge_base.assets.status.indexed') : t('knowledge_base.assets.status.syncing')}
+                            {doc.status === 'indexed' ? t('knowledge_base.assets.status.indexed') : 
+                             doc.status === 'failed' ? t('knowledge_base.assets.status.failed') : 
+                             t('knowledge_base.assets.status.syncing')}
                         </span>
                       </td>
                       <td className="py-4 text-right">

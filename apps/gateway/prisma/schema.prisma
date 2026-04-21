@@ -156,20 +156,20 @@ model Message {
 model Document {
   id          String   @id @default(uuid())
   title       String
-  sourceUrl   String?
-  sourceType  String   @default("file") // 'file', 'web', 'mcp'
-  status      String   @default("processing") // 'processing', 'indexed', 'failed'
-  userId      String?
+  sourceUrl   String?  @map("sourceUrl")
+  sourceType  String   @default("file") @map("sourceType")
+  status      String   @default("processing") 
+  userId      String?  @map("userId")
   
   // 关联项目
-  projectId   String?
+  projectId   String?  @map("projectId")
   project     KnowledgeProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   chunks      DocumentChunk[]
   
-  metadata    Json?    // 原始元数据
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  metadata    Json?    
+  createdAt   DateTime @default(now()) @map("createdAt")
+  updatedAt   DateTime @updatedAt @map("updatedAt")
 
   @@map("documents")
 }
@@ -177,41 +177,35 @@ model Document {
 // 知识库项目（用于分组管理文档）
 model KnowledgeProject {
   id          String     @id @default(uuid())
-  name        String     // 项目名称，如 "Q3 研发规范"
-  category    String     // 分类标签，如 "Legal", "Engineering"
+  name        String     
+  category    String     
   description String?    @db.Text
-  iconUrl     String?    // 封面图 URL
-  color       String?    // UI 主题色（十六进制）
+  iconUrl     String?    @map("iconUrl")
+  color       String?    
   
-  documents   Document[] // 关联的文档
+  documents   Document[] 
   
-  userId      String?    // 创建者 ID
-  isPublic    Boolean    @default(true)
+  userId      String?    @map("userId")
+  isPublic    Boolean    @default(true) @map("isPublic")
   
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime   @default(now()) @map("createdAt")
+  updatedAt   DateTime   @updatedAt @map("updatedAt")
 
   @@map("knowledge_projects")
 }
 
-// RAG 文档切片（支持向量检索 + 全文检索）
+// RAG 文档切片
 model DocumentChunk {
   id          String   @id @default(uuid())
-  documentId  String
+  documentId  String   @map("documentId")
   document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   
   content     String   @db.Text
-  index       Int      // 切片在原文档中的顺序
+  index       Int      
   
-  // 向量存储
   embedding   Json?    
-  
-  // 全文搜索索引字段 (tsvector)
-  // 注意：Prisma 目前不支持 tsvector 类型，我们通过 Raw SQL 维护
-  // 此处在 Schema 中注释说明，实际由 Migration 保证
-  // tsv        Unsupported("tsvector")?
-
-  metadata    Json?    // 切片元数据
+  metadata    Json?    
+  tsv         Unsupported("tsvector")?
 
   @@index([documentId])
   @@map("document_chunks")

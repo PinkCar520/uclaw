@@ -168,7 +168,7 @@
     "admin": "Admin"
   },
   "projects": {
-    "title": "Projects Dashboard",
+    "title": "Projects",
     "subtitle": "Manage and orchestrate your enterprise knowledge assets and workflows.",
     "new_button": "New Project",
     "search_placeholder": "Search projects or categories...",
@@ -221,7 +221,8 @@
       "status": {
         "indexed": "Ready",
         "syncing": "Syncing",
-        "empty": "No assets in this project yet"
+        "failed": "Failed",
+        "empty": "No assets in this project"
       }
     },
     "sidebar": {

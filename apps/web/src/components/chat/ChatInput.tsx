@@ -62,6 +62,72 @@ export function ChatInput({
   const activeDisplayName = beautifyModelName(activeModel.name);
 
   const [isFocused, setIsFocused] = useState(false);
+  const [mentionMenuOpen, setMentionMenuOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState("");
+
+  const MENTION_OPTIONS = [
+    { id: 'search', label: 'Web Search', icon: Globe, desc: 'Search the live web', type: 'search' },
+    { id: 'lexis', label: 'LexisNexis', icon: Database, desc: 'Case law & statutes', type: 'knowledge' },
+    { id: 'internal', label: 'Internal Docs', icon: FileText, desc: 'Workspace files', type: 'knowledge' },
+  ];
+
+  const SLASH_OPTIONS = [
+    { id: 'clear', label: '/clear', desc: 'Clear context', action: 'clear', icon: CloseIcon },
+    { id: 'prompt', label: '/prompt', desc: 'Use prompt template', action: 'prompt', icon: FileText },
+    { id: 'jenkins', label: '/jenkins', desc: 'Run Jenkins tool', action: 'tool', icon: Plus },
+    { id: 'zentao', label: '/zentao', desc: 'Run ZenTao tool', action: 'tool', icon: Plus },
+  ];
+
+  const handleMentionSelect = (type: 'search' | 'knowledge', label: string) => {
+    if (type === 'search') setIsSearchMode(true);
+    if (type === 'knowledge') setIsKnowledgeMode(true);
+    
+    const cursorPosition = textAreaRef.current?.selectionStart || 0;
+    const textBeforeCursor = localInput.slice(0, cursorPosition);
+    const textAfterCursor = localInput.slice(cursorPosition);
+    
+    const textBeforeMatch = textBeforeCursor.replace(/(?:^|\s)@([^\s]*)$/, (match) => {
+      return match.startsWith(' ') ? ' ' : '';
+    });
+    
+    const newText = textBeforeMatch + '@' + label + ' ' + textAfterCursor;
+    setLocalInput(newText);
+    setMentionMenuOpen(false);
+    
+    setTimeout(() => {
+      if (textAreaRef.current) {
+        textAreaRef.current.focus();
+        const newPos = textBeforeMatch.length + label.length + 2;
+        textAreaRef.current.selectionStart = newPos;
+        textAreaRef.current.selectionEnd = newPos;
+      }
+    }, 10);
+  };
+
+  const handleSlashSelect = (action: string, label: string) => {
+    const cursorPosition = textAreaRef.current?.selectionStart || 0;
+    const textBeforeCursor = localInput.slice(0, cursorPosition);
+    const textAfterCursor = localInput.slice(cursorPosition);
+    
+    const textBeforeMatch = textBeforeCursor.replace(/(?:^|\s)\/([^\s]*)$/, (match) => {
+      return match.startsWith(' ') ? ' ' : '';
+    });
+    
+    const newText = textBeforeMatch + label + ' ' + textAfterCursor;
+    setLocalInput(newText);
+    setSlashMenuOpen(false);
+    
+    setTimeout(() => {
+      if (textAreaRef.current) {
+        textAreaRef.current.focus();
+        const newPos = textBeforeMatch.length + label.length + 1;
+        textAreaRef.current.selectionStart = newPos;
+        textAreaRef.current.selectionEnd = newPos;
+      }
+    }, 10);
+  };
 
   useLayoutEffect(() => {
     if (textAreaRef.current) {
@@ -78,9 +144,80 @@ export function ChatInput({
     }
   };
 
+  const filteredMentions = MENTION_OPTIONS.filter(o => o.label.toLowerCase().includes(mentionQuery.toLowerCase()));
+  const filteredSlash = SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes('/' + slashQuery.toLowerCase()));
+
   return (
     <div className="pt-2 pb-4 md:pb-8 px-4 md:px-8 bg-gradient-to-t from-[#FCF9F8] via-[#FCF9F8] to-transparent z-10 w-full mt-auto">
       <div className="max-w-[800px] mx-auto relative">
+        <AnimatePresence>
+          {mentionMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-[calc(100%+8px)] left-4 w-64 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] rounded-xl overflow-hidden z-50"
+            >
+              <div className="px-3 py-2 bg-[#F6F3F2]/50 border-b border-[#E8E4E2]/50">
+                <span className="text-[10px] font-black uppercase text-[#716B67] tracking-widest">Add Context</span>
+              </div>
+              <div className="p-1 max-h-64 overflow-y-auto">
+                {filteredMentions.length > 0 ? filteredMentions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => handleMentionSelect(opt.type as any, opt.label)}
+                    className="flex items-center gap-3 w-full p-2 text-left hover:bg-[#EC5B14]/5 hover:text-[#EC5B14] rounded-lg transition-colors group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center group-hover:border-[#EC5B14]/30 group-hover:bg-white shadow-sm shrink-0 transition-colors">
+                      <opt.icon className="w-4 h-4 text-[#716B67] group-hover:text-[#EC5B14] transition-colors" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-bold text-[#1C1B1B]">{opt.label}</span>
+                      <span className="text-[10px] text-[#A8A4A1] group-hover:text-[#EC5B14]/70 transition-colors">{opt.desc}</span>
+                    </div>
+                  </button>
+                )) : (
+                  <div className="p-3 text-center text-xs text-[#A8A4A1]">No matches found</div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {slashMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-[calc(100%+8px)] left-4 w-64 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] rounded-xl overflow-hidden z-50"
+            >
+              <div className="px-3 py-2 bg-[#F6F3F2]/50 border-b border-[#E8E4E2]/50">
+                <span className="text-[10px] font-black uppercase text-[#716B67] tracking-widest">Slash Commands</span>
+              </div>
+              <div className="p-1 max-h-64 overflow-y-auto">
+                {filteredSlash.length > 0 ? filteredSlash.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => handleSlashSelect(opt.action, opt.label)}
+                    className="flex items-center gap-3 w-full p-2 text-left hover:bg-[#EC5B14]/5 hover:text-[#EC5B14] rounded-lg transition-colors group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center group-hover:border-[#EC5B14]/30 group-hover:bg-white shadow-sm shrink-0 transition-colors">
+                      <opt.icon className="w-4 h-4 text-[#716B67] group-hover:text-[#EC5B14] transition-colors" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-bold text-[#1C1B1B]">{opt.label}</span>
+                      <span className="text-[10px] text-[#A8A4A1] group-hover:text-[#EC5B14]/70 transition-colors">{opt.desc}</span>
+                    </div>
+                  </button>
+                )) : (
+                  <div className="p-3 text-center text-xs text-[#A8A4A1]">No commands found</div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className={cn(
           "bg-white/70 backdrop-blur-md rounded-2xl p-2 flex flex-col shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 transition-all duration-300",
           isFocused ? "ring-[#EC5B14]/30 shadow-[0_0_15px_rgba(236,91,20,0.15)]" : "ring-[#1C1B1B]/5"
@@ -91,14 +228,14 @@ export function ChatInput({
                 initial={{ height: 0, opacity: 0 }} 
                 animate={{ height: 'auto', opacity: 1 }} 
                 exit={{ height: 0, opacity: 0 }} 
-                className="flex flex-wrap gap-2 px-2 pb-2 mb-2 border-b border-[#E8E4E2]/40"
+                className="flex flex-wrap gap-2 px-4 pt-3 pb-1"
               >
                 {selectedFiles.map((file, idx) => (
-                  <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-[#F6F3F2] rounded-xl border border-[#E8E4E2]/60 group relative transition-all hover:border-[#EC5B14]/30">
+                  <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-[#F6F3F2] rounded-xl border border-[#E8E4E2]/60 group relative transition-all hover:border-[#EC5B14]/30 shadow-sm">
                     <FileText className="w-3.5 h-3.5 text-[#EC5B14]" />
                     <span className="text-[11px] font-bold text-[#1C1B1B] max-w-[120px] truncate">{file.name}</span>
                     <button onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white text-[#716B67] hover:text-red-500 transition-colors">
-                      <CloseIcon className="w-3 3" />
+                      <CloseIcon className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
@@ -110,11 +247,51 @@ export function ChatInput({
             <textarea
               ref={textAreaRef}
               value={localInput}
-              onChange={(e) => setLocalInput(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setLocalInput(val);
+                
+                const cursorPosition = e.target.selectionStart;
+                const textBeforeCursor = val.slice(0, cursorPosition);
+                
+                const mentionMatch = textBeforeCursor.match(/(?:^|\s)@([^\s]*)$/);
+                const slashMatch = textBeforeCursor.match(/(?:^|\s)\/([^\s]*)$/);
+                
+                if (mentionMatch) {
+                  setMentionMenuOpen(true);
+                  setMentionQuery(mentionMatch[1]);
+                  setSlashMenuOpen(false);
+                } else if (slashMatch) {
+                  setSlashMenuOpen(true);
+                  setSlashQuery(slashMatch[1]);
+                  setMentionMenuOpen(false);
+                } else {
+                  setMentionMenuOpen(false);
+                  setSlashMenuOpen(false);
+                }
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (mentionMenuOpen && e.key === 'Escape') {
+                  setMentionMenuOpen(false);
                   e.preventDefault();
-                  onFormSubmit();
+                } else if (slashMenuOpen && e.key === 'Escape') {
+                  setSlashMenuOpen(false);
+                  e.preventDefault();
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                  if (mentionMenuOpen) {
+                    e.preventDefault();
+                    if (filteredMentions.length > 0) {
+                      handleMentionSelect(filteredMentions[0].type as any, filteredMentions[0].label);
+                    }
+                  } else if (slashMenuOpen) {
+                    e.preventDefault();
+                    if (filteredSlash.length > 0) {
+                      handleSlashSelect(filteredSlash[0].action, filteredSlash[0].label);
+                    }
+                  } else {
+                    e.preventDefault();
+                    onFormSubmit();
+                  }
                 } else if (e.key === 'ArrowUp' && !localInput.trim() && lastUserMessage) {
                   e.preventDefault();
                   setLocalInput(lastUserMessage);
@@ -130,7 +307,10 @@ export function ChatInput({
               onBlur={() => setIsFocused(false)}
               onPaste={handlePaste}
               placeholder={t('chat.placeholder', 'Ask anything...')}
-              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] py-3 px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed transition-all duration-200"
+              className={cn(
+                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed transition-all duration-200",
+                selectedFiles.length > 0 ? "pt-1 pb-3" : "py-3"
+              )}
               rows={1}
             />
           </div>

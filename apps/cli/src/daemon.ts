@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import * as os from 'node:os';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import inquirer from 'inquirer';
@@ -81,6 +83,30 @@ export async function runDaemon(options: DaemonOptions) {
 
       // 2. Dispatch to New Atomic Tools or Legacy Switch
       switch (data.method) {
+        case 'create_local_project':
+          const { name, category } = data.params;
+          const safeName = name.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
+          const baseDir = path.join(os.homedir(), 'Documents', 'UClaw');
+          const projectPath = path.join(baseDir, safeName);
+
+          // 1. 创建文件夹
+          await fs.mkdir(projectPath, { recursive: true });
+
+          // 2. 初始化 .AIGUIDE.md (业务指令)
+          const guidePath = path.join(projectPath, '.AIGUIDE.md');
+          const guideContent = `# ${name} - AI 业务规范\n\n## 任务上下文\n项目类型: ${category}\n创建时间: ${new Date().toLocaleString()}\n\n## 编排指令\n- 始终优先读取本项目文件夹下的原始资料。\n- 在执行任何修改前，先进行合规性检查。`;
+          
+          try {
+            await fs.access(guidePath); // 检查是否已存在
+          } catch {
+            await fs.writeFile(guidePath, guideContent);
+          }
+
+          result = { path: projectPath };
+          uiHint = 'text';
+          console.log(chalk.green('[Success]') + ` Created local project space at: ${projectPath}`);
+          break;
+
         case 'local_file_edit':
           const editRes = await tools.fileEdit.execute(data.params);
           if (!editRes.success) throw new Error(editRes.error);
@@ -129,9 +155,6 @@ export async function runDaemon(options: DaemonOptions) {
           
           if (audit.riskLevel === 'HIGH') {
             console.log(chalk.yellow('[Security]') + ` High risk command detected: ${data.params.command}`);
-            // Note: In daemon mode, we trust that the Gateway has already performed 
-            // the necessary human-in-the-loop approval before sending this RPC.
-            // We log it for transparency but don't block with a local CLI prompt.
           }
           
           const { stdout, stderr } = await execAsync(data.params.command, {

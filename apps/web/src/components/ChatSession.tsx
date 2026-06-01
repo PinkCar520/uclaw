@@ -623,19 +623,8 @@ export function ChatSession({
           ) : (
               <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
                 <ActiveContextPanel 
-                  context={{
-                    ...(activeContext?.payload || {}),
-                    modelInfo: { 
-                      name: activeDisplayName
-                    },
-                    usage: {
-                      totalTokens: totalUsage.totalTokens || 0
-                    },
-                    complianceMode: '严格模式',
-                    suggestions: activeContext?.payload?.suggestions || ['Run Unit Tests', 'Check Lint', 'Git Status']
-                  }}
-                  onAction={async (action) => {
-                    sendMessage({ content: action, role: 'user' });
+                  onAction={(action) => {
+                    onFormSubmit({ content: action, role: 'user' });
                   }}
                 />
                 <div className="border-t border-[#E8E4E2]/60 bg-[#F6F3F2]/30">

@@ -23,18 +23,40 @@ import { useConversations } from './lib/useConversations';
 import { cn } from './lib/utils';
 import { api } from './lib/api-client';
 
+import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
+
 function AppContent() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { id: sessionIdFromUrl } = useParams<{ id?: string }>();
+  
+  // ── Global Authentication & Identity State ──
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('uclaw_auth_token'));
+  const [user, setUser] = useState<any>(null);
+
+  return (
+    <WorkspaceProvider token={token}>
+      <AppInternal 
+        token={token} 
+        setToken={setToken} 
+        user={user} 
+        setUser={setUser} 
+        sessionIdFromUrl={sessionIdFromUrl}
+      />
+    </WorkspaceProvider>
+  );
+}
+
+function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { activeProject, setActiveProjectId } = useWorkspace();
 
   const [activeTab, setActiveTab] = useState(() => {
     const saved = localStorage.getItem('uclaw_active_tab');
     return saved || 'chat';
   });
-
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('uclaw_active_tab', activeTab);
@@ -52,10 +74,6 @@ function AppContent() {
     setIsSidebarCollapsed(newState);
     localStorage.setItem('uclaw_sidebar_collapsed', String(newState));
   };
-
-  // ── Global Authentication & Identity State ──
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('uclaw_auth_token'));
-  const [user, setUser] = useState<any>(null);
 
   const handleLoginSuccess = (newToken: string, userData: any) => {
     localStorage.setItem('uclaw_auth_token', newToken);
@@ -162,6 +180,21 @@ function AppContent() {
     if (token) fetchModels();
   }, [token]);
 
+  const [projects, setProjects] = useState<any[]>([]);
+
+  // 动态获取项目列表（供全局命令菜单使用）
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await api.get<any>('/api/knowledge-projects');
+        if (res.success) setProjects(res.data);
+      } catch (err) {
+        console.error('Failed to fetch projects for command menu:', err);
+      }
+    };
+    if (token) fetchProjects();
+  }, [token, activeTab]);
+
   if (!token) {
     return <AuthPage onLoginSuccess={handleLoginSuccess} />;
   }
@@ -179,7 +212,7 @@ function AppContent() {
         isCollapsed={isSidebarCollapsed}
         onToggle={toggleSidebar}
         activeMainTab={activeTab}
-        onMainTabChange={(id) => { setActiveTab(id); }}
+        onMainTabChange={(id: string) => { setActiveTab(id); }}
         onOpenSettings={() => { setIsSettingsOpen(true); }}
         onNewChat={handleNewChatAndActivate}
         conversations={conversations}
@@ -237,16 +270,14 @@ function AppContent() {
             <UserCenter token={token} onLogout={handleLogout} />
           ) : activeTab === 'library' ? (
             <SkillLibrary token={token} />
-          ) : activeTab === 'mcp' ? (
-            <MCPServerManager token={token} />
           ) : activeTab === 'projects' ? (
-            selectedProjectId ? (
+            activeProject?.id ? (
               <KnowledgeBase 
-                projectId={selectedProjectId} 
-                onBack={() => setSelectedProjectId(null)} 
+                projectId={activeProject.id} 
+                onBack={() => setActiveProjectId(null)} 
               />
             ) : (
-              <Projects onSelectProject={(id) => setSelectedProjectId(id)} />
+              <Projects />
             )
           ) : (
             <UIGallery />

@@ -69,6 +69,14 @@ export class SessionController {
     return { success: true, data: session };
   }
 
+  @Delete('all')
+  @HttpCode(HttpStatus.OK)
+  async deleteAllSessions(@Req() req: any) {
+    const userId = req.user?.dbId;
+    await this.sessionService.deleteAllSessions(userId);
+    return { success: true };
+  }
+
   /**
    * DELETE /api/sessions/:id
    * 删除会话（级联删除所有消息）

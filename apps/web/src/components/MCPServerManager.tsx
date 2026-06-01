@@ -79,7 +79,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   data_science: 'Data Science',
 };
 
-export function MCPServerManager({ token }: { token?: string | null }) {
+export function MCPServerManager({ token, hideHeader = false }: { token?: string | null; hideHeader?: boolean }) {
   const { t } = useTranslation();
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -251,7 +251,7 @@ export function MCPServerManager({ token }: { token?: string | null }) {
 
   if (loading) {
     return (
-      <div className="flex-1 overflow-y-auto bg-[#fcf9f8] p-10">
+      <div className={cn("flex-1 overflow-y-auto bg-[#fcf9f8]", !hideHeader && "p-10")}>
         <div className="max-w-5xl mx-auto space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="p-6 rounded-2xl bg-[#F6F3F2] animate-pulse h-24" />
@@ -262,63 +262,84 @@ export function MCPServerManager({ token }: { token?: string | null }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fcf9f8] p-10">
+    <div className={cn("flex-1 overflow-y-auto bg-[#fcf9f8]", !hideHeader && "p-10")}>
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="font-display text-3xl font-extrabold text-[#1C1B1B]">
-              MCP Server <span className="text-[#EC5B14]">Management</span>
-            </h2>
-            <p className="text-[#716B67] mt-1">
-              Manage and monitor your MCP server connections
-            </p>
+        {!hideHeader && (
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="font-display text-3xl font-extrabold text-[#1C1B1B]">
+                MCP Server <span className="text-[#EC5B14]">Management</span>
+              </h2>
+              <p className="text-[#716B67] mt-1">
+                Manage and monitor your MCP server connections
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCheckAllHealth}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
+              >
+                <motion.div
+                  key={spinKey}
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </motion.div>
+                Check All
+              </button>
+              <button
+                onClick={handleSyncFromConfig}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
+              >
+                <motion.div
+                  key={syncSpinKey}
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </motion.div>
+                Sync from Config
+              </button>
+              <button
+                onClick={handleNew}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EC5B14] text-white text-sm font-bold hover:bg-[#d44f0e] transition-all shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Server
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
+              >
+                <Globe className="w-4 h-4" />
+                Import Skill
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+        )}
+
+        {hideHeader && (
+          <div className="flex items-center justify-end gap-2 mb-6">
             <button
               onClick={handleCheckAllHealth}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-xs font-bold text-[#716B67] hover:text-[#1C1B1B] transition-all"
             >
-              <motion.div
-                key={spinKey}
-                initial={{ rotate: 0 }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.6, ease: 'easeInOut' }}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </motion.div>
+              <RefreshCw className="w-3.5 h-3.5" />
               Check All
             </button>
             <button
-              onClick={handleSyncFromConfig}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
-            >
-              <motion.div
-                key={syncSpinKey}
-                initial={{ rotate: 0 }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.6, ease: 'easeInOut' }}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </motion.div>
-              Sync from Config
-            </button>
-            <button
               onClick={handleNew}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EC5B14] text-white text-sm font-bold hover:bg-[#d44f0e] transition-all shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EC5B14] text-white text-xs font-bold hover:bg-[#d44f0e] transition-all shadow-sm"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               Add Server
             </button>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E8E4E2] text-sm font-medium text-[#716B67] hover:text-[#1C1B1B] hover:border-[#EC5B14]/30 transition-all"
-            >
-              <Globe className="w-4 h-4" />
-              Import Skill
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Server List */}
         <div className="space-y-3">

@@ -226,6 +226,14 @@ function ChatRow({
 }
 
 // ── Main Sidebar ──
+import { useWorkspace, type ProjectCategory } from '../contexts/WorkspaceContext';
+import { api } from '../lib/api-client';
+
+interface SidebarProps {
+  // ... other props
+  onOpenSearch?: () => void; // 新增可选 prop
+}
+
 export function Sidebar({
   isOpen,
   onClose,
@@ -234,18 +242,36 @@ export function Sidebar({
   activeMainTab,
   onMainTabChange,
   onOpenSettings,
+  onOpenSearch, // 接收
   onNewChat,
-  conversations = [],
+  conversations,
   currentChatId,
   onLoadConversation,
   onRenameConversation,
   onDeleteConversation,
   onFavoriteConversation,
   user,
-  onLogout,
-}: SidebarProps) {
+  onLogout
+}: any) {
   const { t, i18n } = useTranslation();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
+  const { setActiveProjectId } = useWorkspace();
+
+  // 动态获取项目列表（供全局命令菜单使用）
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await api.get<any>('/api/knowledge-projects');
+        if (res.success) setProjects(res.data);
+      } catch (err) {
+        console.error('Failed to fetch projects for command menu:', err);
+      }
+    };
+    const token = localStorage.getItem('uclaw_auth_token');
+    if (token) fetchProjects();
+  }, [isSearchModalOpen]);
+
 
   // Cmd+K / Ctrl+K 快捷键打开搜索
   useEffect(() => {
@@ -279,7 +305,7 @@ export function Sidebar({
       older: [],
     };
 
-    conversations.forEach(chat => {
+    conversations.forEach((chat: any) => {
       const updatedAt = new Date(chat.updatedAt).getTime();
       if (updatedAt >= todayStart) groups.today.push(chat);
       else if (updatedAt >= yesterdayStart) groups.yesterday.push(chat);
@@ -299,7 +325,6 @@ export function Sidebar({
 
   const navItems = [
     { id: 'library', icon: FolderOpen, label: t('sidebar.library') },
-    { id: 'mcp', icon: Puzzle, label: 'MCP Servers' },
     { id: 'workflows', icon: GitMerge, label: t('sidebar.workflows') },
     { id: 'projects', icon: FolderRoot, label: t('sidebar.projects') || 'Projects' },
   ];
@@ -500,8 +525,15 @@ export function Sidebar({
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
         conversations={conversations}
+        projects={projects}
         onSelectChat={(id) => {
           if (onLoadConversation) onLoadConversation(id);
+          onMainTabChange('chat');
+        }}
+        onSelectProject={(id) => {
+          setActiveProjectId(id);
+          onMainTabChange('chat');
+          setIsSearchModalOpen(false);
         }}
       />
     </>

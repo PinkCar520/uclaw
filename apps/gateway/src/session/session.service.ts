@@ -71,6 +71,11 @@ export class SessionService {
     return { success: true };
   }
 
+  async deleteAllSessions(userId: string) {
+    await this.prisma.session.deleteMany({ where: { userId } });
+    return { success: true };
+  }
+
   // ── Message CRUD ──────────────────────────────────────────────
 
   /**

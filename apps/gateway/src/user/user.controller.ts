@@ -28,15 +28,79 @@ export class UserController {
   }
 
   /**
+   * POST /api/user/node/create-local-project
+   * RPC: 请求本地助手创建一个新的项目文件夹
+   */
+  @Post('node/create-local-project')
+  async createLocalProject(@Req() req: any, @Body() body: any) {
+    const { projectName, category } = body;
+    try {
+      const result = await this.rpcGateway.sendToCli(req.user.workId, 'create_local_project', {
+        name: projectName,
+        category
+      });
+      return {
+        success: true,
+        path: result.path
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message
+      };
+    }
+  }
+
+  /**
    * GET /api/user/profile
    * 返回当前用户的完整档案信息
    */
   @Get('profile')
   async getProfile(@Req() req: any) {
     const profile = await this.userService.getUserFullProfile(req.user.workId);
+    
+    // 动态计算统计信息
+    const [sessionCount, messageCount] = await Promise.all([
+      this.prisma.session.count({ where: { userId: req.user.dbId } }),
+      this.prisma.message.count({ 
+        where: { 
+          session: { userId: req.user.dbId },
+          role: 'user'
+        } 
+      }),
+    ]);
+
     return {
       success: true,
-      profile,
+      profile: {
+        ...profile,
+        stats: {
+          sessionCount,
+          messageCount,
+          storageUsed: '1.2 GB', // 暂存占位
+        }
+      },
+    };
+  }
+
+  /**
+   * PATCH /api/user/profile
+   * 更新用户基础资料（姓名、邮箱）
+   */
+  @Patch('profile')
+  async updateProfile(@Req() req: any, @Body() body: any) {
+    const updated = await this.prisma.user.update({
+      where: { id: req.user.dbId },
+      data: {
+        name: body.name || undefined,
+        email: body.email || undefined,
+        avatar: body.avatar || undefined,
+      },
+    });
+
+    return {
+      success: true,
+      user: updated,
     };
   }
 
@@ -52,6 +116,7 @@ export class UserController {
         defaultModel: body.defaultModel || undefined,
         language: body.language || undefined,
         theme: body.theme || undefined,
+        customInstructions: body.customInstructions !== undefined ? body.customInstructions : undefined,
         config: body.config || undefined,
       },
     });

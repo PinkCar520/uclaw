@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -35,6 +35,7 @@ export class SkillOrchestrator {
     private tracingService: TracingService,
     private ragService: RAGService,
     private zentaoService: ZentaoService,
+    @Inject('PRISMA_CLIENT') private prisma: any,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -154,6 +155,18 @@ export class SkillOrchestrator {
     let prompt = basePrompt
         .replace('{{currentUserId}}', ctx.userId)
         .replace('{{onlineClis}}', onlineClis.join(', ') || '无');
+
+    // 注入用户自定义指令 (对标 Claude Custom Instructions)
+    try {
+      const prefs = await this.prisma.userPreference.findFirst({
+        where: { user: { workId: ctx.userId } }
+      });
+      if (prefs?.customInstructions) {
+        prompt += `\n\n## 用户个性化指令 (Custom Instructions)\n以下是用户定义的回复偏好，请务必严格遵守：\n${prefs.customInstructions}`;
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch user preferences: ${err.message}`);
+    }
         
     prompt += `\n\n以下 Skills 提供了特定任务的专项指令。当用户的请求与某个 Skill 的描述匹配时，请调用 activate_skill 工具加载该 Skill 的完整指令。\n\n${catalogXml}`;
 

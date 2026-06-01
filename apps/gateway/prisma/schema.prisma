@@ -43,6 +43,7 @@ model UserPreference {
   theme        String @default("system")
 
   // 存储常用 Prompt、工作流偏好等
+  customInstructions String? @db.Text
   config       Json?
 
   @@map("user_preferences")

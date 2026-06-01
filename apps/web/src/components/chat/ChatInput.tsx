@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect } from 'react';
 import { 
   Plus, FileText, X as CloseIcon, 
-  ChevronDown, Paperclip, ArrowUp, Square, Globe, Database, Check
+  ChevronDown, Paperclip, ArrowUp, Square, Globe, Database, Check, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';

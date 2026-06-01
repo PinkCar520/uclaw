@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   FolderRoot, Search, ArrowUpDown, Plus,
-  Sparkles, X, Loader2, ArrowRight
+  Sparkles, X, Loader2, ArrowRight, Trash2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api-client';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
-interface ProjectsProps {
-  onSelectProject: (projectId: string) => void;
-}
-
-export function Projects({ onSelectProject }: ProjectsProps) {
+export function Projects() {
   const { t } = useTranslation();
+  const { setActiveProjectId } = useWorkspace();
 
   // State
   const [projects, setProjects] = useState<any[]>([]);
@@ -44,11 +42,55 @@ export function Projects({ onSelectProject }: ProjectsProps) {
     fetchProjects();
   }, [fetchProjects]);
 
+  const [isPickingPath, setIsPickingPath] = useState(false);
+
+  const handlePickLocalPath = async () => {
+    setIsPickingPath(true);
+    try {
+      // 发起 RPC 请求，要求本地助手打开文件夹选择器
+      const res = await api.post<any>('/api/user/node/open-folder-picker');
+      if (res.success && res.path) {
+        setNewProject({ ...newProject, description: `${newProject.description} (path:${res.path})` });
+      }
+    } catch (err) {
+      console.error('Failed to trigger local picker:', err);
+      // 如果助手未连接，给出友好提示
+      alert('无法调起本地助手。请确保 UClaw 本地助手（Daemon）已启动并处于登录状态。');
+    } finally {
+      setIsPickingPath(false);
+    }
+  };
+
+  const [createLocalFolder, setCreateLocalFolder] = useState(true);
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
     try {
-      const res = await api.post<any>('/api/knowledge-projects', newProject);
+      let finalDescription = newProject.description;
+
+      // 1. 如果勾选了“创建本地文件夹”，先通过 RPC 通知助手执行本地 mkdir
+      if (createLocalFolder) {
+        try {
+          const rpcRes = await api.post<any>('/api/user/node/create-local-project', {
+            projectName: newProject.name,
+            category: newProject.category
+          });
+          if (rpcRes.success && rpcRes.path) {
+            finalDescription += ` (path:${rpcRes.path})`;
+          }
+        } catch (rpcErr) {
+          console.warn('Local folder creation failed, falling back to cloud-only:', rpcErr);
+          // 如果助手没开，可以选择报错或者继续
+        }
+      }
+
+      // 2. 将包含本地路径的项目元数据存入云端数据库
+      const res = await api.post<any>('/api/knowledge-projects', {
+        ...newProject,
+        description: finalDescription
+      });
+
       if (res.success) {
         setIsModalOpen(false);
         setNewProject({ name: '', category: 'Engineering', description: '' });
@@ -56,7 +98,7 @@ export function Projects({ onSelectProject }: ProjectsProps) {
       }
     } catch (err) {
       console.error('Failed to create project:', err);
-      alert('Failed to create project');
+      alert('创建项目失败，请检查网络或本地助手连接。');
     } finally {
       setIsCreating(false);
     }
@@ -140,10 +182,31 @@ export function Projects({ onSelectProject }: ProjectsProps) {
               <motion.div
                 layoutId={project.id}
                 key={project.id}
-                onClick={() => onSelectProject(project.id)}
-                className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-transparent hover:border-[#EC5B14]/30 hover:shadow-[0_10px_30px_rgba(236,91,20,0.05)] transition-all overflow-hidden group cursor-pointer"
+                className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-transparent hover:border-[#EC5B14]/30 hover:shadow-[0_10px_30px_rgba(236,91,20,0.05)] transition-all overflow-hidden group cursor-pointer relative"
               >
-                <div className="h-32 bg-[#F6F3F2] relative overflow-hidden">
+                {/* Delete Button Overlay */}
+                <div className="absolute top-3 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (confirm(`确定要删除项目 "${project.name}" 吗？此操作不可恢复。`)) {
+                        try {
+                          await api.delete(`/api/knowledge-projects/${project.id}`);
+                          await fetchProjects();
+                        } catch (err) {
+                          console.error('Delete failed:', err);
+                          alert('删除失败');
+                        }
+                      }
+                    }}
+                    className="bg-white shadow-xl text-red-500 p-2 rounded-xl border border-red-50 hover:bg-red-50 transition-all active:scale-95"
+                    title="删除项目"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col h-full" onClick={() => setActiveProjectId(project.id)}>
                   <img
                     className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 mix-blend-multiply"
                     src={project.iconUrl || "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800"}
@@ -219,23 +282,54 @@ export function Projects({ onSelectProject }: ProjectsProps) {
                       onChange={e => setNewProject({ ...newProject, category: e.target.value })}
                       className="w-full bg-[#F6F3F2] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#EC5B14]/20 outline-none font-medium appearance-none"
                     >
-                      <option value="Engineering">{t('skills.categories.code')}</option>
-                      <option value="Legal">{t('knowledge_base.projects.tags.legal')}</option>
-                      <option value="HR">{t('knowledge_base.projects.tags.hr')}</option>
-                      <option value="Operations">{t('knowledge_base.projects.tags.operations')}</option>
-                      <option value="Finance">{t('library.filters.communication')}</option>
+                      <option value="Finance">💰 财务与审计项目</option>
+                      <option value="HR">👥 人事与招聘项目</option>
+                      <option value="Legal">⚖️ 法务与合规项目</option>
+                      <option value="Engineering">💻 研发与工程项目</option>
+                      <option value="Operations">📊 业务运营项目</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-widest text-[#716B67] mb-2">{t('projects.create_modal.description_label')}</label>
-                    <textarea
-                      value={newProject.description}
-                      onChange={e => setNewProject({ ...newProject, description: e.target.value })}
-                      rows={3}
-                      placeholder={t('projects.create_modal.description_placeholder')}
-                      className="w-full bg-[#F6F3F2] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#EC5B14]/20 outline-none font-medium resize-none"
-                    />
+                  <div className="bg-[#F6F3F2]/50 p-4 rounded-2xl border border-[#E8E4E2]/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-xs font-bold uppercase tracking-widest text-[#716B67]">数据存放位置 (私有化保护)</label>
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <input 
+                          type="checkbox" 
+                          checked={createLocalFolder} 
+                          onChange={(e) => setCreateLocalFolder(e.target.checked)}
+                          className="w-4 h-4 rounded border-[#E8E4E2] text-[#EC5B14] focus:ring-[#EC5B14]/20"
+                        />
+                        <span className="text-[11px] font-bold text-[#1C1B1B] group-hover:text-[#EC5B14] transition-colors">同步在本地创建</span>
+                      </label>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <div className={cn(
+                        "flex-1 bg-white rounded-xl px-4 py-3 text-sm text-[#716B67] truncate font-medium border border-[#E8E4E2]",
+                        createLocalFolder && "bg-slate-50 text-slate-400 italic"
+                      )}>
+                        {createLocalFolder 
+                          ? `自动在本地创建: ~/Documents/UClaw/${newProject.name || '项目名'}` 
+                          : (newProject.description.includes('path:') ? newProject.description.split('path:')[1] : '点击选择本地工作文件夹...')}
+                      </div>
+                      {!createLocalFolder && (
+                        <button 
+                          type="button"
+                          onClick={handlePickLocalPath}
+                          disabled={isPickingPath}
+                          className="bg-white border border-[#E8E4E2] px-4 rounded-xl text-xs font-bold hover:bg-[#F6F3F2] transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                        >
+                          {isPickingPath ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                          浏览
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-3 text-[10px] text-[#A8A4A1] font-medium leading-relaxed">
+                      💡 {createLocalFolder 
+                        ? '勾选后，UClaw 本地助手将为您准备好干净的工位。' 
+                        : '选择已有文件夹，助手将自动索引该文件夹下的业务文件。'} 原始资料仅保存在您的本地电脑。
+                    </p>
                   </div>
 
                   <button

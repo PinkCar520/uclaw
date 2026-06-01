@@ -20,6 +20,22 @@ export class KnowledgeProjectController {
     return { success: true, data: projects };
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const project = await this.prisma.knowledgeProject.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { documents: true }
+        }
+      }
+    });
+    if (!project) {
+      return { success: false, error: 'Project not found' };
+    }
+    return { success: true, data: project };
+  }
+
   @Post()
   async create(@Body() data: { name: string; category: string; description?: string; iconUrl?: string; color?: string }) {
     const project = await this.prisma.knowledgeProject.create({

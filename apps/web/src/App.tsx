@@ -5,7 +5,7 @@ import {
   Cloud,
   Cpu,
   Menu,
-} from 'lucide-react';
+} from 'lucide-react'
 import { ChatSession } from '@uclaw/ui/components/ChatSession';
 import { useTranslation } from 'react-i18next';
 import { Dashboard } from '@uclaw/ui/components/Dashboard';
@@ -294,10 +294,10 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
         onLogout={handleLogout}
         user={user}
       />
-      <SettingsDialog 
-        isOpen={isMainSettingsOpen} 
-        onClose={() => setIsMainSettingsOpen(false)} 
-        token={token} 
+      <SettingsDialog
+        isOpen={isMainSettingsOpen}
+        onClose={() => setIsMainSettingsOpen(false)}
+        token={token}
       />
     </div>
   );

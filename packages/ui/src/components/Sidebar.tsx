@@ -27,6 +27,8 @@ import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { NodeStatusIndicator } from './NodeStatusIndicator';
+import { useProjects } from '../lib/useProjects';
+import { ProjectCreateModal } from './ProjectCreateModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -401,57 +403,8 @@ function ProjectRow({
 }
 
 function ProjectQuickAddDropdown({ onCreated }: { onCreated?: () => void }) {
-  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isNaming, setIsNaming] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-
-  const handleQuickCreate = async (e?: React.KeyboardEvent | React.FocusEvent) => {
-    const name = newProjectName.trim();
-    if (!name) {
-      setIsNaming(false);
-      return;
-    }
-    try {
-      let finalDescription = '';
-
-      if ((window as any).api?.createLocalProject) {
-        // Desktop native FS creation
-        const res = await (window as any).api.createLocalProject(name);
-        if (res.success && res.path) {
-          finalDescription = `(path:${res.path})`;
-        } else {
-          alert('本地文件夹创建失败: ' + res.error);
-        }
-      } else {
-        alert('未检测到桌面端 API (window.api)。正在回退到 HTTP 网络请求...');
-        // Fallback or daemon API
-        const rpcRes = await api.post<any>('/api/user/node/create-local-project', {
-          projectName: name,
-          category: 'Engineering'
-        });
-        if (rpcRes.success && rpcRes.path) {
-          finalDescription = `(path:${rpcRes.path})`;
-        }
-      }
-
-      // 2. 存入云端数据库同步状态
-      const res = await api.post<any>('/api/knowledge-projects', {
-        name,
-        category: 'Engineering',
-        description: finalDescription
-      });
-
-      if (res.success) {
-        onCreated?.();
-      }
-    } catch (err) {
-      console.error('Failed to quick create project:', err);
-    }
-    setIsNaming(false);
-    setNewProjectName('');
-    setMenuOpen(false);
-  };
 
   const handlePickLocalPath = async () => {
     try {
@@ -501,43 +454,14 @@ function ProjectQuickAddDropdown({ onCreated }: { onCreated?: () => void }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isNaming} onOpenChange={setIsNaming}>
-        <DialogContent className="sm:max-w-[400px] sm:rounded-[16px] gap-0 p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#1C1B1B]">Create New Project</DialogTitle>
-            <DialogDescription className="pt-2 text-sm text-[#716B67]">
-              Enter a name for your new local project workspace.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-6 mb-4">
-            <input
-              autoFocus
-              value={newProjectName}
-              onChange={e => setNewProjectName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleQuickCreate();
-                if (e.key === 'Escape') setIsNaming(false);
-              }}
-              placeholder="e.g. my-awesome-project"
-              className="w-full bg-[#F6F3F2] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#EC5B14]/20 outline-none font-medium text-sm"
-            />
-          </div>
-          <DialogFooter className="flex sm:justify-end gap-2">
-            <button
-              onClick={() => setIsNaming(false)}
-              className="px-4 py-2 rounded-lg border border-[#E8E4E2] text-sm font-bold text-[#716B67] hover:bg-[#F1EFEB] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleQuickCreate()}
-              className="px-4 py-2 rounded-lg bg-[#1C1B1B] text-sm font-bold text-white hover:bg-[#1C1B1B]/80 transition-all"
-            >
-              Create
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ProjectCreateModal 
+        isOpen={isNaming} 
+        onClose={() => setIsNaming(false)} 
+        onCreated={() => {
+          setIsNaming(false);
+          onCreated?.();
+        }} 
+      />
     </>
   );
 }
@@ -568,8 +492,8 @@ export function Sidebar({
 }: any) {
   const { t, i18n } = useTranslation();
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
-  const { setActiveProjectId } = useWorkspace();
+  const { projects, fetchProjects: fetchProjectsData } = useProjects();
+  const { activeProject, setActiveProjectId } = useWorkspace();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -611,20 +535,11 @@ export function Sidebar({
     }
   }, []);
 
-  const fetchProjectsData = async () => {
-    try {
-      const res = await api.get<any>('/api/knowledge-projects');
-      if (res.success) setProjects(res.data);
-    } catch (err) {
-      console.error('Failed to fetch projects:', err);
-    }
-  };
-
   // 动态获取项目列表（供全局命令菜单使用）
   useEffect(() => {
     const token = localStorage.getItem('uclaw_auth_token');
     if (token) fetchProjectsData();
-  }, [isSearchModalOpen]);
+  }, [fetchProjectsData]);
 
 
   // Cmd+K / Ctrl+K 快捷键打开搜索
@@ -800,7 +715,7 @@ export function Sidebar({
                         <ProjectRow
                           key={proj.id}
                           project={proj}
-                          isActive={activeMainTab === 'chat' /* Replace with actual check if needed */}
+                          isActive={activeProject?.id === proj.id}
                           onClick={() => { setActiveProjectId(proj.id); onMainTabChange('chat'); }}
                           onDeleted={fetchProjectsData}
                         />

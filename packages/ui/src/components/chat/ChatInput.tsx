@@ -6,6 +6,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { beautifyModelName } from '../../lib/chat-utils';
+import { useProjects } from '../../lib/useProjects';
+import { useInstalledSkills } from '../../lib/useInstalledSkills';
+import { ProjectCreateModal } from '../ProjectCreateModal';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { globalToast } from '../GlobalToast';
+import { api } from '../../lib/api-client';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -45,6 +51,7 @@ interface ChatInputProps {
   setGhostText?: (text: string) => void;
   isPredicting?: boolean;
   isEmpty?: boolean;
+  onMainTabChange?: (id: string) => void;
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -82,6 +89,7 @@ export const ChatInput = React.memo(({
   setGhostText = () => {},
   isPredicting = false,
   isEmpty = false,
+  onMainTabChange,
 }: ChatInputProps) => {
   const activeModel = models.find(m => m.id === selectedModelId) || models[0] || { name: 'Loading...', icon: 'Globe', color: 'text-slate-400' };
   const activeDisplayName = beautifyModelName(activeModel.name);
@@ -92,6 +100,11 @@ export const ChatInput = React.memo(({
   const [mentionQuery, setMentionQuery] = useState("");
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
+  const [isProjectCreateModalOpen, setIsProjectCreateModalOpen] = useState(false);
+
+  const { projects, fetchProjects } = useProjects();
+  const { installedSkills } = useInstalledSkills();
+  const { activeProject, setActiveProjectId } = useWorkspace();
 
   const MENTION_OPTIONS = [
     { id: 'search', label: 'Web Search', icon: Globe, desc: 'Search the live web', type: 'search' },
@@ -457,17 +470,31 @@ export const ChatInput = React.memo(({
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent sideOffset={8} className="w-56 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl p-1.5 backdrop-blur-xl bg-white/95">
-                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
-                          <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center shrink-0">
-                            <Briefcase className="w-4 h-4 text-[#716B67]" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[13px] font-bold text-[#1C1B1B]">Uclaw</span>
-                            <span className="text-[10px] text-[#A8A4A1]">Jhon</span>
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />
-                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
+                        {projects.map(project => (
+                          <DropdownMenuItem 
+                            key={project.id} 
+                            onClick={() => {
+                              setActiveProjectId(project.id);
+                              globalToast(`Chat moved to ${project.name}`);
+                            }}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]"
+                          >
+                            <div className="flex items-center gap-3 overflow-hidden flex-1">
+                              <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center shrink-0">
+                                <Briefcase className="w-4 h-4 text-[#716B67]" />
+                              </div>
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-[13px] font-bold text-[#1C1B1B] truncate">{project.name}</span>
+                                <span className="text-[10px] text-[#A8A4A1] truncate">Local Project</span>
+                              </div>
+                            </div>
+                            {activeProject?.id === project.id && (
+                              <Check className="w-4 h-4 text-[#EC5B14] shrink-0" />
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                        {projects.length > 0 && <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />}
+                        <DropdownMenuItem onClick={() => setIsProjectCreateModalOpen(true)} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
                           <Plus className="w-4 h-4 text-[#716B67]" />
                           <span className="text-[13px] font-medium text-[#1C1B1B]">Start a new project</span>
                         </DropdownMenuItem>
@@ -484,24 +511,18 @@ export const ChatInput = React.memo(({
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent sideOffset={8} className="w-60 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl p-1.5 backdrop-blur-xl bg-white/95">
-                        {[
-                          'dizi-teacher',
-                          'even-ai-navigator',
-                          'shanghai-rental-advisor',
-                          'skill-creator',
-                          'sunscreen-clothing-guide'
-                        ].map(skill => (
-                          <DropdownMenuItem key={skill} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
+                        {installedSkills.map(skill => (
+                          <DropdownMenuItem key={skill.id} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
                             <FileText className="w-4 h-4 text-[#716B67] shrink-0" />
-                            <span className="text-[13px] font-medium text-[#1C1B1B] truncate">{skill}</span>
+                            <span className="text-[13px] font-medium text-[#1C1B1B] truncate">{skill.name}</span>
                           </DropdownMenuItem>
                         ))}
-                        <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />
-                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
+                        {installedSkills.length > 0 && <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />}
+                        <DropdownMenuItem onClick={() => onMainTabChange?.('library')} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
                           <Archive className="w-4 h-4 text-[#716B67] shrink-0" />
                           <span className="text-[13px] font-medium text-[#1C1B1B]">Manage skills</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
+                        <DropdownMenuItem onClick={() => onMainTabChange?.('library')} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
                           <Plus className="w-4 h-4 text-[#716B67] shrink-0" />
                           <span className="text-[13px] font-medium text-[#1C1B1B]">Add skill</span>
                         </DropdownMenuItem>
@@ -524,6 +545,27 @@ export const ChatInput = React.memo(({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <AnimatePresence>
+                {activeProject && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, width: 0 }}
+                    animate={{ opacity: 1, scale: 1, width: 'auto' }}
+                    exit={{ opacity: 0, scale: 0.9, width: 0 }}
+                    className="flex items-center ml-1 overflow-hidden"
+                  >
+                    <button 
+                      onClick={() => onMainTabChange?.('projects')}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#EC5B14] bg-[#EC5B14]/5 hover:bg-[#EC5B14]/10 transition-colors whitespace-nowrap group"
+                    >
+                      <Briefcase className="w-3.5 h-3.5 text-[#EC5B14]" />
+                      <span className="text-xs font-bold text-[#EC5B14] truncate max-w-[120px]">
+                        {activeProject.name}
+                      </span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <DropdownMenu open={isModelDropdownOpen} onOpenChange={setIsModelDropdownOpen}>
                 <DropdownMenuTrigger asChild>
@@ -639,6 +681,32 @@ export const ChatInput = React.memo(({
           </div>
         </div>
       </div>
+
+      <ProjectCreateModal
+        isOpen={isProjectCreateModalOpen}
+        onClose={() => setIsProjectCreateModalOpen(false)}
+        onCreated={async (name: string) => {
+          setIsProjectCreateModalOpen(false);
+          await fetchProjects();
+          
+          // Try to automatically find and select the new project by name
+          // We need a short delay since fetchProjects might be async
+          setTimeout(async () => {
+             try {
+                const res = await api.get<any>('/api/knowledge-projects');
+                const newProj = res.data?.find((p: any) => p.name === name);
+                if (newProj) {
+                   setActiveProjectId(newProj.id);
+                   globalToast(`Chat moved to ${newProj.name}`);
+                }
+             } catch (e) {
+                // Ignore error on fallback
+             }
+          }, 500);
+
+          onMainTabChange?.('projects');
+        }}
+      />
     </div>
   );
 });

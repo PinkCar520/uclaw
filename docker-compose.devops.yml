@@ -1,5 +1,6 @@
+
 services:
-  # UClaw AI 网关总线 (NestJS + Prisma)
+  # UClaw AI 网关总线 (NestJS + Prisma 7)
   gateway:
     build:
       context: .
@@ -19,14 +20,17 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GATEWAY_ROOT=/app
-      # TODO: 既然已剥离本地 DevOps 服务，请在 .env 文件中配置这些云端第三方 SaaS 的真实地址
-      - ZENTAO_BASE_URL=${ZENTAO_BASE_URL:-http://zentao:80}
-      - JENKINS_BASE_URL=${JENKINS_BASE_URL:-http://jenkins:8080}
-      - GITLAB_BASE_URL=${GITLAB_BASE_URL:-http://gitlab:80}
+      - ZENTAO_BASE_URL=http://zentao:80
+      - JENKINS_BASE_URL=http://jenkins:8080
+      - GITLAB_BASE_URL=http://gitlab:80
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      jenkins:
+        condition: service_started
+      gitlab:
         condition: service_started
 
   # UClaw AI 可视化面板 (React/Vite + Nginx)
@@ -91,6 +95,44 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # 禅道 Web 服务 (集成测试环境)
+  zentao:
+    image: easysoft/zentao:latest
+    container_name: uclaw-zentao
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - MYSQL_INTERNAL=false
+      - MYSQL_HOST=zentao-db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=zentao
+      - MYSQL_PASSWORD=zentao_pass
+      - MYSQL_DATABASE=zentao
+    volumes:
+      - uclaw_zentao_data:/www/zentaopms
+    depends_on:
+      zentao-db:
+        condition: service_healthy
+
+  # 禅道专用数据库
+  zentao-db:
+    image: mariadb:10.6
+    container_name: uclaw-zentao-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_pass
+      - MYSQL_DATABASE=zentao
+      - MYSQL_USER=zentao
+      - MYSQL_PASSWORD=zentao_pass
+    volumes:
+      - uclaw_zentao_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "zentao", "-pzentao_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # 会话记忆与流控层 (Redis)
   redis:
     image: redis:7-alpine
@@ -100,7 +142,45 @@ services:
     volumes:
       - uclaw_redis_data:/data
 
+  # Jenkins CI/CD
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: uclaw-jenkins
+    restart: always
+    ports:
+      - "8082:8080"
+      - "50000:50000"
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    volumes:
+      - uclaw_jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # GitLab 代码托管
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: uclaw-gitlab
+    restart: always
+    ports:
+      - "8083:80"
+      - "443:443"
+      - "22:22"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8083'
+        gitlab_rails['initial_root_password'] = 'gitlab_admin_pass'
+    volumes:
+      - uclaw_gitlab_data:/etc/gitlab
+      - uclaw_gitlab_logs:/var/log/gitlab
+      - uclaw_gitlab_data:/var/opt/gitlab
+    shm_size: '256m'
+
 volumes:
   uclaw_postgres_data:
   uclaw_redis_data:
+  uclaw_zentao_data:
+  uclaw_zentao_mysql:
   uclaw_gateway_uploads:
+  uclaw_jenkins_data:
+  uclaw_gitlab_data:
+  uclaw_gitlab_logs:

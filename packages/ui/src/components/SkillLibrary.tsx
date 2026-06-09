@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api-client';
 import { MCPServerManager } from './MCPServerManager';
+import { useInstalledSkills } from '../lib/useInstalledSkills';
 
 type Category = 'all' | 'pm' | 'cicd' | 'vc' | 'communication' | 'data_science';
 type SubTab = 'marketplace' | 'mcp';
@@ -68,6 +69,7 @@ export function SkillLibrary({ token }: { token?: string | null }) {
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
   const installingRef = React.useRef<string | null>(null);
+  const { fetchInstalledSkills } = useInstalledSkills();
 
   useEffect(() => {
     if (activeSubTab !== 'marketplace') return;
@@ -124,6 +126,7 @@ export function SkillLibrary({ token }: { token?: string | null }) {
       const data = await api.post<any>(`/api/skills/${skillId}/install`);
       if (data.success) {
         setInstalledIds((prev) => new Set([...prev, skillId]));
+        fetchInstalledSkills();
       }
     } catch (err) {
       console.error('Install failed:', err);
@@ -146,6 +149,7 @@ export function SkillLibrary({ token }: { token?: string | null }) {
           next.delete(skillId);
           return next;
         });
+        fetchInstalledSkills();
       }
     } catch (err) {
       console.error('Uninstall failed:', err);

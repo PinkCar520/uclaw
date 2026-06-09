@@ -61,6 +61,7 @@ interface ChatSessionProps {
   onStreamFinished: (sessionId: string) => Promise<void>; // 流完成后刷新侧边栏
   onRenameConversation?: (id: string, title: string) => void;
   isLoadingHistory?: boolean;
+  onMainTabChange?: (id: string) => void;
   t: (key: string, options?: any) => string;
 }
 
@@ -76,6 +77,7 @@ export function ChatSession({
                               onStreamFinished,
                               onRenameConversation,
                               isLoadingHistory,
+                              onMainTabChange,
                               t
                             }: ChatSessionProps) {
   const reducedMotion = useReducedMotion();
@@ -522,6 +524,7 @@ export function ChatSession({
           ghostText={ghostText}
           setGhostText={setGhostText}
           isPredicting={isPredicting}
+          onMainTabChange={onMainTabChange}
           />
         </div>
 

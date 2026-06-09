@@ -21,6 +21,7 @@ import { SettingsModal } from '@uclaw/ui/components/SettingsModal';
 import { AuthPage } from '@uclaw/ui/components/AuthPage';
 import { useConversations } from '@uclaw/ui/lib/useConversations';
 import { cn } from '@uclaw/ui/lib/utils';
+import { Toaster } from '@uclaw/ui/components/GlobalToast';
 import { api } from '@uclaw/ui/lib/api-client';
 
 import { WorkspaceProvider, useWorkspace } from '@uclaw/ui/contexts/WorkspaceContext';
@@ -199,7 +200,12 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
   }, [token, activeTab]);
 
   if (!token) {
-    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <Toaster />
+        <AuthPage onLoginSuccess={handleLoginSuccess} />
+      </>
+    );
   }
 
   if (!isInitialized) {
@@ -208,6 +214,7 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
 
   return (
     <div className="flex h-screen w-full bg-[#f6f3f2] font-sans selection:bg-[#EC5B14]/10 selection:text-[#EC5B14]">
+      <Toaster />
       {/* 1. 侧边栏 (Fixed App Shell) */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -260,6 +267,7 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
                 onStreamFinished={onStreamFinished}
                 onRenameConversation={handleRenameChat}
                 isLoadingHistory={isLoadingMessages}
+                onMainTabChange={(id: string) => setActiveTab(id)}
                 t={t}
               />
             </div>

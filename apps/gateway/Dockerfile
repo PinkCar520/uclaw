@@ -22,7 +22,7 @@ COPY agent/skills/package.json agent/skills/
 COPY packages/shared/sandbox/package.json packages/shared/sandbox/
 
 # 安装全量依赖 (使用缓存挂载加速)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
 
 # 3. 拷贝源码并生成 Prisma Client
 COPY apps/gateway/prisma apps/gateway/prisma

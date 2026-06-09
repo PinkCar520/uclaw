@@ -24,7 +24,7 @@ COPY packages/tools/zentao/package.json packages/tools/zentao/
 COPY . .
 
 # 安装全量依赖 (提供完整上下文以防 pnpm workspace 丢失链接)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
 
 # 编译前端
 RUN pnpm --filter @uclaw/core build

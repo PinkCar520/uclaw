@@ -20,9 +20,8 @@ COPY packages/shared/core/package.json packages/shared/core/
 COPY packages/shared/sandbox/package.json packages/shared/sandbox/
 COPY packages/tools/zentao/package.json packages/tools/zentao/
 
-# 安装全量依赖 (允许 allowBuilds 列表中的构建脚本运行)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-
+# 安装全量依赖 (配置 ignore-scripts 跳过 electron 等不必要的编译)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm config set ignore-scripts true && pnpm install --frozen-lockfile
 # 拷贝代码
 COPY . .
 

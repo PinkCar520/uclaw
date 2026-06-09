@@ -81,6 +81,7 @@ function ChatRow({
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [expandedDateGroups, setExpandedDateGroups] = useState<Record<string, boolean>>({});
   const [renameValue, setRenameValue] = useState(chat.title);
   const renameRef = useRef<HTMLInputElement>(null);
 
@@ -229,14 +230,14 @@ function ChatRow({
 import { useWorkspace, type ProjectCategory } from '../contexts/WorkspaceContext';
 import { api } from '../lib/api-client';
 
-function ProjectRow({ 
-  project, 
-  isActive, 
-  onClick, 
-  onDeleted 
-}: { 
-  project: any; 
-  isActive: boolean; 
+function ProjectRow({
+  project,
+  isActive,
+  onClick,
+  onDeleted
+}: {
+  project: any;
+  isActive: boolean;
   onClick: () => void;
   onDeleted?: () => void;
 }) {
@@ -267,7 +268,7 @@ function ProjectRow({
     try {
       const match = project.description?.match(/\(path:(.*?)\)/);
       const targetPath = match && match[1] ? match[1] : undefined;
-      
+
       if ((window as any).api?.revealInFinder) {
         const res = await (window as any).api.revealInFinder(targetPath || project.id);
         if (!res.success) {
@@ -275,9 +276,9 @@ function ProjectRow({
         }
       } else {
         alert('未检测到桌面端环境 (window.api 为空)，无法调用系统 Finder。');
-        await api.post('/api/user/node/reveal-in-finder', { 
+        await api.post('/api/user/node/reveal-in-finder', {
           path: targetPath,
-          projectId: project.id 
+          projectId: project.id
         });
       }
     } catch (err) {
@@ -569,6 +570,46 @@ export function Sidebar({
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const { setActiveProjectId } = useWorkspace();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const ipc = (window as any).electron?.ipcRenderer;
+    
+    const checkFullscreen = async () => {
+      if (ipc) {
+        try {
+          const isFull = await ipc.invoke('is-fullscreen');
+          if (mounted) setIsFullscreen(isFull);
+        } catch (e) {
+          // ignore error if handler not ready
+        }
+      } else {
+        // Fallback for web mode
+        setIsFullscreen(window.innerHeight === window.screen.height);
+      }
+    };
+    
+    checkFullscreen();
+
+    if (ipc) {
+      const callback = (_e: any, isFull: boolean) => {
+        if (mounted) setIsFullscreen(isFull);
+      };
+      ipc.on('fullscreen-change', callback);
+      return () => {
+        mounted = false;
+        ipc.removeListener('fullscreen-change', callback);
+      };
+    } else {
+      const handleResize = () => setIsFullscreen(window.innerHeight === window.screen.height);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        mounted = false;
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, []);
 
   const fetchProjectsData = async () => {
     try {
@@ -657,7 +698,10 @@ export function Sidebar({
 
       {/* Fixed Toggle Button (Desktop Only) */}
       <div
-        className="hidden md:flex fixed top-[8px] left-[90px] z-[9999] titlebar-no-drag"
+        className={cn(
+          "hidden md:flex fixed z-[9999] titlebar-no-drag transition-all duration-300",
+          isFullscreen ? "left-[20px] top-4" : "left-[90px] top-[4px]"
+        )}
         style={{ WebkitAppRegion: 'no-drag' } as any}
       >
         <button
@@ -732,38 +776,38 @@ export function Sidebar({
               return (
                 <React.Fragment key={item.id}>
                   <div className="relative group flex items-center w-full">
-                  <button
-                    onClick={() => onMainTabChange(item.id)}
-                    className={cn(
-                      'w-full flex items-center font-medium text-[13px] transition-all focus:outline-none gap-3 px-2.5 py-1.5 rounded-[8px]',
-                      isActive
-                        ? 'bg-[#1C1B1B]/[0.06] text-[#1C1B1B]'
-                        : 'text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B]'
+                    <button
+                      onClick={() => onMainTabChange(item.id)}
+                      className={cn(
+                        'w-full flex items-center font-medium text-[13px] transition-all focus:outline-none gap-3 px-2.5 py-1.5 rounded-[8px]',
+                        isActive
+                          ? 'bg-[#1C1B1B]/[0.06] text-[#1C1B1B]'
+                          : 'text-[#716B67] hover:bg-[#1C1B1B]/5 hover:text-[#1C1B1B]'
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span className="flex-1 text-left">{item.label}</span>
+                    </button>
+                    {item.id === 'projects' && !isCollapsed && (
+                      <ProjectQuickAddDropdown onCreated={() => { fetchProjectsData(); onMainTabChange('projects'); }} />
                     )}
-                    title={item.label}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                  </button>
-                  {item.id === 'projects' && !isCollapsed && (
-                    <ProjectQuickAddDropdown onCreated={() => { fetchProjectsData(); onMainTabChange('projects'); }} />
-                  )}
-                </div>
-                {/* 渲染项目子列表 */}
-                {item.id === 'projects' && !isCollapsed && projects.length > 0 && (
-                  <div className="mt-1 mb-2 space-y-0.5">
-                    {projects.map((proj: any) => (
-                      <ProjectRow 
-                        key={proj.id} 
-                        project={proj} 
-                        isActive={activeMainTab === 'chat' /* Replace with actual check if needed */} 
-                        onClick={() => { setActiveProjectId(proj.id); onMainTabChange('chat'); }} 
-                        onDeleted={fetchProjectsData}
-                      />
-                    ))}
                   </div>
-                )}
-              </React.Fragment>
+                  {/* 渲染项目子列表 */}
+                  {item.id === 'projects' && !isCollapsed && projects.length > 0 && (
+                    <div className="mt-1 mb-2 space-y-0.5">
+                      {projects.map((proj: any) => (
+                        <ProjectRow
+                          key={proj.id}
+                          project={proj}
+                          isActive={activeMainTab === 'chat' /* Replace with actual check if needed */}
+                          onClick={() => { setActiveProjectId(proj.id); onMainTabChange('chat'); }}
+                          onDeleted={fetchProjectsData}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </nav>

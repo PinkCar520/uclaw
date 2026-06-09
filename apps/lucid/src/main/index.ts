@@ -31,6 +31,17 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  // Fullscreen IPC
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow.webContents.send('fullscreen-change', true)
+  })
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow.webContents.send('fullscreen-change', false)
+  })
+  ipcMain.handle('is-fullscreen', () => {
+    return mainWindow.isFullScreen()
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -42,6 +53,16 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(icon)
+    app.setAboutPanelOptions({
+      applicationName: app.getName(),
+      applicationVersion: app.getVersion(),
+      version: app.getVersion(),
+      iconPath: join(__dirname, '../../resources/icon.png')
+    })
+  }
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 

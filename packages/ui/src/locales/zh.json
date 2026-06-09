@@ -25,7 +25,7 @@
       "success_value": "94%"
     },
     "integrations": {
-      "active_title": "活跃集成",
+      "active_title": "已接入系统与数据源",
       "manage": "管理",
       "pending_mrs": "待处理 MR",
       "pipeline_running": "正在运行的流水线",

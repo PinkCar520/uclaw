@@ -3,14 +3,21 @@ import {
   ChevronRight, Sun, Moon, Globe,
   User, Edit2, CreditCard, Key,
   Plus, MoreVertical, TerminalSquare, Rocket, MonitorSmartphone,
-  Save, ShieldCheck, RefreshCw, LogOut, Shield, Sparkles
+  Save, ShieldCheck, RefreshCw, LogOut, Shield, Sparkles, X, Search
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { PermissionManager } from './PermissionManager';
 import { api } from '../lib/api-client';
 
-export function UserCenter({ token, onLogout }: { token: string | null; onLogout?: () => void }) {
+interface SettingsDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  token: string | null;
+}
+
+export function SettingsDialog({ isOpen, onClose, token }: SettingsDialogProps) {
   const { t, i18n } = useTranslation();
   const [activeSubTab, setActiveSubTab] = useState('general');
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -131,25 +138,47 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
   const currentTheme = userProfile?.preferences?.theme || 'light';
 
   return (
-    <div className="flex-1 flex flex-col relative overflow-hidden bg-[#FCF9F8]">
-      <div className="flex-1 overflow-y-auto px-8 md:px-12 py-8 scroll-smooth no-scrollbar text-foreground">
-        <header className="mb-12 max-w-4xl">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="bg-[#EC5B14]/10 text-[#EC5B14] text-[10px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">{t('user_center.member_center')}</span>
-            <span className="text-[#E8E4E2]">•</span>
-            <span className="text-[#716B67] text-[10px] font-bold uppercase tracking-widest">{t('user_center.common.id_label')}{userProfile?.workId}</span>
-          </div>
-          <h2 className="text-4xl font-display font-extrabold tracking-tight text-foreground mb-2 text-balance lg:max-w-2xl">
-            {t('user_center.welcome')}<span className="text-[#EC5B14]">{userProfile?.name || 'Alex'}</span>
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl">{t('user_center.welcome_desc')}</p>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl pb-20">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+          />
           
-          {/* Left Column: Navigation */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="flex flex-col space-y-1">
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="relative flex w-[1000px] h-[800px] max-w-[95vw] max-h-[95vh] bg-card rounded-2xl shadow-2xl overflow-hidden text-foreground border border-border/50"
+          >
+            {/* Close Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors z-[60] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Left Column: Navigation */}
+            <div className="w-[280px] bg-muted/30 border-r border-border/50 flex flex-col h-full shrink-0">
+              <div className="p-6 pb-2">
+                <div className="relative mb-6">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    className="w-full bg-background border border-border/50 rounded-lg pl-9 pr-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#EC5B14]/20 transition-all"
+                  />
+                </div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3 px-2">Settings</h3>
+                <div className="flex flex-col space-y-1">
               {[
                 { id: 'general', label: t('user_center.tabs.general'), icon: MonitorSmartphone },
                 { id: 'instructions', label: 'Custom Instructions', icon: Sparkles },
@@ -162,10 +191,10 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
                   key={tab.id}
                   onClick={() => setActiveSubTab(tab.id)}
                   className={cn(
-                    "flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all group",
+                    "flex items-center justify-between px-3 py-3 rounded-xl text-left transition-all group text-sm",
                     activeSubTab === tab.id 
                       ? "bg-card text-[#EC5B14] shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-border/50 font-bold" 
-                      : "text-muted-foreground font-semibold hover:bg-muted hover:text-foreground"
+                      : "text-muted-foreground font-medium hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -175,16 +204,16 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
                   <ChevronRight className={cn("w-4 h-4 transition-transform", activeSubTab === tab.id ? "translate-x-0" : "-translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0")} />
                 </button>
               ))}
+                </div>
+              </div>
             </div>
 
-          </div>
-
-          {/* Right Column: Dynamic Content */}
-          <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Right Column: Dynamic Content */}
+            <div className="flex-1 overflow-y-auto relative p-10 pb-24 scroll-smooth">
             
             {activeSubTab === 'general' && (
               <>
-                <section className="md:col-span-2 bg-card border border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-8 rounded-[32px] space-y-8">
+                <section className="space-y-8 max-w-3xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="bg-[#EC5B14]/10 p-2 rounded-lg text-[#EC5B14]">
@@ -256,7 +285,7 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
             )}
 
             {activeSubTab === 'instructions' && (
-              <section className="md:col-span-2 bg-card border border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-10 rounded-[32px] space-y-8">
+              <section className="space-y-8 max-w-3xl">
                 <div className="flex items-center gap-3">
                   <div className="bg-[#EC5B14]/10 p-2 rounded-lg text-[#EC5B14]">
                     <Sparkles className="w-5 h-5" />
@@ -302,7 +331,7 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
             )}
 
             {activeSubTab === 'profile' && (
-              <section className="bg-card border md:col-span-2 border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-10 rounded-[32px] space-y-8">
+              <section className="space-y-8 max-w-3xl">
                  <div className="flex items-center gap-6">
                     <div className="relative w-24 h-24">
                       <img alt={t('user_center.identity.edit_avatar')} className="w-full h-full rounded-3xl object-cover border-4 border-card shadow-xl shadow-[#000]/5" src={userProfile?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuA0oS2KtsdNSGQoheV6v31oxAq-NhwZzQ47xg8__EJhv8OqGKGnZL3wep9OPHmM8x2Ik6mpZYLUp_nlIoldi6DXVNzDnTDsq10ls1jkUj-t_evdmGKwkn_t5xfFRgHK6-mmcStkVS-zdI45IF3rmBL3mH9KmAB8N9AvKqU-Dv45N0-NNrOIrD2ZlsGh9MmfkPMjEPcNRAJQVNa20KRYE9eY-Svv7Taq6vVmmqM9HxckuxqA9UWUSYJjawCeP6JhTrR_2ym5Y9kmaeo"} />
@@ -355,7 +384,7 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
             )}
 
             {activeSubTab === 'integrations' && (
-              <section className="md:col-span-2 bg-card border border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-10 rounded-[32px] space-y-8">
+              <section className="space-y-8 max-w-3xl">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold text-foreground">{t('user_center.integrations.title')}</h3>
                   <button 
@@ -405,7 +434,7 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
             )}
 
             {activeSubTab === 'billing' && (
-               <section className="bg-card border border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] p-10 rounded-[32px] space-y-8 md:col-span-2 text-foreground">
+               <section className="space-y-8 max-w-3xl text-foreground">
                   <div className="flex items-center gap-3">
                     <div className="bg-[#EC5B14]/10 p-2 rounded-lg text-[#EC5B14]">
                       <CreditCard className="w-5 h-5" />
@@ -461,8 +490,9 @@ export function UserCenter({ token, onLogout }: { token: string | null; onLogout
             )}
 
           </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

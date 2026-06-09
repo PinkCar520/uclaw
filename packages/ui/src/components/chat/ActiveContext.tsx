@@ -18,12 +18,12 @@ import { cn } from '../../lib/utils';
 import { useWorkspace, type ProjectCategory } from '../../contexts/WorkspaceContext';
 
 const DOMAIN_CONFIG: Record<ProjectCategory, { label: string; icon: any; color: string; bgColor: string; pathLabel: string; branchLabel: string }> = {
-  Engineering: { label: '研发工程上下文', icon: GitBranch, color: 'text-blue-600', bgColor: 'bg-blue-50', pathLabel: '当前路径', branchLabel: '活跃分支' },
-  Finance: { label: '财务审计上下文', icon: Wallet, color: 'text-emerald-600', bgColor: 'bg-emerald-50', pathLabel: '本地核算资料库', branchLabel: '当前账期' },
-  Legal: { label: '法务合规上下文', icon: Scale, color: 'text-purple-600', bgColor: 'bg-purple-50', pathLabel: '合同卷宗文件夹', branchLabel: '合规版本' },
-  HR: { label: '人才编排上下文', icon: Users, color: 'text-orange-600', bgColor: 'bg-orange-50', pathLabel: '本地简历库', branchLabel: '招聘批次' },
-  Operations: { label: '业务运营上下文', icon: Briefcase, color: 'text-sky-600', bgColor: 'bg-sky-50', pathLabel: '运营数据归档', branchLabel: '周期' },
-  Default: { label: '通用任务上下文', icon: Terminal, color: 'text-slate-600', bgColor: 'bg-slate-50', pathLabel: '工作目录', branchLabel: '状态' },
+  Engineering: { label: '当前工作区', icon: GitBranch, color: 'text-blue-600', bgColor: 'bg-blue-50', pathLabel: '工作区目录', branchLabel: '当前版本/分支' },
+  Finance: { label: '当前工作区', icon: Wallet, color: 'text-emerald-600', bgColor: 'bg-emerald-50', pathLabel: '本地资料库', branchLabel: '当前账期' },
+  Legal: { label: '当前工作区', icon: Scale, color: 'text-purple-600', bgColor: 'bg-purple-50', pathLabel: '本地卷宗库', branchLabel: '合规版本' },
+  HR: { label: '当前工作区', icon: Users, color: 'text-orange-600', bgColor: 'bg-orange-50', pathLabel: '本地资源库', branchLabel: '招聘批次' },
+  Operations: { label: '当前工作区', icon: Briefcase, color: 'text-sky-600', bgColor: 'bg-sky-50', pathLabel: '运营数据归档', branchLabel: '业务周期' },
+  Default: { label: '当前工作区', icon: Terminal, color: 'text-slate-600', bgColor: 'bg-slate-50', pathLabel: '本地工作区', branchLabel: '当前状态' },
 };
 
 export function ActiveContextPanel({ onAction }: { onAction?: (action: string) => void }) {
@@ -35,6 +35,9 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
   const handleSwitchProject = () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
   };
+
+  const projectPathMatch = activeProject?.description?.match(/\(path:(.*?)\)/);
+  const displayPath = projectPathMatch ? projectPathMatch[1] : (node.currentPath !== '—' ? node.currentPath : '未绑定本地目录');
 
   return (
     <div className="flex flex-col h-full p-6 space-y-8">
@@ -56,8 +59,8 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
         </div>
 
         <div className={cn(
-          "bg-[#FDFCFB] rounded-[24px] p-6 border border-[#F1EEEB] space-y-4 group transition-all duration-300 shadow-sm relative overflow-hidden",
-          !activeProject ? "border-dashed border-[#E8E4E2] bg-white flex flex-col items-center justify-center py-10" : "hover:border-[#EC5B14]/30 hover:shadow-md"
+          "bg-[#FDFCFB] rounded-[24px] p-6 border border-[#F1EEEB] space-y-4 group transition-all duration-300 relative overflow-hidden",
+          !activeProject ? "border-dashed border-[#E8E4E2] bg-white flex flex-col items-center justify-center py-10" : "hover:border-[#EC5B14]/30"
         )}>
           {/* Privacy Shield Background Watermark */}
           {activeProject && (
@@ -91,7 +94,7 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
                   </span>
                 </div>
                 <p className="text-[12px] text-[#716B67] leading-relaxed line-clamp-2">
-                  {activeProject?.description?.split('(path:')[0] || '正在为您提供专业的业务编排支持。'}
+                  {activeProject?.description?.split('(path:')[0] || '正在为您提供专属的业务编排与智能协作支持。'}
                 </p>
               </div>
 
@@ -112,7 +115,7 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#716B67]">
             <Activity className="w-4 h-4" />
-            <h2 className="text-xs font-bold tracking-widest uppercase">本地助手 (Secure Client)</h2>
+            <h2 className="text-xs font-bold tracking-widest uppercase">环境状态</h2>
           </div>
           <div className="flex items-center gap-1.5">
             <span className={cn("w-2 h-2 rounded-full", node.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} />
@@ -122,23 +125,23 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
           </div>
         </div>
 
-        <div className="bg-[#1C1B1B] rounded-[24px] p-5 space-y-4 text-white/90 shadow-lg shadow-black/5 relative overflow-hidden group border border-white/5">
+        <div className="bg-[#FDFCFB] rounded-[24px] p-5 space-y-4 relative overflow-hidden group border border-[#F1EEEB]">
           <div className="space-y-3 relative z-10">
             <div className="flex items-start gap-3">
-              <FolderOpen className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+              <FolderOpen className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">{domain.pathLabel}</p>
-                <p className="text-[12px] font-medium truncate text-white/80">{node.currentPath}</p>
+                <p className="text-[10px] font-bold text-[#A8A4A1] uppercase tracking-widest mb-0.5">{domain.pathLabel}</p>
+                <p className="text-[12px] font-medium truncate text-[#1C1B1B]">{displayPath}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Zap className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+              <Zap className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">{domain.branchLabel}</p>
+                <p className="text-[10px] font-bold text-[#A8A4A1] uppercase tracking-widest mb-0.5">{domain.branchLabel}</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-[12px] font-bold text-white/80">{node.currentBranch}</p>
+                  <p className="text-[12px] font-bold text-[#1C1B1B] truncate">{node.currentBranch || '默认'}</p>
                   {!node.isClean && (
-                    <span className="text-[10px] text-orange-400 font-bold uppercase tracking-tighter bg-orange-400/10 px-1.5 py-0.5 rounded">有待处理资料</span>
+                    <span className="text-[10px] text-orange-600 font-bold uppercase tracking-tighter bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">有待处理变更</span>
                   )}
                 </div>
               </div>
@@ -146,23 +149,23 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
           </div>
 
           {node.isOnline && (
-            <div className="pt-4 border-t border-white/10 relative z-10">
+            <div className="pt-4 border-t border-[#F1EEEB] relative z-10">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">助手工作负载</span>
-                <span className="text-[10px] font-bold text-emerald-400 tracking-tighter flex items-center gap-1">
+                <span className="text-[10px] font-bold text-[#A8A4A1] uppercase tracking-widest">系统工作负载</span>
+                <span className="text-[10px] font-bold text-emerald-600 tracking-tighter flex items-center gap-1">
                   <Activity className="w-2.5 h-2.5" />
-                  智能调度中
+                  稳定运行中
                 </span>
               </div>
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <div className="flex justify-between text-[9px] font-bold text-white/30 uppercase tracking-tighter">
+                  <div className="flex justify-between text-[9px] font-bold text-[#A8A4A1] uppercase tracking-tighter">
                     <span>处理性能</span>
                     <span>{node.cpuUsage}%</span>
                   </div>
-                  <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-1 bg-[#E8E4E2] rounded-full overflow-hidden">
                     <motion.div 
-                      className="h-full bg-gradient-to-r from-emerald-500 to-blue-500"
+                      className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500"
                       initial={{ width: 0 }}
                       animate={{ width: `${node.cpuUsage}%` }}
                     />
@@ -178,7 +181,7 @@ export function ActiveContextPanel({ onAction }: { onAction?: (action: string) =
       <div className="space-y-3">
         <h4 className="text-[10px] font-bold text-[#716B67] uppercase tracking-widest flex items-center gap-2">
           <Zap className="w-3 h-3 text-[#EC5B14]" />
-          领域建议指令
+          智能辅助指令
         </h4>
         <div className="flex flex-wrap gap-2">
           {suggestedActions.map((suggestion, idx) => (

@@ -9,7 +9,7 @@ import {
 import { ChatSession } from '@uclaw/ui/components/ChatSession';
 import { useTranslation } from 'react-i18next';
 import { Dashboard } from '@uclaw/ui/components/Dashboard';
-import { UserCenter } from '@uclaw/ui/components/UserCenter';
+import { SettingsDialog } from '@uclaw/ui/components/SettingsDialog';
 import { UIGallery } from '@uclaw/ui/components/UIGallery';
 import { SkillLibrary } from '@uclaw/ui/components/SkillLibrary';
 import { MCPServerManager } from '@uclaw/ui/components/MCPServerManager';
@@ -62,7 +62,8 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
     localStorage.setItem('uclaw_active_tab', activeTab);
   }, [activeTab]);
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Used for UserMenu Popover
+  const [isMainSettingsOpen, setIsMainSettingsOpen] = useState(false); // Used for Settings Dialog Modal
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('uclaw_sidebar_collapsed');
@@ -268,8 +269,6 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
               onLoadConversation={loadConversationAndActivate}
               onDeleteConversations={handleDeleteConversations}
             />
-          ) : activeTab === 'settings' ? (
-            <UserCenter token={token} onLogout={handleLogout} />
           ) : activeTab === 'library' ? (
             <SkillLibrary token={token} />
           ) : activeTab === 'projects' ? (
@@ -291,11 +290,16 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onNavigateSettings={() => {
-          setActiveTab('settings');
+          setIsMainSettingsOpen(true);
           setIsSettingsOpen(false);
         }}
         onLogout={handleLogout}
         user={user}
+      />
+      <SettingsDialog 
+        isOpen={isMainSettingsOpen} 
+        onClose={() => setIsMainSettingsOpen(false)} 
+        token={token} 
       />
     </div>
   );

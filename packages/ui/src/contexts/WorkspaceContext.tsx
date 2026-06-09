@@ -43,9 +43,9 @@ interface WorkspaceState {
 }
 
 const DOMAIN_ACTIONS: Record<ProjectCategory, string[]> = {
-  Engineering: ['Git Status', '运行单元测试', '代码质量分析', '修复待办 Bug'],
-  Finance: ['自动对账', '凭证合规扫描', '生成季度报表', 'ERP 异常检测'],
-  Legal: ['合同风险审查', '法律法规查新', '知识产权自检', '起草法律意见'],
+  Engineering: ['分析当前项目', '梳理核心业务逻辑', '检查近期变更', '规划下一步工作'],
+  Finance: ['本月账单汇总', '异常开支核查', '生成审计报告'],
+  Legal: ['合规风险扫描', '提取核心条款', '对比历史版本', '起草法律意见'],
   HR: ['简历批量筛选', '面试入职编排', '考勤算薪校验', '组织架构分析'],
   Operations: ['业务指标监控', '流程瓶颈分析', '分销渠道核对', '工单自动化'],
   Default: ['检查状态', '执行审计', '生成报表'],
@@ -91,8 +91,8 @@ export function WorkspaceProvider({ children, token }: { children: React.ReactNo
       const data = await api.get<any>('/api/user/node-status');
       setNode({
         isOnline: data.isOnline,
-        currentPath: data.info?.cwd || '~/workspace/uwork/uclaw',
-        currentBranch: data.info?.branch || 'main',
+        currentPath: data.info?.cwd || '—',
+        currentBranch: data.info?.branch || '—',
         isClean: data.info?.isClean ?? true,
         cpuUsage: data.info?.cpu || 12,
         ramUsage: data.info?.ram || 1.2,

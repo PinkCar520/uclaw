@@ -19,7 +19,7 @@ import {
   ArrowDown, Sparkles, Copy, RotateCcw, Check,
   Plus, FileText, X as CloseIcon, Image as ImageIcon,
   ChevronDown, Paperclip, ArrowRight, ArrowUp, Terminal, Cpu, Database, BadgeCheck, Globe, Square,
-  ThumbsUp, ThumbsDown, AlertCircle, Pencil
+  ThumbsUp, ThumbsDown, AlertCircle, Pencil, PanelRight, PanelRightClose
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReducedMotion } from '../lib/useReducedMotion';
@@ -148,6 +148,7 @@ export function ChatSession({
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
 
   // ── Branching Metadata Calculation ──
   const branchMetadata = useMemo(() => {
@@ -344,9 +345,22 @@ export function ChatSession({
           onDragOver={handleDragOver}
       >
         <div className={cn(
-          "flex-1 flex flex-col relative overflow-hidden bg-white/40",
+          "flex-1 flex flex-col relative overflow-hidden bg-white/40 transition-all duration-300",
           messages.length === 0 && !isLoadingHistory && "justify-center"
         )}>
+          {/* Right Sidebar Toggle Button */}
+          {(!previewAttachment && !activeCapsule) && (
+            <div className="absolute top-4 right-4 z-[9999] titlebar-no-drag">
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRightSidebarOpen(prev => !prev); }}
+                className="w-6 h-6 inline-flex items-center justify-center rounded-md hover:bg-[#1C1B1B]/10 text-[#716B67] hover:text-[#1C1B1B] transition-colors cursor-pointer titlebar-no-drag pointer-events-auto"
+                style={{ WebkitAppRegion: 'no-drag' } as any}
+                title={isRightSidebarOpen ? '收起侧边栏' : '展开侧边栏'}
+              >
+                {isRightSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRight className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
           <AnimatePresence>
             {isDragging && (
                 <motion.div
@@ -521,7 +535,11 @@ export function ChatSession({
         {/* Sidebar Right (Capsule Panel + Preview + Meta) */}
         <aside className={cn(
             "absolute lg:relative right-0 top-0 bottom-0 z-40 border-l border-[#E8E4E2] bg-[#fcf9f8] lg:bg-[#fcf9f8]/80 backdrop-blur-md flex-col h-full overflow-hidden transition-all duration-300",
-            (previewAttachment || activeCapsule) ? "translate-x-0 flex w-full lg:w-[450px]" : "translate-x-full lg:translate-x-0 hidden lg:flex lg:w-80"
+            (previewAttachment || activeCapsule) 
+               ? "translate-x-0 flex w-full lg:w-[450px] lg:mr-0 opacity-100" 
+               : isRightSidebarOpen
+                 ? "translate-x-full lg:translate-x-0 hidden lg:flex w-80 lg:w-80 lg:mr-0 opacity-100"
+                 : "translate-x-full lg:translate-x-0 hidden lg:flex w-80 lg:w-80 lg:-mr-80 opacity-0 pointer-events-none"
         )}>
           {activeCapsule ? (
               /* ── Capsule Panel ── */

@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect } from 'react';
 import { 
   Plus, FileText, X as CloseIcon, 
-  ChevronDown, Paperclip, ArrowUp, Square, Globe, Database, Check, Sparkles
+  ChevronDown, Paperclip, ArrowUp, Square, Globe, Database, Check, Sparkles, Terminal, Cpu, FolderPlus, Wand2, Plug, BookOpen, Wrench, Briefcase, Archive, Settings2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -13,6 +13,10 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from '../ui/dropdown-menu';
 
 interface ChatInputProps {
@@ -425,6 +429,102 @@ export const ChatInput = React.memo(({
 
           <div className="flex items-center justify-between px-2 sm:px-4 pb-2">
             <div className="flex items-center gap-0.5 sm:gap-1.5 overflow-hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1.5 sm:p-2 rounded-lg text-[#716B67] bg-transparent hover:bg-[#eeece9] hover:text-[#1C1B1B] transition-all shrink-0">
+                    <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="w-56 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl p-1.5 backdrop-blur-xl bg-white/95 mb-2">
+                  <DropdownMenuItem onClick={() => {
+                    const input = document.createElement('input'); 
+                    input.type = 'file'; 
+                    input.multiple = true; 
+                    input.onchange = (e: any) => { 
+                      if (e.target.files) addFiles(Array.from(e.target.files as FileList)); 
+                    }; 
+                    input.click(); 
+                  }} className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
+                    <div className="flex items-center gap-3">
+                      <Paperclip className="w-4 h-4 text-[#716B67]" />
+                      <span className="text-[13px] font-medium text-[#1C1B1B]">Add files or photos</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5 data-[state=open]:bg-[#F6F3F2]">
+                      <FolderPlus className="w-4 h-4 text-[#716B67] shrink-0" />
+                      <span className="text-[13px] font-medium text-[#1C1B1B] flex-1">Add to project</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent sideOffset={8} className="w-56 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl p-1.5 backdrop-blur-xl bg-white/95">
+                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
+                          <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center shrink-0">
+                            <Briefcase className="w-4 h-4 text-[#716B67]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[13px] font-bold text-[#1C1B1B]">Uclaw</span>
+                            <span className="text-[10px] text-[#A8A4A1]">Jhon</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />
+                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
+                          <Plus className="w-4 h-4 text-[#716B67]" />
+                          <span className="text-[13px] font-medium text-[#1C1B1B]">Start a new project</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  
+                  <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />
+                  
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5 data-[state=open]:bg-[#F6F3F2]">
+                      <Wrench className="w-4 h-4 text-[#716B67] shrink-0" />
+                      <span className="text-[13px] font-medium text-[#1C1B1B] flex-1">Skills</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent sideOffset={8} className="w-60 border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl p-1.5 backdrop-blur-xl bg-white/95">
+                        {[
+                          'dizi-teacher',
+                          'even-ai-navigator',
+                          'shanghai-rental-advisor',
+                          'skill-creator',
+                          'sunscreen-clothing-guide'
+                        ].map(skill => (
+                          <DropdownMenuItem key={skill} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
+                            <FileText className="w-4 h-4 text-[#716B67] shrink-0" />
+                            <span className="text-[13px] font-medium text-[#1C1B1B] truncate">{skill}</span>
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />
+                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
+                          <Archive className="w-4 h-4 text-[#716B67] shrink-0" />
+                          <span className="text-[13px] font-medium text-[#1C1B1B]">Manage skills</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2]">
+                          <Plus className="w-4 h-4 text-[#716B67] shrink-0" />
+                          <span className="text-[13px] font-medium text-[#1C1B1B]">Add skill</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuItem disabled className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-not-allowed opacity-40 mb-0.5">
+                    <Plug className="w-4 h-4 text-[#716B67]" />
+                    <span className="text-[13px] font-medium text-[#1C1B1B]">Add plugins...</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator className="bg-[#E8E4E2]/50 my-1" />
+                  
+                  <DropdownMenuItem onClick={() => setIsSearchMode(!isSearchMode)} className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-[#F6F3F2] mb-0.5">
+                    <div className="flex items-center gap-3">
+                      <Globe className="w-4 h-4 text-[#716B67]" />
+                      <span className="text-[13px] font-medium text-[#1C1B1B]">Web search</span>
+                    </div>
+                    {isSearchMode && <Check className="w-4 h-4 text-[#EC5B14]" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <DropdownMenu open={isModelDropdownOpen} onOpenChange={setIsModelDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-[#716B67] hover:bg-[#eeece9] transition-all border border-transparent hover:border-[#E8E4E2]/40 shrink-0">

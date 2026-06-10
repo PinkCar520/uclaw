@@ -15,9 +15,6 @@ RUN corepack enable
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-# 全局关闭 pnpm 新包发布时间限制（解决 Turbo 的相关报错），以及自动同步机制
-RUN echo "minimum-release-age=0" >> .npmrc
-
 # 首先只拷贝 package.json 和 lockfile 进行依赖安装，完美利用 Docker 缓存层
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -25,8 +22,11 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 # 安装依赖
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --config.minimum-release-age=0
 
-# 拷贝源代码
+# 拷贝源代码 (这会覆盖 /app 下已有的 .npmrc，所以我们要在之后追加)
 COPY --from=pruner /app/out/full/ .
+
+# 必须在这里追加配置，否则会被上面的 COPY 覆盖，导致 turbo 偷偷装包时报错
+RUN echo "minimum-release-age=0" >> .npmrc
 
 # Prisma 生成（需要源文件中的 schema）
 RUN cd apps/gateway && ./node_modules/.bin/prisma generate
@@ -41,11 +41,11 @@ ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 RUN corepack enable
 ENV NODE_ENV=production
 
-# 全局关闭 pnpm 新包发布时间限制
-RUN echo "minimum-release-age=0" >> .npmrc
-
-# 从 builder 中拷贝所有编译后的产物
+# 从 builder 中拷贝所有编译后的产物 (会覆盖 .npmrc)
 COPY --from=builder /app ./
+
+# 再次追加配置以确保 runner 阶段也能绕过检查
+RUN echo "minimum-release-age=0" >> .npmrc
 
 # 【核心瘦身操作】遵循 pnpm 官方针对 Monorepo 的指引：
 # 1. 递归删除项目中所有的 node_modules 目录（此时只剩下被 prune 过的包）

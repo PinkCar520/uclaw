@@ -46,7 +46,8 @@ RUN pnpm --filter @uclaw/mcp-im build
 RUN pnpm --filter gateway build
 
 # 【核心瘦身操作】清理所有 devDependencies，只保留生产环境运行必需的 node_modules
-RUN pnpm prune --prod
+# 设置 CI=true 绕过 pnpm 在无 TTY 环境下删除 node_modules 时的确认提示
+RUN CI=true pnpm prune --prod
 
 # 第二阶段：生产运行
 FROM node:22-alpine AS runner

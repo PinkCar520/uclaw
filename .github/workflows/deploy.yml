@@ -69,10 +69,11 @@ jobs:
           context: .
           file: ./apps/gateway/Dockerfile
           push: true
+          provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha
 
   build-and-push-web:
     name: Build and Push Web Image
@@ -109,6 +110,7 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
+          provenance: false
           build-args: |
             CACHE_BUST=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}

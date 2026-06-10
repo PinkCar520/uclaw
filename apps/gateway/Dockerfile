@@ -20,13 +20,12 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # 安装依赖
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --config.minimum-release-age=0
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-# 拷贝源代码 (这会覆盖 /app 下已有的 .npmrc，所以我们要在之后追加)
+# 拷贝源代码
 COPY --from=pruner /app/out/full/ .
-
-# 必须在这里追加配置，否则会被上面的 COPY 覆盖，导致 turbo 偷偷装包时报错
-RUN echo "minimum-release-age=0" >> .npmrc
+# turbo prune 不包含根 tsconfig.json，需手动补充（子包的 tsconfig 会 extends 它）
+COPY --from=pruner /app/tsconfig.json ./tsconfig.json
 
 # Prisma 生成（需要源文件中的 schema）
 RUN cd apps/gateway && ./node_modules/.bin/prisma generate
@@ -41,17 +40,14 @@ ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 RUN corepack enable
 ENV NODE_ENV=production
 
-# 从 builder 中拷贝所有编译后的产物 (会覆盖 .npmrc)
+# 从 builder 中拷贝所有编译后的产物
 COPY --from=builder /app ./
-
-# 再次追加配置以确保 runner 阶段也能绕过检查
-RUN echo "minimum-release-age=0" >> .npmrc
 
 # 【核心瘦身操作】遵循 pnpm 官方针对 Monorepo 的指引：
 # 1. 递归删除项目中所有的 node_modules 目录（此时只剩下被 prune 过的包）
 RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 # 2. 仅安装生产依赖
-RUN pnpm install --prod --frozen-lockfile --config.minimum-release-age=0
+RUN pnpm install --prod --frozen-lockfile
 # 3. 由于重建了依赖，需要重新生成一次 Prisma Client
 RUN cd apps/gateway && ./node_modules/.bin/prisma generate
 

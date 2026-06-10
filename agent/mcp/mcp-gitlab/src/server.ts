@@ -47,8 +47,8 @@ server.tool(
     description: z.string().optional().describe('项目描述'),
     visibility: z.enum(['private', 'internal', 'public']).default('private').describe('可见性等级'),
   },
-  async (params) => {
-    const p = await gitlab.createProject(params);
+  async ({ name, description, visibility }) => {
+    const p = await gitlab.createProject({ name, description, visibility });
     return {
       content: [{ 
         type: 'text', 
@@ -87,8 +87,8 @@ server.tool(
     description: z.string().optional().describe('详细描述'),
     labels: z.array(z.string()).optional().describe('标签列表，如 ["bug", "critical"]'),
   },
-  async ({ projectId, ...data }) => {
-    const i = await gitlab.createIssue(projectId, data);
+  async ({ projectId, title, description, labels }) => {
+    const i = await gitlab.createIssue(projectId, { title, description, labels });
     return {
       content: [{ type: 'text', text: `✓ Issue #${i.iid} 创建成功！\n地址: ${i.webUrl}` }]
     };

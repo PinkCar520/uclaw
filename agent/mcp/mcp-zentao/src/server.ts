@@ -237,7 +237,7 @@ server.tool(
   {
     bugId: z.string().describe('缺陷 ID，例如 BUG-2048 或纯数字 2048'),
   },
-  async ({ bugId }: { bugId: string }) => {
+  async ({ bugId }) => {
     const bug = await zentao.getBugInfo(bugId);
     if (!bug) {
       return {
@@ -272,7 +272,7 @@ server.tool(
   {
     query: z.string().describe('搜索关键词，如功能模块名、错误信息片段'),
   },
-  async ({ query }: { query: string }) => {
+  async ({ query }) => {
     const bugs = await zentao.searchBugs(query);
     const textContent = bugs.length > 0
       ? `找到 ${bugs.length} 个与 "${query}" 相关的缺陷\n${bugs.map((b: any) => `  #${b.id}: ${b.title} [${b.status}]`).join('\n')}`
@@ -311,7 +311,7 @@ server.tool(
       .default('fixed')
       .describe('解决方案类型，默认为 fixed（已修复）'),
   },
-  async ({ bugId, resolution }: { bugId: string; resolution?: string }) => {
+  async ({ bugId, resolution }) => {
     const res = (resolution ?? 'fixed') as 'fixed' | 'wontfix' | 'bydesign' | 'duplicate' | 'external';
     const success = await zentao.resolveBug(bugId, res);
     const textMsg = success
@@ -348,7 +348,7 @@ server.tool(
       .default(4)
       .describe('禅道产品 ID，默认为 4（UClaw 产品）'),
   },
-  async ({ productId }: { productId?: number }) => {
+  async ({ productId }) => {
     const pid = productId ?? 4;
     const stats = await zentao.getBugStats(pid);
     const summary = `共 ${stats.total} 个缺陷，活跃 ${stats.active} 个，已解决 ${stats.resolved} 个`;
@@ -381,7 +381,7 @@ server.tool(
     pri: z.number().optional().describe('优先级 (1=高, 2=中, 3=低, 4=最低)'),
     estimate: z.number().optional().describe('预估工时'),
   },
-  async ({ productId, title, spec, pri, estimate }: { productId: number; title: string; spec: string; pri?: number; estimate?: number }) => {
+  async ({ productId, title, spec, pri, estimate }) => {
     const res = await zentao.createStory(productId, { title, spec, pri, estimate });
     if (!res.success) {
       return {
@@ -404,7 +404,7 @@ server.tool(
   {
     storyId: z.string().describe('需求 ID，例如 STORY-101 或纯数字 101'),
   },
-  async ({ storyId }: { storyId: string }) => {
+  async ({ storyId }) => {
     const story = await zentao.getStoryInfo(storyId);
     if (!story) {
       return {
@@ -427,7 +427,7 @@ server.tool(
   {
     query: z.string().describe('搜索关键词，如需求标题片段'),
   },
-  async ({ query }: { query: string }) => {
+  async ({ query }) => {
     const stories = await zentao.searchStories(query);
     return {
       content: [
@@ -470,8 +470,8 @@ server.tool(
     type: z.enum(['normal', 'multibranch', 'branch']).optional().default('normal').describe('产品类型'),
     desc: z.string().optional().describe('产品描述'),
   },
-  async (data: { name: string; code: string; type?: string; desc?: string }) => {
-    const res = await zentao.createProduct(data);
+  async ({ name, code, type, desc }) => {
+    const res = await zentao.createProduct({ name, code, type, desc });
     if (!res.success) {
       return {
         content: [{ type: 'text' as const, text: `✗ 创建产品失败：${JSON.stringify(res.error)}` }],
@@ -498,8 +498,8 @@ server.tool(
     desc: z.string().optional().describe('项目描述'),
     productIds: z.array(z.number()).optional().describe('关联的产品 ID 列表'),
   },
-  async (data: { name: string; code: string; begin: string; end: string; desc?: string; productIds?: number[] }) => {
-    const res = await zentao.createProject(data);
+  async ({ name, code, begin, end, desc, productIds }) => {
+    const res = await zentao.createProject({ name, code, begin, end, desc, productIds });
     if (!res.success) {
       return {
         content: [{ type: 'text' as const, text: `✗ 创建项目失败：${JSON.stringify(res.error)}` }],

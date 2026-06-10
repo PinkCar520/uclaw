@@ -15,6 +15,9 @@ RUN corepack enable
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
+# 全局关闭 pnpm 新包发布时间限制（解决 Turbo 的相关报错），以及自动同步机制
+RUN echo "minimum-release-age=0" >> .npmrc
+
 # 首先只拷贝 package.json 和 lockfile 进行依赖安装，完美利用 Docker 缓存层
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -37,6 +40,9 @@ WORKDIR /app
 ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 RUN corepack enable
 ENV NODE_ENV=production
+
+# 全局关闭 pnpm 新包发布时间限制
+RUN echo "minimum-release-age=0" >> .npmrc
 
 # 从 builder 中拷贝所有编译后的产物
 COPY --from=builder /app ./

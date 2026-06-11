@@ -50,7 +50,7 @@ export class PermissionController {
 
   /**
    * POST /api/permissions/settings
-   * Save settings.json to the workspace .uclaw directory.
+   * Save settings.json to the workspace .ocean directory.
    */
   @Post('settings')
   saveSettings(
@@ -61,8 +61,8 @@ export class PermissionController {
     const path = require('path');
 
     const targetDir = workspacePath
-      ? path.join(workspacePath, '.uclaw')
-      : path.join(process.cwd(), '.uclaw');
+      ? path.join(workspacePath, '.ocean')
+      : path.join(process.cwd(), '.ocean');
 
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });

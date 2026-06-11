@@ -29,7 +29,7 @@ export interface MCPConfigFile {
  * Supports 3 configuration layers (Claude Code compatible):
  *   1. Local (cwd/.mcp.json or cwd/.claude/mcp.json) - highest priority
  *   2. Project (.mcp.json in workspace root, git-tracked) - medium priority
- *   3. User (~/.uclaw/mcp.json) - lowest priority
+ *   3. User (~/.ocean/mcp.json) - lowest priority
  *
  * Layers are merged with later overriding earlier.
  * Environment variables in args/env are expanded.
@@ -45,12 +45,12 @@ export class MCPConfigLoader {
   loadConfig(workspacePath?: string): MCPConfigFile {
     const layers: MCPConfigFile[] = [];
 
-    // Layer 1: User-level (~/.uclaw/mcp.json) - lowest priority
+    // Layer 1: User-level (~/.ocean/mcp.json) - lowest priority
     const userHome = process.env.HOME || process.env.USERPROFILE || '';
     if (userHome) {
-      const userConfig = this.tryLoadJson(path.join(userHome, '.uclaw', 'mcp.json'));
+      const userConfig = this.tryLoadJson(path.join(userHome, '.ocean', 'mcp.json'));
       if (userConfig) {
-        this.logger.debug(`Loaded user MCP config from: ~/.uclaw/mcp.json`);
+        this.logger.debug(`Loaded user MCP config from: ~/.ocean/mcp.json`);
         layers.unshift(userConfig);
       }
     }

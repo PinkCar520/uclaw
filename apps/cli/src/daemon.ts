@@ -86,7 +86,7 @@ export async function runDaemon(options: DaemonOptions) {
         case 'create_local_project':
           const { name, category } = data.params;
           const safeName = name.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
-          const baseDir = path.join(os.homedir(), 'Documents', 'Lucid');
+          const baseDir = path.join(os.homedir(), 'Documents', 'Ocean');
           const projectPath = path.join(baseDir, safeName);
 
           // 1. 创建文件夹

@@ -370,7 +370,7 @@ export class SkillOrchestrator {
           if (action === 'status' && result.branch) {
             response.activeContext = {
               workspace: {
-                name: result.gitDir?.split('/').pop() || 'uClaw',
+                name: result.gitDir?.split('/').pop() || 'Ocean',
                 branch: result.branch,
                 isClean: result.isClean,
                 path: result.cwd || ''
@@ -677,7 +677,7 @@ CRITICAL RULES:
 
 EXAMPLES:
 - User: "帮我看看这个合同" -> Completion: "，重点检查知识产权条款和违约责任。"
-- User: "uclaw是什么项目？" -> Completion: "，请从技术架构和法律AI产品的定位进行深度解析。"
+- User: "ocean是什么项目？" -> Completion: "，请从技术架构和法律AI产品的定位进行深度解析。"
 - User: "写一段代码" -> Completion: "实现一个基于 React 的高度自适应文本框。"`,
         messages: [{ role: 'user', content: prefix }],
         temperature: 0.1,

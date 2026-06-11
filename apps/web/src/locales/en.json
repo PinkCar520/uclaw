@@ -283,7 +283,7 @@
   "library": {
     "v3": "v3",
     "title": "Skill & MCP Library",
-    "subtitle": "Extend uClaw's intelligence with curated Model Context Protocol connectors and specialized agent skills for your enterprise ecosystem.",
+    "subtitle": "Extend Ocean's intelligence with curated Model Context Protocol connectors and specialized agent skills for your enterprise ecosystem.",
     "stats": {
       "total_skills": "{{count}} Total Skills",
       "new_this_week": "{{count}} New This Week"
@@ -305,7 +305,7 @@
       "productivity": "Productivity"
     },
     "featured": {
-      "badge": "Featured by uClaw",
+      "badge": "Featured by Ocean",
       "title": "Enterprise Knowledge Graph",
       "desc": "Index your entire Confluence, Notion, and Jira workspace into a unified RAG pipeline for instant retrieval.",
       "button": "Enable Full Suite"
@@ -313,7 +313,7 @@
     "cards": {
       "zentao": {
         "title": "ZenTao PM Integration",
-        "desc": "Sync uClaw tasks directly with ZenTao projects. Automate sprint planning and bug tracking via natural language."
+        "desc": "Sync Ocean tasks directly with ZenTao projects. Automate sprint planning and bug tracking via natural language."
       },
       "jenkins": {
         "title": "Jenkins CI/CD",
@@ -325,7 +325,7 @@
       },
       "slack": {
         "title": "Slack Bot Integration",
-        "desc": "Bridge uClaw to your Slack workspace. Notify teams of AI milestones and query uClaw from channels."
+        "desc": "Bridge Ocean to your Slack workspace. Notify teams of AI milestones and query Ocean from channels."
       },
       "docker": {
         "title": "Docker Control",
@@ -365,7 +365,7 @@
     "password_label": "Password",
     "password_placeholder": "••••••••",
     "forgot_password": "Forgot?",
-    "sign_in_button": "Sign In to uClaw",
+    "sign_in_button": "Sign In to Ocean",
     "create_account_button": "Create Free Account",
     "continue_with": "Or continue with",
     "sso_portal": "SSO Portal",

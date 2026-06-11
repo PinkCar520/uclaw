@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# UClaw MCP 快速更新脚本
+# Ocean MCP 快速更新脚本
 # 用途：日常代码更新（不停止数据库等其他服务）
 
 set -e
@@ -30,7 +30,7 @@ log_error() {
 
 echo ""
 echo -e "${BLUE}================================${NC}"
-echo -e "${BLUE}   UClaw MCP 快速更新${NC}"
+echo -e "${BLUE}   Ocean MCP 快速更新${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 

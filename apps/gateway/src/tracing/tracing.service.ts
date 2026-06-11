@@ -13,7 +13,7 @@ export class TracingService implements OnModuleInit {
   }
 
   onModuleInit() {
-    console.log('[TracingService] Initialized for uClaw observability');
+    console.log('[TracingService] Initialized for Ocean observability');
   }
 
   /**

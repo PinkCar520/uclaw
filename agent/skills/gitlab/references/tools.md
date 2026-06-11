@@ -14,9 +14,9 @@
 
 **返回示例**：
 ```
-- uclaw/backend: Ocean 后端服务
-- uclaw/frontend: Ocean 前端应用
-- uclaw/docs: 项目文档仓库
+- ocean/backend: Ocean 后端服务
+- ocean/frontend: Ocean 前端应用
+- ocean/docs: 项目文档仓库
 ```
 
 ---

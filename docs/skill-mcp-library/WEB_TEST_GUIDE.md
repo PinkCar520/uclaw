@@ -293,10 +293,10 @@ docker logs ocean-gateway 2>&1 | tail -50
 **排查：**
 ```bash
 # 检查配置文件是否写入
-cat .uclaw/settings.json  # 或 ~/.uclaw/settings.json
+cat .ocean/settings.json  # 或 ~/.ocean/settings.json
 
 # 检查文件权限
-ls -la .uclaw/settings.json
+ls -la .ocean/settings.json
 ```
 
 ### 问题 3: Skill 未显示在目录中

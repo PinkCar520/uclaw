@@ -294,13 +294,13 @@ export function SettingsDialog({ isOpen, onClose, token }: SettingsDialogProps) 
                 </div>
                 
                 <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">
-                  {t('user_center.instructions.desc', 'Give uClaw specific instructions on how you want it to behave and respond. These will be applied to every new conversation.')}
+                  {t('user_center.instructions.desc', 'Give Ocean specific instructions on how you want it to behave and respond. These will be applied to every new conversation.')}
                 </p>
 
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <label className="block text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      {t('user_center.instructions.label', 'How should uClaw respond?')}
+                      {t('user_center.instructions.label', 'How should Ocean respond?')}
                     </label>
                     <textarea 
                       value={editedInstructions}

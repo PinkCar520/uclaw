@@ -79,11 +79,11 @@ app.whenReady().then(() => {
   // Native File System Operations for Local Projects
   ipcMain.handle('create-local-project', async (_, projectName: string) => {
     try {
-      const uclawDir = join(os.homedir(), 'Documents', 'Ocean');
-      if (!fs.existsSync(uclawDir)) {
-        fs.mkdirSync(uclawDir, { recursive: true });
+      const oceanDir = join(os.homedir(), 'Documents', 'Ocean');
+      if (!fs.existsSync(oceanDir)) {
+        fs.mkdirSync(oceanDir, { recursive: true });
       }
-      const projectPath = join(uclawDir, projectName);
+      const projectPath = join(oceanDir, projectName);
       if (!fs.existsSync(projectPath)) {
         fs.mkdirSync(projectPath, { recursive: true });
       }

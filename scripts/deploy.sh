@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# UClaw MCP Docker 部署脚本
+# Ocean MCP Docker 部署脚本
 # 用途：一键构建、部署和验证
 
 set -e  # 遇到错误立即退出
@@ -132,7 +132,7 @@ show_deployment_info() {
     log_success "部署完成！"
     echo ""
     echo -e "${GREEN}============================${NC}"
-    echo -e "${GREEN}   UClaw MCP 部署成功！${NC}"
+    echo -e "${GREEN}   Ocean MCP 部署成功！${NC}"
     echo -e "${GREEN}============================${NC}"
     echo ""
     echo "服务访问地址："
@@ -166,7 +166,7 @@ show_deployment_info() {
 
 # 显示帮助
 show_help() {
-    echo "UClaw MCP Docker 部署脚本"
+    echo "Ocean MCP Docker 部署脚本"
     echo ""
     echo "用法: $0 [选项]"
     echo ""

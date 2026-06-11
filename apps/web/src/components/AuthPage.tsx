@@ -74,7 +74,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
               <div className="bg-[#EC5B14] p-2 rounded-[12px] shadow-[0_8px_16px_rgba(236,91,20,0.3)]">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-display font-black text-white tracking-tight">uClaw</span>
+              <span className="text-2xl font-display font-black text-white tracking-tight">Ocean</span>
             </div>
 
             <div className="mt-auto">

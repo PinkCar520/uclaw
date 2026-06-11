@@ -96,7 +96,7 @@ pnpm run dev
 当你需要发布新的 `.dmg` 或 `.app` 安装包时，受限于国内网络环境，请**务必使用带镜像的构建命令**：
 
 ```bash
-# 在项目根目录或 lucid 目录执行：
+# 在项目根目录或 ocean 目录执行：
 ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/" ELECTRON_BUILDER_BINARIES_MIRROR="https://npmmirror.com/mirrors/electron-builder-binaries/" pnpm run build:mac
 ```
 

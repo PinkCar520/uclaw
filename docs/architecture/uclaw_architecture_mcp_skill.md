@@ -217,7 +217,7 @@ export const fixBugSkill: Skill = {
   description: '完整的 Bug 修复工作流：拉取详情 → 分析 → 代码修复 → Push → 关闭缺陷',
   
   // 触发意图识别（LLM 根据用户输入匹配技能）
-  triggers: ['fix bug', '修复', '解决缺陷', 'uclaw fix'],
+  triggers: ['fix bug', '修复', '解决缺陷', 'ocean fix'],
 
   // 输入参数 Schema
   inputSchema: z.object({
@@ -289,7 +289,7 @@ export class SkillOrchestrator {
 ## 四、新目录结构
 
 ```text
-uclaw/
+ocean/
 ├── apps/
 │   ├── web/              # 前端（不变）
 │   ├── gateway/

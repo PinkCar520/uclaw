@@ -64,7 +64,7 @@ export class SkillLoader {
    *
    * Scan order (last wins on name collision):
    *   1. Built-in skills (bundled with gateway)
-   *   2. User-installed skills (~/.uclaw/skills) — reserved for OceanHub
+   *   2. User-installed skills (~/.ocean/skills) — reserved for OceanHub
    */
   async discover(dirs?: string[]): Promise<SkillEntry[]> {
     const scanDirs = dirs ?? this.getDefaultScanDirs();
@@ -130,10 +130,10 @@ export class SkillLoader {
       this.logger.log(`Scanning external skills from AGP_SKILLS_PATH: ${paths.join(', ')}`);
     }
 
-    // 3. User-installed via OceanHub (~/.uclaw/skills)
+    // 3. User-installed via OceanHub (~/.ocean/skills)
     const userHome = process.env.HOME || process.env.USERPROFILE || '';
     if (userHome) {
-      const userSkillsDir = path.join(userHome, '.uclaw', 'skills');
+      const userSkillsDir = path.join(userHome, '.ocean', 'skills');
       dirs.push(userSkillsDir);
     }
 

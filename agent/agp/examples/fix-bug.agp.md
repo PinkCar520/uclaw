@@ -31,7 +31,7 @@ metadata:
 
 当用户提到以下任意关键词时，激活本工作流：
 - 中文：修复、解决缺陷、解决 bug、处理缺陷、帮我修、关闭 bug
-- 英文：fix bug、fix-bug、uclaw fix、resolve bug
+- 英文：fix bug、fix-bug、ocean fix、resolve bug
 
 ## 前置检查
 

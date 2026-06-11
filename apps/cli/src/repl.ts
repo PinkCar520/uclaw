@@ -228,7 +228,7 @@ async function runReadlineRepl(options: ReplOptions) {
 
   function prompt() {
     if (isClosing) return;
-    rl.question(chalk.bold.green('\nuclaw> '), async (input) => {
+    rl.question(chalk.bold.green('\nocean> '), async (input) => {
       if (isClosing) return;
       const trimmed = input.trim();
       if (!trimmed) { prompt(); return; }
@@ -333,7 +333,7 @@ function handleCommand(
 }
 
 function findSkillsDir(startDir: string): string | null {
-  const candidates = ['agent/skills', '.claude/skills', '.uclaw/skills'];
+  const candidates = ['agent/skills', '.claude/skills', '.ocean/skills'];
   let current = startDir;
   while (true) {
     for (const candidate of candidates) {

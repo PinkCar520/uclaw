@@ -491,7 +491,7 @@ curl http://localhost:3000/api/mcp-servers
    - 工具调用审批实时通知
 
 5. **MCP Server 脚手架**
-   - CLI 命令：`uclaw mcp create <name>`
+   - CLI 命令：`ocean mcp create <name>`
    - 自动生成项目骨架
 
 6. **监控与告警**

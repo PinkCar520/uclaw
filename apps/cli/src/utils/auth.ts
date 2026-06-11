@@ -11,7 +11,7 @@ const CRED_PATH = CONFIG.CRED_PATH;
 /**
  * Resolve API Key from:
  * 1. OCEAN_API_KEY environment variable
- * 2. ~/.uclaw/credentials.json
+ * 2. ~/.ocean/credentials.json
  */
 export async function resolveApiKey(): Promise<string | null> {
   if (process.env.OCEAN_API_KEY) return process.env.OCEAN_API_KEY;
@@ -26,7 +26,7 @@ export async function resolveApiKey(): Promise<string | null> {
 }
 
 /**
- * Save credentials to ~/.uclaw/credentials.json
+ * Save credentials to ~/.ocean/credentials.json
  */
 export async function saveCredentials(creds: { apiKey: string; userId?: string }): Promise<void> {
   // Ensure directory exists
@@ -46,7 +46,7 @@ export async function saveCredentials(creds: { apiKey: string; userId?: string }
 }
 
 /**
- * Remove credentials file from ~/.uclaw/credentials.json
+ * Remove credentials file from ~/.ocean/credentials.json
  */
 export async function removeCredentials(): Promise<boolean> {
   try {

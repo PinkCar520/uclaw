@@ -1,17 +1,17 @@
 /**
- * uClaw Native Bridge
+ * Ocean Native Bridge
  * Allows the Web application to communicate with the SwiftUI Native container.
  */
 
 export const isNative = () => {
   return typeof window !== 'undefined' && 
-         (navigator.userAgent.includes('OceanNative') || !!(window as any).webkit?.messageHandlers?.uclaw);
+         (navigator.userAgent.includes('OceanNative') || !!(window as any).webkit?.messageHandlers?.ocean);
 };
 
 export const nativeAction = (action: string, data: any = {}) => {
   if (isNative()) {
     try {
-      (window as any).webkit.messageHandlers.uclaw.postMessage({
+      (window as any).webkit.messageHandlers.ocean.postMessage({
         action,
         ...data
       });

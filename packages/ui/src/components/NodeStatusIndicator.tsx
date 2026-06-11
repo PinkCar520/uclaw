@@ -76,7 +76,7 @@ export function NodeStatusIndicator({ token, isCollapsed }: NodeStatusIndicatorP
           <p className="text-xs font-medium">
             {isOnline 
               ? 'Local CLI node is connected and ready.' 
-              : 'Start your local node with "uclaw daemon" to enable local execution.'}
+              : 'Start your local node with "ocean daemon" to enable local execution.'}
           </p>
         </TooltipContent>
       </Tooltip>

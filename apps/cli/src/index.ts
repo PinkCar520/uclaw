@@ -4,8 +4,8 @@
  * Ocean CLI - Entry Point
  * 
  * Dual mode:
- * - `uclaw <command>` - Single command execution
- * - `uclaw` (no args) - Interactive REPL mode
+ * - `ocean <command>` - Single command execution
+ * - `ocean` (no args) - Interactive REPL mode
  */
 
 import { Command } from 'commander';
@@ -189,7 +189,7 @@ program
   .action(async () => {
     const key = await resolveApiKey();
     if (!key) {
-      console.log(chalk.yellow('Not logged in. Use `uclaw login` to authenticate.'));
+      console.log(chalk.yellow('Not logged in. Use `ocean login` to authenticate.'));
     } else {
       const userId = await getAutoUserId();
       console.log(chalk.bold('Status: ') + chalk.green('Logged In'));

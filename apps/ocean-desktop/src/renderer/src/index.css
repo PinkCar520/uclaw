@@ -3,7 +3,7 @@
 @source "../../../../../packages/ui";
 @import "@ocean/ui/styles/index.css";
 
-/* Lucid 桌面端专属样式补丁
+/* Ocean 桌面端专属样式补丁
  * 设计 Token 已由 @ocean/ui/styles 统一提供。
  * 此文件仅覆盖桌面端独有的样式调整：
  * - 移除 WebKit 滚动条

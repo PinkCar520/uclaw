@@ -296,7 +296,7 @@ logging:
 
 ```bash
 # 备份 PostgreSQL
-docker compose exec postgres pg_dump -U postgres uclaw > backup_$(date +%Y%m%d).sql
+docker compose exec postgres pg_dump -U postgres ocean > backup_$(date +%Y%m%d).sql
 
 # 备份 Jenkins
 docker compose cp jenkins:/var/jenkins_home ./backup/jenkins

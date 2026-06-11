@@ -67,7 +67,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=uclaw
+      - POSTGRES_DB=ocean
     ports:
       - "5432:5432"
     volumes:

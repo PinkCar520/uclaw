@@ -125,7 +125,7 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
       all_chats: t('sidebar.all_chats'),
     };
     const name = tabNames[activeTab] || activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
-    document.title = `uClaw - ${name}`;
+    document.title = `Ocean - ${name}`;
   }, [activeTab, t]);
 
   const handleDeleteChat = (id: string) => {
@@ -247,7 +247,7 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-display font-bold text-[#1C1B1B] text-lg">uClaw</span>
+          <span className="font-display font-bold text-[#1C1B1B] text-lg">Ocean</span>
           <div className="w-9" />
         </div>
 

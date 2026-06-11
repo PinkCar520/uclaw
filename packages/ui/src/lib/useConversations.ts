@@ -124,9 +124,9 @@ export function useConversations({
   useEffect(() => {
     if (sessionId) {
       const conv = conversations.find(c => c.id === sessionId);
-      document.title = conv ? `uClaw - ${conv.title}` : 'uClaw - AI Assistant';
+      document.title = conv ? `Ocean - ${conv.title}` : 'Ocean - AI Assistant';
     } else {
-      document.title = `uClaw - ${t('sidebar.new_chat')}`;
+      document.title = `Ocean - ${t('sidebar.new_chat')}`;
     }
   }, [conversations, sessionId, t]);
 

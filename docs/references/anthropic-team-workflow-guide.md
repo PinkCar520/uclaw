@@ -60,7 +60,7 @@ alias zb='cd worktrees/b && claude'
 alias zc='cd worktrees/c && claude'
 ```
 
-**适用于 LucidPanda 项目：** 可以同时运行：
+**适用于 OceanPanda 项目：** 可以同时运行：
 - 会话 A：处理 RSS Worker 的新功能开发
 - 会话 B：调试 Clash 代理配置问题
 - 会话 C：写 Next.js 前端组件
@@ -124,10 +124,10 @@ git worktree remove ../project-feature-a
 **Boris 团队的做法：**
 > "我们整个团队共用一个 CLAUDE.md，提交到 git，全团队每周多次更新。每次发现 Claude 做错了什么，就把规则加进去。每个错误都变成一条规则。"
 
-**CLAUDE.md 文件结构模板（适合 LucidPanda）：**
+**CLAUDE.md 文件结构模板（适合 OceanPanda）：**
 
 ```markdown
-# LucidPanda 项目 Claude 使用规范
+# OceanPanda 项目 Claude 使用规范
 
 ## 项目架构概述
 - 后端：FastAPI + PostgreSQL/TimescaleDB + Redis
@@ -204,7 +204,7 @@ description: 提交当前变更，推送到远端，创建 PR
 读取最近 7 天的 git 提交记录、项目当前状态，告诉我项目现在处于什么状态，今天适合做什么工作。
 ```
 
-**适合 LucidPanda 的自定义 commands：**
+**适合 OceanPanda 的自定义 commands：**
 ```
 /check-proxy    — 测试所有代理节点连通性（Bloomberg/WSJ/Gemini）
 /rss-test      — 运行全量 RSS 源抓取测试，输出成功率报告
@@ -396,7 +396,7 @@ Claude 的回答应该：
 
 **实际操作：**
 ```
-1. 创建 Project "LucidPanda - 国际新闻代理优化"
+1. 创建 Project "OceanPanda - 国际新闻代理优化"
 2. 上传：
    - 当前 Clash 配置文档
    - 各新闻源的抓取成功率报告
@@ -447,11 +447,11 @@ Claude 的回答应该：
 → Claude 直接读取帖子，理解问题，修复代码，不需要你手动复制
 
 # GitHub + Jira 集成
-"从 Jira 票 LUCID-142 取任务描述，实现对应功能，创建 PR"
+"从 Jira 票 OCEAN-142 取任务描述，实现对应功能，创建 PR"
 → Claude 全程自动，你只需审 PR
 ```
 
-**适合 LucidPanda 的 MCP 集成：**
+**适合 OceanPanda 的 MCP 集成：**
 - Slack MCP：让 Claude 直接看 bug 报告频道
 - GitHub MCP：让 Claude 自己创建 PR、查 CI 状态
 - Docker（通过 bash 工具）：让 Claude 直接看容器日志

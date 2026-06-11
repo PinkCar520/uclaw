@@ -1,7 +1,7 @@
 services:
   # Ocean AI 网关总线 (NestJS + Prisma)
   gateway:
-    image: ${DOCKERHUB_USERNAME:-lucid}/ocean-gateway:latest
+    image: ${DOCKERHUB_USERNAME:-ocean}/ocean-gateway:latest
     container_name: ocean-gateway
     restart: always
     ports:
@@ -25,7 +25,7 @@ services:
 
   # Ocean AI 可视化面板 (React/Vite + Nginx)
   web:
-    image: ${DOCKERHUB_USERNAME:-lucid}/ocean-web:latest
+    image: ${DOCKERHUB_USERNAME:-ocean}/ocean-web:latest
     container_name: ocean-web
     restart: always
     ports:
@@ -55,7 +55,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=uclaw
+      - POSTGRES_DB=ocean
     ports:
       - "5432:5432"
     volumes:

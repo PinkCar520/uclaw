@@ -31,13 +31,13 @@ export class McpClientManager {
    * Load MCP config from config file
    */
   async loadConfig(configPath?: string) {
-    const uclawRoot = findUclawRoot(process.cwd());
+    const oceanRoot = findUclawRoot(process.cwd());
     const pathsToTry = [
       configPath,
       path.join(process.cwd(), '.mcp.json'),
       path.join(process.cwd(), '.claude', 'mcp.json'),
-      path.join(process.cwd(), '.uclaw', 'mcp.json'),
-      uclawRoot ? path.join(uclawRoot, '.uclaw', 'mcp.json') : null,
+      path.join(process.cwd(), '.ocean', 'mcp.json'),
+      oceanRoot ? path.join(oceanRoot, '.ocean', 'mcp.json') : null,
       // Fallback to gateway mcp.config.json
       path.resolve(process.cwd(), 'apps/gateway/mcp.config.json'),
     ].filter(Boolean) as string[];
@@ -47,10 +47,10 @@ export class McpClientManager {
         const raw = fs.readFileSync(p!, 'utf-8');
         this.config = JSON.parse(raw);
         // Resolve ${OCEAN_ROOT} in paths
-        if (uclawRoot && this.config) {
+        if (oceanRoot && this.config) {
           this.config.mcpServers = this.config.mcpServers.map((s: McpServerEntry) => ({
             ...s,
-            args: s.args.map(a => a.replace(/\$\{OCEAN_ROOT\}/g, uclawRoot)),
+            args: s.args.map(a => a.replace(/\$\{OCEAN_ROOT\}/g, oceanRoot)),
           }));
         }
         console.log(`[MCP] Loaded config from: ${p}`);

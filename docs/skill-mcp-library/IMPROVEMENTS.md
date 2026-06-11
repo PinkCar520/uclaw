@@ -55,7 +55,7 @@
 - `apps/gateway/src/skill/permission.service.ts` — 权限评估服务
 - `apps/gateway/src/skill/permission.module.ts` — NestJS 模块
 - `apps/gateway/src/skill/permission.controller.ts` — REST API
-- `.uclaw/settings.example.json` — 示例配置
+- `.ocean/settings.example.json` — 示例配置
 
 **功能特性：**
 1. **Claude Code 兼容的权限模式：**
@@ -92,7 +92,7 @@
 **配置层级（优先级从高到低）：**
 1. **Local** — `cwd/.mcp.json` 或 `cwd/.claude/mcp.json`
 2. **Project** — `<workspace>/.mcp.json`（应提交到 Git）
-3. **User** — `~/.uclaw/mcp.json`
+3. **User** — `~/.ocean/mcp.json`
 4. **Built-in** — `mcp.config.json`（网关内置，兜底）
 
 **环境变量展开：**
@@ -133,8 +133,8 @@
 
 **新增文件：**
 - `apps/gateway/src/skill/enterprise-governance.types.ts` — 企业治理类型
-- `.uclaw/managed-settings.example.json` — 示例托管设置
-- `.uclaw/managed-mcp.example.json` — 示例托管 MCP 配置
+- `.ocean/managed-settings.example.json` — 示例托管设置
+- `.ocean/managed-mcp.example.json` — 示例托管 MCP 配置
 
 **功能：**
 1. **Managed Settings** (`managed-settings.json`)
@@ -171,9 +171,9 @@
 | `apps/gateway/src/skill/permission.controller.ts` | 权限 REST API |
 | `apps/gateway/src/skill/enterprise-governance.types.ts` | 企业治理类型 |
 | `apps/gateway/src/mcp/mcp-config.loader.ts` | MCP 多层级配置加载 |
-| `.uclaw/settings.example.json` | 权限配置示例 |
-| `.uclaw/managed-settings.example.json` | 企业设置示例 |
-| `.uclaw/managed-mcp.example.json` | 企业 MCP 配置示例 |
+| `.ocean/settings.example.json` | 权限配置示例 |
+| `.ocean/managed-settings.example.json` | 企业设置示例 |
+| `.ocean/managed-mcp.example.json` | 企业 MCP 配置示例 |
 
 ---
 
@@ -220,8 +220,8 @@
 ### 1. 创建项目级 settings.json
 
 ```bash
-mkdir -p .uclaw
-cat > .uclaw/settings.json << 'EOF'
+mkdir -p .ocean
+cat > .ocean/settings.json << 'EOF'
 {
   "mode": "default",
   "allow": ["getBugInfo", "git_status"],

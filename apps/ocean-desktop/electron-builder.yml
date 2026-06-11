@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: lucid
+productName: ocean
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: lucid
+  executableName: ocean
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

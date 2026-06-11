@@ -305,7 +305,7 @@
   "library": {
     "v3": "v3",
     "title": "插件与 MCP 库",
-    "subtitle": "通过精选的模型上下文协议 (MCP) 连接器和专为您的企业生态系统定制的代理技能，扩展 uClaw 的智能。",
+    "subtitle": "通过精选的模型上下文协议 (MCP) 连接器和专为您的企业生态系统定制的代理技能，扩展 Ocean 的智能。",
     "stats": {
       "total_skills": "共 {{count}} 个技能",
       "new_this_week": "本周新增 {{count}} 个"
@@ -327,7 +327,7 @@
       "productivity": "生产力"
     },
     "featured": {
-      "badge": "uClaw 官方推荐",
+      "badge": "Ocean 官方推荐",
       "title": "企业知识图谱",
       "desc": "将您的整个 Confluence、Notion 和 Jira 工作区编入统一的 RAG 流水线，实现即时检索。",
       "button": "启用全集"
@@ -335,7 +335,7 @@
     "cards": {
       "zentao": {
         "title": "禅道 PM 集成",
-        "desc": "将 uClaw 任务直接同步至禅道项目。通过自然语言自动化迭代计划和缺陷跟踪。"
+        "desc": "将 Ocean 任务直接同步至禅道项目。通过自然语言自动化迭代计划和缺陷跟踪。"
       },
       "jenkins": {
         "title": "Jenkins CI/CD",
@@ -347,7 +347,7 @@
       },
       "slack": {
         "title": "Slack 机器人集成",
-        "desc": "将 uClaw 连接至您的 Slack 工作区。向团队通知 AI 里程碑并从频道查询 uClaw。"
+        "desc": "将 Ocean 连接至您的 Slack 工作区。向团队通知 AI 里程碑并从频道查询 Ocean。"
       },
       "docker": {
         "title": "Docker 控制",

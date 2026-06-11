@@ -26,7 +26,7 @@ export function EmptyState({
         <div className="bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] p-4 rounded-2xl shadow-[0_8px_24px_rgba(236,91,20,0.25)] mb-4 flex items-center justify-center">
           <Sparkles className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-4xl font-display font-black text-[#1C1B1B] tracking-tight mb-2">uClaw</h1>
+        <h1 className="text-4xl font-display font-black text-[#1C1B1B] tracking-tight mb-2">Ocean</h1>
         <p className="text-[#716B67] font-medium text-lg">What can I help you with today?</p>
       </div>
 

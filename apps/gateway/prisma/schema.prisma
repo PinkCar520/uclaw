@@ -57,7 +57,7 @@ model ApiKey {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  key         String   @unique  // uclaw_sk_ 前缀的 API Key
+  key         String   @unique  // ocean_sk_ 前缀的 API Key
   name        String   // Key 名称/备注，如 "CLI Daemon", "VSCode Extension"
   permissions String[] @default(["read", "write", "execute"]) // 权限范围
   lastUsedAt  DateTime? // 最后使用时间

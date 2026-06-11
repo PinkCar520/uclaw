@@ -32,7 +32,7 @@ describe('GitLabTool', () => {
           {
             id: 1,
             name: 'ocean',
-            path_with_namespace: 'uclaw/ocean',
+            path_with_namespace: 'ocean/ocean',
             description: 'Ocean main repo',
             web_url: 'https://gitlab.example.com/ocean/ocean',
             default_branch: 'main',
@@ -82,7 +82,7 @@ describe('GitLabTool', () => {
         data: {
           id: 2,
           name: 'new-project',
-          path_with_namespace: 'uclaw/new-project',
+          path_with_namespace: 'ocean/new-project',
           web_url: 'https://gitlab.example.com/ocean/new-project',
           default_branch: 'main',
           visibility: 'private',

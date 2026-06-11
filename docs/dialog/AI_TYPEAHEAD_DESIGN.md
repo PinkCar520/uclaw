@@ -1,7 +1,7 @@
 # Feature Design Document: AI-Assisted Prompt Typeahead (Ghost Text)
 
 ## 1. Executive Summary
-This document outlines the product requirements, interaction design, and technical architecture for the **AI-Assisted Prompt Typeahead (Ghost Text)** feature within the uClaw `ChatInput` component. 
+This document outlines the product requirements, interaction design, and technical architecture for the **AI-Assisted Prompt Typeahead (Ghost Text)** feature within the Ocean `ChatInput` component. 
 
 Inspired by industry leaders like GitHub Copilot, Cursor, and Claude, this feature aims to lower the barrier to entry for prompt engineering by silently predicting and suggesting high-quality, context-aware prompt completions as the user types.
 

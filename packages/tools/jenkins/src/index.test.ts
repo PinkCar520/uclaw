@@ -32,7 +32,7 @@ describe('JenkinsTool', () => {
           jobs: [
             {
               name: 'gateway-build',
-              fullName: 'uclaw/gateway-build',
+              fullName: 'ocean/gateway-build',
               url: 'https://jenkins.example.com/job/gateway-build',
               description: 'Gateway build job',
               color: 'blue',
@@ -69,7 +69,7 @@ describe('JenkinsTool', () => {
       mockAxiosInstance.get.mockResolvedValue({
         data: {
           name: 'test-job',
-          fullName: 'uclaw/test-job',
+          fullName: 'ocean/test-job',
           url: 'https://jenkins.example.com/job/test-job',
           description: 'Test job',
           color: 'blue',

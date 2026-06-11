@@ -38,6 +38,7 @@ function createWindow(): void {
   mainWindow.on('leave-full-screen', () => {
     mainWindow.webContents.send('fullscreen-change', false)
   })
+  ipcMain.removeHandler('is-fullscreen')
   ipcMain.handle('is-fullscreen', () => {
     return mainWindow.isFullScreen()
   })

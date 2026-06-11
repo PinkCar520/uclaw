@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect } from 'react';
 import { 
   Plus, FileText, X as CloseIcon, 
-  ChevronDown, Paperclip, ArrowUp, Square, Globe, Database, Check, Sparkles, Terminal, Cpu, FolderPlus, Wand2, Plug, BookOpen, Wrench, Briefcase, Archive, Settings2
+  ChevronDown, Paperclip, ArrowUp, Square, Globe, Database, Check, Sparkles, Terminal, Cpu, FolderPlus, Wand2, Plug, BookOpen, Wrench, Briefcase, Archive, Settings2, Bug, Puzzle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -113,10 +113,10 @@ export const ChatInput = React.memo(({
   ];
 
   const SLASH_OPTIONS = [
-    { id: 'clear', label: '/clear', desc: 'Clear context', action: 'clear', icon: CloseIcon },
-    { id: 'prompt', label: '/prompt', desc: 'Use prompt template', action: 'prompt', icon: FileText },
-    { id: 'jenkins', label: '/jenkins', desc: 'Run Jenkins tool', action: 'tool', icon: Plus },
-    { id: 'zentao', label: '/zentao', desc: 'Run ZenTao tool', action: 'tool', icon: Plus },
+    { id: 'clear', label: '/clear', desc: 'Clear conversation context', action: 'clear', icon: CloseIcon },
+    { id: 'prompt', label: '/prompt', desc: 'Insert prompt template', action: 'prompt', icon: FileText },
+    { id: 'jenkins', label: '/jenkins', desc: 'Execute Jenkins skill', action: 'tool', icon: Wrench },
+    { id: 'zentao', label: '/zentao', desc: 'Execute ZenTao skill', action: 'tool', icon: Wrench },
   ];
 
   const handleMentionSelect = (type: 'search' | 'knowledge', label: string) => {
@@ -212,28 +212,23 @@ export const ChatInput = React.memo(({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-[calc(100%+8px)] left-4 w-64 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] rounded-xl overflow-hidden z-50"
+              className="absolute bottom-[calc(100%+8px)] left-4 w-auto min-w-[280px] pr-4 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl overflow-hidden z-50 p-1.5"
             >
-              <div className="px-3 py-2 bg-[#F6F3F2]/50 border-b border-[#E8E4E2]/50">
-                <span className="text-[10px] font-black uppercase text-[#716B67] tracking-widest">Add Context</span>
-              </div>
-              <div className="p-1 max-h-64 overflow-y-auto">
+              <div className="max-h-64 overflow-y-auto no-scrollbar">
                 {filteredMentions.length > 0 ? filteredMentions.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => handleMentionSelect(opt.type as any, opt.label)}
-                    className="flex items-center gap-3 w-full p-2 text-left hover:bg-[#EC5B14]/5 hover:text-[#EC5B14] rounded-lg transition-colors group"
+                    className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-[#F6F3F2] rounded-lg transition-colors group mb-0.5"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center group-hover:border-[#EC5B14]/30 group-hover:bg-white shadow-sm shrink-0 transition-colors">
-                      <opt.icon className="w-4 h-4 text-[#716B67] group-hover:text-[#EC5B14] transition-colors" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-bold text-[#1C1B1B]">{opt.label}</span>
-                      <span className="text-[10px] text-[#A8A4A1] group-hover:text-[#EC5B14]/70 transition-colors">{opt.desc}</span>
-                    </div>
+                    <opt.icon className="w-4 h-4 text-[#716B67] shrink-0" />
+                    <span className="text-[13px] font-medium text-[#1C1B1B] flex-1 truncate">
+                      <span className="font-semibold">{opt.label}</span>
+                      <span className="text-[#A8A4A1] ml-2 font-normal">{opt.desc}</span>
+                    </span>
                   </button>
                 )) : (
-                  <div className="p-3 text-center text-xs text-[#A8A4A1]">No matches found</div>
+                  <div className="px-3 py-2 text-center text-[13px] text-[#A8A4A1]">No matches found</div>
                 )}
               </div>
             </motion.div>
@@ -245,28 +240,23 @@ export const ChatInput = React.memo(({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-[calc(100%+8px)] left-4 w-64 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] rounded-xl overflow-hidden z-50"
+              className="absolute bottom-[calc(100%+8px)] left-4 w-auto min-w-[280px] pr-4 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl overflow-hidden z-50 p-1.5"
             >
-              <div className="px-3 py-2 bg-[#F6F3F2]/50 border-b border-[#E8E4E2]/50">
-                <span className="text-[10px] font-black uppercase text-[#716B67] tracking-widest">Slash Commands</span>
-              </div>
-              <div className="p-1 max-h-64 overflow-y-auto">
+              <div className="max-h-64 overflow-y-auto no-scrollbar">
                 {filteredSlash.length > 0 ? filteredSlash.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => handleSlashSelect(opt.action, opt.label)}
-                    className="flex items-center gap-3 w-full p-2 text-left hover:bg-[#EC5B14]/5 hover:text-[#EC5B14] rounded-lg transition-colors group"
+                    className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-[#F6F3F2] rounded-lg transition-colors group mb-0.5"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E8E4E2] flex items-center justify-center group-hover:border-[#EC5B14]/30 group-hover:bg-white shadow-sm shrink-0 transition-colors">
-                      <opt.icon className="w-4 h-4 text-[#716B67] group-hover:text-[#EC5B14] transition-colors" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-bold text-[#1C1B1B]">{opt.label}</span>
-                      <span className="text-[10px] text-[#A8A4A1] group-hover:text-[#EC5B14]/70 transition-colors">{opt.desc}</span>
-                    </div>
+                    <opt.icon className="w-4 h-4 text-[#716B67] shrink-0" />
+                    <span className="text-[13px] font-medium text-[#1C1B1B] flex-1 truncate">
+                      <span className="font-semibold">{opt.label}</span>
+                      <span className="text-[#A8A4A1] ml-2 font-normal">{opt.desc}</span>
+                    </span>
                   </button>
                 )) : (
-                  <div className="p-3 text-center text-xs text-[#A8A4A1]">No commands found</div>
+                  <div className="px-3 py-2 text-center text-[13px] text-[#A8A4A1]">No commands found</div>
                 )}
               </div>
             </motion.div>
@@ -530,7 +520,7 @@ export const ChatInput = React.memo(({
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
                   <DropdownMenuItem disabled className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-not-allowed opacity-40 mb-0.5">
-                    <Plug className="w-4 h-4 text-[#716B67]" />
+                    <Puzzle className="w-4 h-4 text-[#716B67]" />
                     <span className="text-[13px] font-medium text-[#1C1B1B]">Add plugins...</span>
                   </DropdownMenuItem>
                   

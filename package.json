@@ -12,7 +12,7 @@
     "dev": "turbo run dev",
     "gateway": "pnpm --filter gateway start:dev",
     "web": "pnpm --filter web dev",
-    "ocean-desktop": "pnpm --filter ocean-desktop dev",
+    "desktop": "pnpm --filter ocean-desktop dev",
     "daemon": "pnpm --filter @ocean/cli start daemon",
     "all": "turbo run dev",
     "build": "turbo run build",

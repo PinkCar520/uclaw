@@ -37,7 +37,7 @@ jobs:
   build-and-push-gateway:
     name: Build and Push Gateway Image
     needs: prep
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -65,28 +65,23 @@ jobs:
 
       - name: Build and push Gateway Docker image
         uses: docker/build-push-action@v7
-        timeout-minutes: 60
+        timeout-minutes: 30
         env:
           BUILDKIT_PROGRESS: plain
         with:
           context: .
           file: ./apps/gateway/Dockerfile
-          load: true
+          push: true
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Push Gateway image via standard docker
-        run: |
-          docker push ccr.ccs.tencentyun.com/lucid/uclaw-gateway:latest
-          docker push ccr.ccs.tencentyun.com/lucid/uclaw-gateway:${{ needs.prep.outputs.sha_short }}
-
   build-and-push-web:
     name: Build and Push Web Image
     needs: prep
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -114,13 +109,13 @@ jobs:
 
       - name: Build and push Web Docker image
         uses: docker/build-push-action@v7
-        timeout-minutes: 60
+        timeout-minutes: 30
         env:
           BUILDKIT_PROGRESS: plain
         with:
           context: .
           file: ./apps/web/Dockerfile
-          load: true
+          push: true
           provenance: false
           build-args: |
             CACHE_BUST=${{ github.sha }}
@@ -128,11 +123,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Push Web image via standard docker
-        run: |
-          docker push ccr.ccs.tencentyun.com/lucid/uclaw-web:latest
-          docker push ccr.ccs.tencentyun.com/lucid/uclaw-web:${{ needs.prep.outputs.sha_short }}
 
   deploy:
     name: Auto Deploy to Server

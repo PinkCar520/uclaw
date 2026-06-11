@@ -17,7 +17,7 @@ export interface ApiError extends Error {
  * 核心请求函数
  */
 export async function request<T>(
-  url: string, 
+  url: string,
   options: RequestInit = {}
 ): Promise<T> {
   const token = localStorage.getItem('uclaw_auth_token');
@@ -38,7 +38,7 @@ export async function request<T>(
   let finalUrl = url;
   if (finalUrl.startsWith('/api') && typeof window !== 'undefined' && window.location.protocol === 'file:') {
     // In production Desktop app, point /api directly to the Gateway since there is no Vite dev proxy
-    const desktopApiBase = localStorage.getItem('uclaw_desktop_api_base') || 'http://43.139.108.187:3000';
+    const desktopApiBase = localStorage.getItem('uclaw_desktop_api_base') || 'http://43.139.108.187:8081';
     finalUrl = `${desktopApiBase}${finalUrl}`;
   }
 
@@ -52,7 +52,7 @@ export async function request<T>(
     if (!response.ok) {
       const error: ApiError = new Error('API Request Failed');
       error.status = response.status;
-      
+
       try {
         error.data = await response.json();
       } catch {
@@ -98,31 +98,31 @@ export async function request<T>(
  * 快捷方法集
  */
 export const api = {
-  get: <T>(url: string, options?: RequestInit) => 
+  get: <T>(url: string, options?: RequestInit) =>
     request<T>(url, { ...options, method: 'GET' }),
-  
-  post: <T>(url: string, data?: any, options?: RequestInit) => 
-    request<T>(url, { 
-      ...options, 
-      method: 'POST', 
-      body: data instanceof FormData ? data : JSON.stringify(data) 
-    }),
-  
-  put: <T>(url: string, data?: any, options?: RequestInit) => 
-    request<T>(url, { 
-      ...options, 
-      method: 'PUT', 
-      body: data instanceof FormData ? data : JSON.stringify(data) 
+
+  post: <T>(url: string, data?: any, options?: RequestInit) =>
+    request<T>(url, {
+      ...options,
+      method: 'POST',
+      body: data instanceof FormData ? data : JSON.stringify(data)
     }),
 
-  patch: <T>(url: string, data?: any, options?: RequestInit) => 
-    request<T>(url, { 
-      ...options, 
-      method: 'PATCH', 
-      body: data instanceof FormData ? data : JSON.stringify(data) 
+  put: <T>(url: string, data?: any, options?: RequestInit) =>
+    request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: data instanceof FormData ? data : JSON.stringify(data)
     }),
-  
-  delete: <T>(url: string, options?: RequestInit) => 
+
+  patch: <T>(url: string, data?: any, options?: RequestInit) =>
+    request<T>(url, {
+      ...options,
+      method: 'PATCH',
+      body: data instanceof FormData ? data : JSON.stringify(data)
+    }),
+
+  delete: <T>(url: string, options?: RequestInit) =>
     request<T>(url, { ...options, method: 'DELETE' }),
 };
 
@@ -136,12 +136,12 @@ export const authFetch = async (input: RequestInfo | URL, init?: RequestInit) =>
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  
+
   let finalInput = input;
   if (typeof finalInput === 'string' && finalInput.startsWith('/api') && typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    const desktopApiBase = localStorage.getItem('uclaw_desktop_api_base') || 'http://43.139.108.187:3000';
+    const desktopApiBase = localStorage.getItem('uclaw_desktop_api_base') || 'http://43.139.108.187:8081';
     finalInput = `${desktopApiBase}${finalInput}`;
   }
-  
+
   return fetch(finalInput, { ...init, headers });
 };

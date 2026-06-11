@@ -22,13 +22,13 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.0
-        version: 1.29.0(zod@3.24.0)
+        version: 1.29.0(zod@3.23.8)
       '@uclaw/tools-gitlab':
         specifier: workspace:*
         version: link:../../../packages/tools/gitlab
       zod:
-        specifier: ^3.24.0
-        version: 3.24.0
+        specifier: 3.23.8
+        version: 3.23.8
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -54,13 +54,13 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.0
-        version: 1.29.0(zod@3.24.0)
+        version: 1.29.0(zod@3.23.8)
       '@uclaw/tools-jenkins':
         specifier: workspace:*
         version: link:../../../packages/tools/jenkins
       zod:
-        specifier: ^3.24.0
-        version: 3.24.0
+        specifier: 3.23.8
+        version: 3.23.8
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -73,7 +73,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.0
-        version: 1.29.0(zod@3.24.0)
+        version: 1.29.0(zod@3.23.8)
       '@uclaw/core':
         specifier: workspace:*
         version: link:../../../packages/shared/core
@@ -81,8 +81,8 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/tools/zentao
       zod:
-        specifier: ^3.24.0
-        version: 3.24.0
+        specifier: 3.23.8
+        version: 3.23.8
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -8431,8 +8431,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@3.24.0:
-    resolution: {integrity: sha512-Hz+wiY8yD0VLA2k/+nsg2Abez674dDGTai33SwNvMPuf9uIrBC9eFgIMQxBBbHFxVXi8W+5nX9DcAh9YNSQm/w==}
+  zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
@@ -9726,7 +9726,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.29.0(zod@3.24.0)':
+  '@modelcontextprotocol/sdk@1.29.0(zod@3.23.8)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.25)
       ajv: 8.20.0
@@ -9743,8 +9743,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.0
       raw-body: 3.0.2
-      zod: 3.24.0
-      zod-to-json-schema: 3.25.2(zod@3.24.0)
+      zod: 3.23.8
+      zod-to-json-schema: 3.25.2(zod@3.23.8)
     transitivePeerDependencies:
       - supports-color
 
@@ -17033,9 +17033,9 @@ snapshots:
       compress-commons: 4.1.0
       readable-stream: 3.6.2
 
-  zod-to-json-schema@3.25.2(zod@3.24.0):
+  zod-to-json-schema@3.25.2(zod@3.23.8):
     dependencies:
-      zod: 3.24.0
+      zod: 3.23.8
 
   zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
@@ -17045,7 +17045,7 @@ snapshots:
     dependencies:
       zod: 4.4.3
 
-  zod@3.24.0: {}
+  zod@3.23.8: {}
 
   zod@4.4.3: {}
 

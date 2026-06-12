@@ -23,6 +23,7 @@ import { useConversations } from '@ocean/ui/lib/useConversations';
 import { cn } from '@ocean/ui/lib/utils';
 import { api } from '@ocean/ui/lib/api-client';
 import { LandingPage } from './components/LandingPage';
+import { SkillManager } from './components/SkillManager';
 
 import { WorkspaceProvider, useWorkspace } from '@ocean/ui/contexts/WorkspaceContext';
 
@@ -270,6 +271,8 @@ function AppInternal({ token, setToken, user, setUser, sessionIdFromUrl }: any) 
             />
           ) : activeTab === 'library' ? (
             <SkillLibrary token={token} />
+          ) : activeTab === 'skill_studio' ? (
+            <SkillManager token={token} />
           ) : activeTab === 'projects' ? (
             activeProject?.id ? (
               <KnowledgeBase

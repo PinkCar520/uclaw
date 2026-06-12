@@ -319,6 +319,7 @@ model Skill {
   icon          String?  // lucide icon 名称
   tags          String[] // 标签数组
   triggerKws    String[] // 触发关键词，用于感知上下文注入
+  embedding     Unsupported("vector(1536)")?
   installations SkillInstallation[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

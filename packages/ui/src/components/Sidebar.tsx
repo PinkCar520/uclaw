@@ -594,6 +594,7 @@ export function Sidebar({
 
   const navItems = [
     { id: 'library', icon: FolderOpen, label: t('sidebar.library') },
+    { id: 'skill_studio', icon: Puzzle, label: 'Skill Studio' },
     { id: 'workflows', icon: GitMerge, label: t('sidebar.workflows') },
     { id: 'projects', icon: FolderRoot, label: t('sidebar.projects') || 'Projects' },
   ];

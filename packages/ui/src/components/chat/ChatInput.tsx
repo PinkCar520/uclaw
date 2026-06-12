@@ -100,6 +100,9 @@ export const ChatInput = React.memo(({
   const [mentionQuery, setMentionQuery] = useState("");
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
+  const [slashActiveIndex, setSlashActiveIndex] = useState(0);
+  const [mentionActiveIndex, setMentionActiveIndex] = useState(0);
+  const [activeMentions, setActiveMentions] = useState<{ id: string; label: string; type: string; icon: any }[]>([]);
   const [isProjectCreateModalOpen, setIsProjectCreateModalOpen] = useState(false);
 
   const { projects, fetchProjects } = useProjects();
@@ -119,45 +122,62 @@ export const ChatInput = React.memo(({
     { id: 'zentao', label: '/zentao', desc: 'Execute ZenTao skill', action: 'tool', icon: Wrench },
   ];
 
-  const handleMentionSelect = (type: 'search' | 'knowledge', label: string) => {
+  const handleMentionSelect = (type: 'search' | 'knowledge', label: string, id: string, icon: any) => {
+    // Prevent duplicate mentions
+    if (activeMentions.find(m => m.id === id)) {
+      setMentionMenuOpen(false);
+      setTimeout(() => textAreaRef.current?.focus(), 10);
+      return;
+    }
+
     if (type === 'search') setIsSearchMode(true);
     if (type === 'knowledge') setIsKnowledgeMode(true);
-    
+
+    // Add as chip instead of inserting text in textarea
+    setActiveMentions(prev => [...prev, { id, label, type, icon }]);
+
+    // Remove the @query from the textarea
     const cursorPosition = textAreaRef.current?.selectionStart || 0;
     const textBeforeCursor = localInput.slice(0, cursorPosition);
     const textAfterCursor = localInput.slice(cursorPosition);
-    
     const textBeforeMatch = textBeforeCursor.replace(/(?:^|\s)@([^\s]*)$/, (match) => {
       return match.startsWith(' ') ? ' ' : '';
     });
-    
-    const newText = textBeforeMatch + '@' + label + ' ' + textAfterCursor;
-    setLocalInput(newText);
+    const newText = textBeforeMatch + textAfterCursor;
+    setLocalInput(newText.trimStart());
     setMentionMenuOpen(false);
-    
+
     setTimeout(() => {
       if (textAreaRef.current) {
         textAreaRef.current.focus();
-        const newPos = textBeforeMatch.length + label.length + 2;
+        const newPos = textBeforeMatch.trimStart().length;
         textAreaRef.current.selectionStart = newPos;
         textAreaRef.current.selectionEnd = newPos;
       }
     }, 10);
   };
 
-  const handleSlashSelect = (action: string, label: string) => {
+  const removeMention = (id: string) => {
+    const mention = activeMentions.find(m => m.id === id);
+    if (mention?.type === 'search') setIsSearchMode(false);
+    if (mention?.type === 'knowledge') setIsKnowledgeMode(false);
+    setActiveMentions(prev => prev.filter(m => m.id !== id));
+  };
+
+  const handleSlashSelect = (action: string, label: string, _id: string, _icon: any) => {
+    // Insert the command label into textarea (stays as inline colored text)
     const cursorPosition = textAreaRef.current?.selectionStart || 0;
     const textBeforeCursor = localInput.slice(0, cursorPosition);
     const textAfterCursor = localInput.slice(cursorPosition);
-    
+
+    // Replace the /query typed so far with the full /label
     const textBeforeMatch = textBeforeCursor.replace(/(?:^|\s)\/([^\s]*)$/, (match) => {
       return match.startsWith(' ') ? ' ' : '';
     });
-    
     const newText = textBeforeMatch + label + ' ' + textAfterCursor;
     setLocalInput(newText);
     setSlashMenuOpen(false);
-    
+
     setTimeout(() => {
       if (textAreaRef.current) {
         textAreaRef.current.focus();
@@ -199,6 +219,35 @@ export const ChatInput = React.memo(({
   const filteredMentions = MENTION_OPTIONS.filter(o => o.label.toLowerCase().includes(mentionQuery.toLowerCase()));
   const filteredSlash = SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes('/' + slashQuery.toLowerCase()));
 
+  // Parse localInput to highlight /command tokens in the ghost overlay
+  const renderHighlightedInput = (text: string) => {
+    // Split text into segments: /word tokens (blue) and everything else (transparent)
+    const parts: { text: string; highlight: boolean }[] = [];
+    let remaining = text;
+    const regex = /((?:^|(?<=\s))\/\S+)/g;
+    let lastIndex = 0;
+    let match;
+    // Use simple split approach for broad compatibility
+    const tokens = text.split(/((?:^|\s)\/\S+)/);
+    let idx = 0;
+    for (const token of tokens) {
+      const isSlashToken = /^(\s?\/\S+)$/.test(token) && token.includes('/');
+      if (isSlashToken) {
+        // Leading space should be transparent, /word should be blue
+        const spaceMatch = token.match(/^(\s*)(\/\S+)$/);
+        if (spaceMatch) {
+          if (spaceMatch[1]) parts.push({ text: spaceMatch[1], highlight: false });
+          parts.push({ text: spaceMatch[2], highlight: true });
+        } else {
+          parts.push({ text: token, highlight: true });
+        }
+      } else {
+        parts.push({ text: token, highlight: false });
+      }
+    }
+    return parts;
+  };
+
   return (
     <div className={cn(
       "px-4 md:px-8 z-10 w-full font-sans transition-all duration-500",
@@ -212,23 +261,44 @@ export const ChatInput = React.memo(({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-[calc(100%+8px)] left-4 w-auto min-w-[280px] pr-4 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl overflow-hidden z-50 p-1.5"
+              className="absolute bottom-[calc(100%+8px)] left-4 w-auto min-w-[300px] bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.18)] rounded-xl overflow-hidden z-50"
             >
-              <div className="max-h-64 overflow-y-auto no-scrollbar">
-                {filteredMentions.length > 0 ? filteredMentions.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => handleMentionSelect(opt.type as any, opt.label)}
-                    className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-[#F6F3F2] rounded-lg transition-colors group mb-0.5"
-                  >
-                    <opt.icon className="w-4 h-4 text-[#716B67] shrink-0" />
-                    <span className="text-[13px] font-medium text-[#1C1B1B] flex-1 truncate">
-                      <span className="font-semibold">{opt.label}</span>
-                      <span className="text-[#A8A4A1] ml-2 font-normal">{opt.desc}</span>
-                    </span>
-                  </button>
-                )) : (
-                  <div className="px-3 py-2 text-center text-[13px] text-[#A8A4A1]">No matches found</div>
+              <div className="px-3 py-2 border-b border-[#E8E4E2]/60 bg-[#F6F3F2]/60 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-[#716B67] tracking-widest">Add Context</span>
+                <div className="flex items-center gap-2 text-[10px] text-[#A8A4A1]">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0EDE9] border border-[#E8E4E2] font-mono text-[9px] text-[#716B67]">↑↓</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0EDE9] border border-[#E8E4E2] font-mono text-[9px] text-[#716B67]">↵</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0EDE9] border border-[#E8E4E2] font-mono text-[9px] text-[#716B67]">Esc</kbd>
+                </div>
+              </div>
+              <div className="p-1.5 max-h-64 overflow-y-auto no-scrollbar">
+                {filteredMentions.length > 0 ? filteredMentions.map((opt, idx) => {
+                  const isActive = idx === mentionActiveIndex;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => handleMentionSelect(opt.type as any, opt.label, opt.id, opt.icon)}
+                      onMouseEnter={() => setMentionActiveIndex(idx)}
+                      className={cn(
+                        "flex items-center gap-3 w-full px-3 py-2.5 text-left rounded-lg transition-all duration-100 mb-0.5",
+                        isActive ? "bg-[#EC5B14]/8 ring-1 ring-[#EC5B14]/20" : "hover:bg-[#F6F3F2]"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all",
+                        isActive ? "bg-gradient-to-br from-[#EC5B14] to-[#cc4900] shadow-sm" : "bg-[#F0EDE9] border border-[#E8E4E2]"
+                      )}>
+                        <opt.icon className={cn("w-3.5 h-3.5", isActive ? "text-white" : "text-[#716B67]")} />
+                      </div>
+                      <span className="flex-1 truncate">
+                        <span className={cn("text-[13px] font-bold", isActive ? "text-[#EC5B14]" : "text-[#1C1B1B]")}>{opt.label}</span>
+                        <span className={cn("ml-2 text-[12px] font-normal", isActive ? "text-[#EC5B14]/60" : "text-[#A8A4A1]")}>{opt.desc}</span>
+                      </span>
+                      {isActive && <span className="text-[10px] text-[#EC5B14]/50 font-medium shrink-0">↵</span>}
+                    </button>
+                  );
+                }) : (
+                  <div className="px-3 py-4 text-center text-[13px] text-[#A8A4A1]">No matches found</div>
                 )}
               </div>
             </motion.div>
@@ -240,23 +310,45 @@ export const ChatInput = React.memo(({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-[calc(100%+8px)] left-4 w-auto min-w-[280px] pr-4 bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-xl overflow-hidden z-50 p-1.5"
+              className="absolute bottom-[calc(100%+8px)] left-4 w-auto min-w-[300px] bg-white/95 backdrop-blur-xl border border-[#E8E4E2] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.18)] rounded-xl overflow-hidden z-50"
             >
-              <div className="max-h-64 overflow-y-auto no-scrollbar">
-                {filteredSlash.length > 0 ? filteredSlash.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => handleSlashSelect(opt.action, opt.label)}
-                    className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-[#F6F3F2] rounded-lg transition-colors group mb-0.5"
-                  >
-                    <opt.icon className="w-4 h-4 text-[#716B67] shrink-0" />
-                    <span className="text-[13px] font-medium text-[#1C1B1B] flex-1 truncate">
-                      <span className="font-semibold">{opt.label}</span>
-                      <span className="text-[#A8A4A1] ml-2 font-normal">{opt.desc}</span>
-                    </span>
-                  </button>
-                )) : (
-                  <div className="px-3 py-2 text-center text-[13px] text-[#A8A4A1]">No commands found</div>
+              {/* Header */}
+              <div className="px-3 py-2 border-b border-[#E8E4E2]/60 bg-[#F6F3F2]/60 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-[#716B67] tracking-widest">Commands</span>
+                <div className="flex items-center gap-2 text-[10px] text-[#A8A4A1]">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0EDE9] border border-[#E8E4E2] font-mono text-[9px] text-[#716B67]">↑↓</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0EDE9] border border-[#E8E4E2] font-mono text-[9px] text-[#716B67]">↵</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0EDE9] border border-[#E8E4E2] font-mono text-[9px] text-[#716B67]">Esc</kbd>
+                </div>
+              </div>
+              <div className="p-1.5 max-h-64 overflow-y-auto">
+                {filteredSlash.length > 0 ? filteredSlash.map((opt, idx) => {
+                  const isActive = idx === slashActiveIndex;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => handleSlashSelect(opt.action, opt.label, opt.id, opt.icon)}
+                      onMouseEnter={() => setSlashActiveIndex(idx)}
+                      className={cn(
+                        "flex items-center gap-3 w-full px-3 py-2.5 text-left rounded-lg transition-all duration-100 mb-0.5",
+                        isActive ? "bg-[#EC5B14]/8 ring-1 ring-[#EC5B14]/20" : "hover:bg-[#F6F3F2]"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all",
+                        isActive ? "bg-gradient-to-br from-[#EC5B14] to-[#cc4900] shadow-sm" : "bg-[#F0EDE9] border border-[#E8E4E2]"
+                      )}>
+                        <opt.icon className={cn("w-3.5 h-3.5", isActive ? "text-white" : "text-[#716B67]")} />
+                      </div>
+                      <span className="flex-1 truncate">
+                        <span className={cn("text-[13px] font-bold", isActive ? "text-[#EC5B14]" : "text-[#1C1B1B]")}>{opt.label}</span>
+                        <span className={cn("ml-2 text-[12px] font-normal", isActive ? "text-[#EC5B14]/60" : "text-[#A8A4A1]")}>{opt.desc}</span>
+                      </span>
+                      {isActive && <span className="text-[10px] text-[#EC5B14]/50 font-medium shrink-0">↵</span>}
+                    </button>
+                  );
+                }) : (
+                  <div className="px-3 py-4 text-center text-[13px] text-[#A8A4A1]">No commands found</div>
                 )}
               </div>
             </motion.div>
@@ -268,13 +360,34 @@ export const ChatInput = React.memo(({
           isFocused ? "ring-[#EC5B14]/30 shadow-[0_0_15px_rgba(236,91,20,0.15)]" : "ring-[#1C1B1B]/5"
         )}>
           <AnimatePresence>
-            {attachments.length > 0 && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }} 
-                animate={{ height: 'auto', opacity: 1 }} 
-                exit={{ height: 0, opacity: 0 }} 
+            {(attachments.length > 0 || activeMentions.length > 0) && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
                 className="flex flex-wrap gap-2 px-4 pt-3 pb-1"
               >
+                {/* Mention chips with hover X */}
+                {activeMentions.map((mention) => {
+                  const MentionIcon = mention.icon;
+                  return (
+                    <div key={mention.id} className="relative group flex items-center">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#EC5B14]/8 border border-[#EC5B14]/20 text-[#EC5B14]">
+                        <MentionIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-[12px] font-bold">{mention.label}</span>
+                      </div>
+                      <button
+                        tabIndex={-1}
+                        onClick={() => removeMention(mention.id)}
+                        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#1C1B1B] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-150 hover:bg-red-500 shadow-sm z-10"
+                      >
+                        <CloseIcon className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* File attachments */}
                 {attachments.map((file) => (
                   <div key={file.id} className={cn(
                     "flex items-center gap-2 px-3.5 py-2 rounded-xl border group relative transition-all",
@@ -294,14 +407,14 @@ export const ChatInput = React.memo(({
                       "text-[12px] font-bold max-w-[160px] truncate",
                       file.isUploading ? "text-[#716B67] animate-pulse" : "text-[#1C1B1B]"
                     )}>{file.name}</span>
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        removeFile(file.id); 
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(file.id);
                         if (setPreviewAttachment) {
                           setPreviewAttachment((prev: any) => prev?.name === file.name ? null : prev);
                         }
-                      }} 
+                      }}
                       className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[#E8E4E2] text-[#716B67] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all ml-1"
                     >
                       <CloseIcon className="w-3.5 h-3.5" />
@@ -313,14 +426,22 @@ export const ChatInput = React.memo(({
           </AnimatePresence>
 
           <div className="relative flex flex-col">
-            <div 
+            {/* Ghost overlay: renders /command tokens in blue, rest transparent */}
+            <div
               ref={ghostRef}
               className={cn(
                 "absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-auto text-[15px] px-4 leading-relaxed font-sans no-scrollbar border-none",
-                attachments.length > 0 ? "pt-1 pb-3" : "py-3"
+                attachments.length > 0 || activeMentions.length > 0 ? "pt-1 pb-3" : "py-3"
               )}
             >
-              <span className="text-transparent border-none">{localInput}</span>
+              {renderHighlightedInput(localInput).map((part, i) =>
+                part.highlight
+                  ? <span key={i} style={{ color: '#2b7fff', background: 'rgba(43,127,255,0.1)', borderRadius: '4px', padding: '2px 6px' }} className="font-medium">
+                      <span style={{ marginRight: '3px' }}>/</span>
+                      {part.text.startsWith('/') ? part.text.substring(1) : part.text.trimStart().substring(1)}
+                    </span>
+                  : <span key={i} style={{ color: '#1C1B1B' }}>{part.text}</span>
+              )}
               {ghostText && <span className="text-[#A8A4A1]/50 border-none">{ghostText}</span>}
             </div>
 
@@ -340,10 +461,12 @@ export const ChatInput = React.memo(({
                 if (mentionMatch) {
                   setMentionMenuOpen(true);
                   setMentionQuery(mentionMatch[1]);
+                  setMentionActiveIndex(0);
                   setSlashMenuOpen(false);
                 } else if (slashMatch) {
                   setSlashMenuOpen(true);
                   setSlashQuery(slashMatch[1]);
+                  setSlashActiveIndex(0);
                   setMentionMenuOpen(false);
                 } else {
                   setMentionMenuOpen(false);
@@ -374,22 +497,32 @@ export const ChatInput = React.memo(({
                 } else if (slashMenuOpen && e.key === 'Escape') {
                   setSlashMenuOpen(false);
                   e.preventDefault();
+                } else if (slashMenuOpen && e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSlashActiveIndex(prev => prev >= filteredSlash.length - 1 ? 0 : prev + 1);
+                } else if (slashMenuOpen && e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSlashActiveIndex(prev => prev <= 0 ? Math.max(filteredSlash.length - 1, 0) : prev - 1);
+                } else if (mentionMenuOpen && e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setMentionActiveIndex(prev => prev >= filteredMentions.length - 1 ? 0 : prev + 1);
+                } else if (mentionMenuOpen && e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setMentionActiveIndex(prev => prev <= 0 ? Math.max(filteredMentions.length - 1, 0) : prev - 1);
                 } else if (e.key === 'Enter' && !e.shiftKey) {
                   if (mentionMenuOpen) {
                     e.preventDefault();
-                    if (filteredMentions.length > 0) {
-                      handleMentionSelect(filteredMentions[0].type as any, filteredMentions[0].label);
-                    }
+                    const target = filteredMentions[mentionActiveIndex] || filteredMentions[0];
+                    if (target) handleMentionSelect(target.type as any, target.label, target.id, target.icon);
                   } else if (slashMenuOpen) {
                     e.preventDefault();
-                    if (filteredSlash.length > 0) {
-                      handleSlashSelect(filteredSlash[0].action, filteredSlash[0].label);
-                    }
+                    const target = filteredSlash[slashActiveIndex] || filteredSlash[0];
+                    if (target) handleSlashSelect(target.action, target.label, target.id, target.icon);
                   } else {
                     e.preventDefault();
                     onFormSubmit();
                   }
-                } else if (e.key === 'ArrowUp' && !localInput.trim() && lastUserMessage) {
+                } else if (e.key === 'ArrowUp' && !slashMenuOpen && !mentionMenuOpen && !localInput.trim() && lastUserMessage) {
                   e.preventDefault();
                   setLocalInput(lastUserMessage);
                   setTimeout(() => {
@@ -398,6 +531,30 @@ export const ChatInput = React.memo(({
                       textAreaRef.current.selectionEnd = textAreaRef.current.value.length;
                     }
                   }, 0);
+                } else if (
+                  e.key === 'Backspace' &&
+                  !slashMenuOpen && !mentionMenuOpen &&
+                  textAreaRef.current?.selectionStart === textAreaRef.current?.selectionEnd
+                ) {
+                  // Whole-token delete: if cursor is right after /command (+ optional space), delete whole token
+                  const pos = textAreaRef.current?.selectionStart ?? 0;
+                  const textBefore = localInput.slice(0, pos);
+                  // Match /command optionally followed by a single space at end of textBefore
+                  const tokenMatch = textBefore.match(/((?:^|\s)(\/\S+)(\s?))$/);
+                  if (tokenMatch) {
+                    e.preventDefault();
+                    // Remove from the '/' character to current pos (keep the leading whitespace before /)
+                    const removeLen = tokenMatch[2].length + tokenMatch[3].length; // /command + optional space
+                    const newPos = pos - removeLen;
+                    const newText = localInput.slice(0, newPos) + localInput.slice(pos);
+                    setLocalInput(newText);
+                    setTimeout(() => {
+                      if (textAreaRef.current) {
+                        textAreaRef.current.selectionStart = newPos;
+                        textAreaRef.current.selectionEnd = newPos;
+                      }
+                    }, 0);
+                  }
                 }
               }}
               onFocus={() => setIsFocused(true)}
@@ -410,8 +567,8 @@ export const ChatInput = React.memo(({
               }}
               placeholder={t('chat.placeholder', 'Ask anything...')}
               className={cn(
-                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[15px] text-[#1C1B1B] placeholder:text-[#A8A4A1] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed font-sans relative z-0",
-                attachments.length > 0 ? "pt-1 pb-3" : "py-3"
+                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-transparent placeholder:text-[#A8A4A1] caret-[#1C1B1B] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed font-sans relative z-0",
+                attachments.length > 0 || activeMentions.length > 0 ? "pt-1 pb-3" : "py-3"
               )}
               rows={1}
             />

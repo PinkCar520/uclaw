@@ -165,27 +165,29 @@ export const ChatInput = React.memo(({
   };
 
   const handleSlashSelect = (action: string, label: string, _id: string, _icon: any) => {
-    // Insert the command label into textarea (stays as inline colored text)
-    const cursorPosition = textAreaRef.current?.selectionStart || 0;
-    const textBeforeCursor = localInput.slice(0, cursorPosition);
-    const textAfterCursor = localInput.slice(cursorPosition);
-
-    // Replace the /query typed so far with the full /label
-    const textBeforeMatch = textBeforeCursor.replace(/(?:^|\s)\/([^\s]*)$/, (match) => {
-      return match.startsWith(' ') ? ' ' : '';
-    });
-    const newText = textBeforeMatch + label + ' ' + textAfterCursor;
-    setLocalInput(newText);
     setSlashMenuOpen(false);
 
-    setTimeout(() => {
-      if (textAreaRef.current) {
-        textAreaRef.current.focus();
-        const newPos = textBeforeMatch.length + label.length + 1;
-        textAreaRef.current.selectionStart = newPos;
-        textAreaRef.current.selectionEnd = newPos;
-      }
-    }, 10);
+    if (textAreaRef.current) {
+      let html = textAreaRef.current.innerHTML;
+      html = html.replace(/(?:^|\s|&nbsp;)\/([^<\s]*)$/, (match) => {
+         const leading = match.charAt(0) === '/' ? '' : match.charAt(0);
+         return leading + `<span contenteditable="false" class="chip inline-block px-2 py-0.5 rounded-md bg-[#2b7fff]/10 text-[#2b7fff] font-mono text-[13px] select-none pointer-events-none mx-0.5 align-baseline" style="user-select: none; -webkit-user-select: none;">${label}</span><span class="cursor-anchor">&#8203;</span>`;
+      });
+      textAreaRef.current.innerHTML = html;
+      setLocalInput(textAreaRef.current.textContent || '');
+
+      setTimeout(() => {
+        if (textAreaRef.current) {
+          textAreaRef.current.focus();
+          const sel = window.getSelection();
+          const newRange = document.createRange();
+          newRange.selectNodeContents(textAreaRef.current);
+          newRange.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(newRange);
+        }
+      }, 10);
+    }
   };
 
   const ghostRef = React.useRef<HTMLDivElement>(null);
@@ -202,17 +204,18 @@ export const ChatInput = React.memo(({
   }, [textAreaRef]);
 
   useLayoutEffect(() => {
-    if (textAreaRef.current) {
-      textAreaRef.current.style.height = 'auto';
-      textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, 200)}px`;
-    }
+    // ContentEditable div auto-resizes naturally, no need to set height manually based on scrollHeight
   }, [localInput, textAreaRef]);
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     if (e.clipboardData.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
       const filesArray = Array.from(e.clipboardData.files);
       addFiles(filesArray);
+    } else {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
     }
   };
 
@@ -426,37 +429,28 @@ export const ChatInput = React.memo(({
           </AnimatePresence>
 
           <div className="relative flex flex-col">
-            {/* Ghost overlay: renders /command tokens in blue, rest transparent */}
+            {/* Ghost overlay: renders ghost text if any */}
             <div
               ref={ghostRef}
               className={cn(
-                "absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-auto text-[15px] px-4 leading-relaxed font-sans no-scrollbar border-none",
+                "absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-hidden text-[15px] px-4 leading-relaxed font-sans border-none",
                 attachments.length > 0 || activeMentions.length > 0 ? "pt-1 pb-3" : "py-3"
               )}
             >
-              {renderHighlightedInput(localInput).map((part, i) =>
-                part.highlight
-                  ? <span key={i} style={{ color: '#2b7fff', background: 'rgba(43,127,255,0.1)', borderRadius: '4px', padding: '2px 6px' }} className="font-medium">
-                      <span style={{ marginRight: '3px' }}>/</span>
-                      {part.text.startsWith('/') ? part.text.substring(1) : part.text.trimStart().substring(1)}
-                    </span>
-                  : <span key={i} style={{ color: '#1C1B1B' }}>{part.text}</span>
-              )}
+              <span style={{ color: 'transparent' }}>{localInput}</span>
               {ghostText && <span className="text-[#A8A4A1]/50 border-none">{ghostText}</span>}
             </div>
 
-            <textarea
-              ref={textAreaRef}
-              value={localInput}
-              onChange={(e) => {
-                const val = e.target.value;
+            <div
+              ref={textAreaRef as React.RefObject<HTMLDivElement>}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => {
+                const val = e.currentTarget.textContent || '';
                 setLocalInput(val);
                 
-                const cursorPosition = e.target.selectionStart;
-                const textBeforeCursor = val.slice(0, cursorPosition);
-                
-                const mentionMatch = textBeforeCursor.match(/(?:^|\s)@([^\s]*)$/);
-                const slashMatch = textBeforeCursor.match(/(?:^|\s)\/([^\s]*)$/);
+                const mentionMatch = val.match(/(?:^|\s)@([^\s]*)$/);
+                const slashMatch = val.match(/(?:^|\s)\/([^\s]*)$/);
                 
                 if (mentionMatch) {
                   setMentionMenuOpen(true);
@@ -476,14 +470,17 @@ export const ChatInput = React.memo(({
               onKeyDown={(e) => {
                 if (e.key === 'Tab' && ghostText) {
                   e.preventDefault();
-                  setLocalInput(localInput + ghostText);
-                  setGhostText('');
-                  setTimeout(() => {
-                    if (textAreaRef.current) {
-                      const newLen = textAreaRef.current.value.length;
-                      textAreaRef.current.setSelectionRange(newLen, newLen);
-                    }
-                  }, 0);
+                  if (textAreaRef.current) {
+                    textAreaRef.current.textContent = localInput + ghostText;
+                    setLocalInput(localInput + ghostText);
+                    setGhostText('');
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(textAreaRef.current);
+                    range.collapse(false);
+                    sel?.removeAllRanges();
+                    sel?.addRange(range);
+                  }
                   return;
                 }
                 
@@ -520,40 +517,74 @@ export const ChatInput = React.memo(({
                     if (target) handleSlashSelect(target.action, target.label, target.id, target.icon);
                   } else {
                     e.preventDefault();
+                    if (textAreaRef.current) {
+                      textAreaRef.current.innerHTML = '';
+                    }
                     onFormSubmit();
+                  }
+                } else if (e.key === 'Backspace' && !slashMenuOpen && !mentionMenuOpen) {
+                  const sel = window.getSelection();
+                  if (sel && sel.isCollapsed) {
+                    const { anchorNode, anchorOffset } = sel;
+                    let targetChip: HTMLElement | null = null;
+                    let targetAnchor: HTMLElement | null = null;
+
+                    if (anchorNode?.nodeType === Node.TEXT_NODE) {
+                      if (anchorNode.parentElement?.classList.contains('cursor-anchor') && anchorOffset === 1) {
+                        const prev = anchorNode.parentElement.previousSibling as HTMLElement;
+                        if (prev && prev.contentEditable === 'false') {
+                          targetChip = prev;
+                          targetAnchor = anchorNode.parentElement;
+                        }
+                      } else if (anchorOffset === 0) {
+                        const prev = anchorNode.previousSibling as HTMLElement;
+                        if (prev && prev.contentEditable === 'false') {
+                          targetChip = prev;
+                        } else if (prev && prev.classList?.contains('cursor-anchor')) {
+                          const chip = prev.previousSibling as HTMLElement;
+                          if (chip && chip.contentEditable === 'false') {
+                            targetChip = chip;
+                            targetAnchor = prev;
+                          }
+                        }
+                      }
+                    } else if (anchorNode?.nodeType === Node.ELEMENT_NODE) {
+                      const child = anchorNode.childNodes[anchorOffset - 1] as HTMLElement;
+                      if (child && child.contentEditable === 'false') {
+                        targetChip = child;
+                      } else if (child && child.classList?.contains('cursor-anchor')) {
+                        const chip = child.previousSibling as HTMLElement;
+                        if (chip && chip.contentEditable === 'false') {
+                          targetChip = chip;
+                          targetAnchor = child;
+                        }
+                      }
+                    }
+
+                    if (targetChip) {
+                      e.preventDefault();
+                      targetChip.remove();
+                      if (targetAnchor) targetAnchor.remove();
+                      
+                      // Trigger input change so React state stays perfectly synced
+                      if (textAreaRef.current) {
+                        const ev = new Event('input', { bubbles: true });
+                        textAreaRef.current.dispatchEvent(ev);
+                        setLocalInput(textAreaRef.current.textContent || '');
+                      }
+                    }
                   }
                 } else if (e.key === 'ArrowUp' && !slashMenuOpen && !mentionMenuOpen && !localInput.trim() && lastUserMessage) {
                   e.preventDefault();
-                  setLocalInput(lastUserMessage);
-                  setTimeout(() => {
-                    if (textAreaRef.current) {
-                      textAreaRef.current.selectionStart = textAreaRef.current.value.length;
-                      textAreaRef.current.selectionEnd = textAreaRef.current.value.length;
-                    }
-                  }, 0);
-                } else if (
-                  e.key === 'Backspace' &&
-                  !slashMenuOpen && !mentionMenuOpen &&
-                  textAreaRef.current?.selectionStart === textAreaRef.current?.selectionEnd
-                ) {
-                  // Whole-token delete: if cursor is right after /command (+ optional space), delete whole token
-                  const pos = textAreaRef.current?.selectionStart ?? 0;
-                  const textBefore = localInput.slice(0, pos);
-                  // Match /command optionally followed by a single space at end of textBefore
-                  const tokenMatch = textBefore.match(/((?:^|\s)(\/\S+)(\s?))$/);
-                  if (tokenMatch) {
-                    e.preventDefault();
-                    // Remove from the '/' character to current pos (keep the leading whitespace before /)
-                    const removeLen = tokenMatch[2].length + tokenMatch[3].length; // /command + optional space
-                    const newPos = pos - removeLen;
-                    const newText = localInput.slice(0, newPos) + localInput.slice(pos);
-                    setLocalInput(newText);
-                    setTimeout(() => {
-                      if (textAreaRef.current) {
-                        textAreaRef.current.selectionStart = newPos;
-                        textAreaRef.current.selectionEnd = newPos;
-                      }
-                    }, 0);
+                  if (textAreaRef.current) {
+                    textAreaRef.current.textContent = lastUserMessage;
+                    setLocalInput(lastUserMessage);
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(textAreaRef.current);
+                    range.collapse(false);
+                    sel?.removeAllRanges();
+                    sel?.addRange(range);
                   }
                 }
               }}
@@ -565,12 +596,11 @@ export const ChatInput = React.memo(({
                   ghostRef.current.scrollTop = textAreaRef.current.scrollTop;
                 }
               }}
-              placeholder={t('chat.placeholder', 'Ask anything...')}
               className={cn(
-                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-transparent placeholder:text-[#A8A4A1] caret-[#1C1B1B] px-4 resize-none min-h-[44px] max-h-[200px] leading-relaxed font-sans relative z-0",
+                "w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[#1C1B1B] caret-[#1C1B1B] px-4 min-h-[44px] max-h-[200px] leading-relaxed font-sans relative z-0 overflow-y-auto break-words whitespace-pre-wrap outline-none empty:before:content-[attr(placeholder)] empty:before:text-[#A8A4A1] empty:before:pointer-events-none text-[15px]",
                 attachments.length > 0 || activeMentions.length > 0 ? "pt-1 pb-3" : "py-3"
               )}
-              rows={1}
+              placeholder={t('chat.placeholder', 'Ask anything...')}
             />
 
             <AnimatePresence>

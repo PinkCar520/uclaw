@@ -37,7 +37,7 @@ ocean/
 │   ├── gateway/         # [核心大脑] NestJS 网关，统管鉴权与调度
 │   ├── web/             # [前端 UI] Generative UI 可视化面板
 │   └── cli/             # [终端工具] 交互式命令行助手
-├── agent/
+├── agents/
 │   ├── mcp/             # MCP 标准服务实现 (Zentao, Jenkins, GitLab 等)
 │   ├── skills/          # 声明式技能工作流定义 (SKILL.md)
 │   └── agp/             # 智能体治理协议规范与实现

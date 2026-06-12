@@ -259,7 +259,7 @@ POST /api/mcp/servers/:id/disconnect
 
 1. ✅ `apps/gateway/src/mcp/mcp.types.ts` - 类型系统扩展（+130 行）
 2. ✅ `apps/gateway/src/mcp/mcp-client.manager.ts` - 核心能力增强（+370 行）
-3. ✅ `agent/mcp/mcp-zentao/src/server.ts` - Resources + Prompts（+180 行）
+3. ✅ `agents/mcp/mcp-zentao/src/server.ts` - Resources + Prompts（+180 行）
 4. ✅ `apps/gateway/prisma/schema.prisma` - 数据库模型扩展（+40 行）
 5. ✅ `apps/gateway/src/mcp-server/mcp-resources.controller.ts` - 新控制器（+140 行）
 6. ✅ `apps/gateway/src/mcp-server/mcp-server.module.ts` - 模块更新（+4 行）

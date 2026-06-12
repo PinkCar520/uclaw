@@ -218,10 +218,10 @@ server.tool(
   '触发 Jenkins 构建',
   {
     jobName: z.string().describe('任务名称'),
-    params: z.record(z.string()).optional().describe('构建参数（可选）'),
+    params: z.record(z.string(), z.string()).optional().describe('构建参数（可选）'),
   },
   async ({ jobName, params }) => {
-    const result = await jenkins.triggerBuild(jobName, params);
+    const result = await jenkins.triggerBuild(jobName, params as Record<string, string> | undefined);
     if (!result.success) {
       return {
         content: [{ type: 'text' as const, text: `✗ 触发构建失败: ${jobName}` }],

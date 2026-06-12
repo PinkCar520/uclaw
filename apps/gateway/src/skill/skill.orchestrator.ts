@@ -36,14 +36,14 @@ export class SkillOrchestrator {
     private ragService: RAGService,
     private zentaoService: ZentaoService,
     @Inject('PRISMA_CLIENT') private prisma: any,
-  ) {}
+  ) { }
 
   // ──────────────────────────────────────────────
   // Model
   // ──────────────────────────────────────────────
   private getModel(modelId?: string) {
     const defaultProvider = this.configService.get<string>('DEFAULT_AI_PROVIDER') || 'deepseek';
-    
+
     // 聚合所有的配置项
     const configs: Record<string, any> = {
       deepseek: {
@@ -79,7 +79,7 @@ export class SkillOrchestrator {
     // 如果传入了明确的 modelId，可以扩展逻辑去匹配。为了简单起见，如果 modelId 是 provider 的名字，直接切换
     let activeProviderKey = defaultProvider;
     let selectedModelId = configs[defaultProvider]?.model;
-    
+
     if (modelId) {
       if (configs[modelId]) {
         activeProviderKey = modelId;
@@ -87,7 +87,7 @@ export class SkillOrchestrator {
       } else {
         // Find which provider owns this model
         for (const [key, conf] of Object.entries(configs)) {
-          if (conf.model === modelId || conf.model?.split(',').map((m:string)=>m.trim()).includes(modelId)) {
+          if (conf.model === modelId || conf.model?.split(',').map((m: string) => m.trim()).includes(modelId)) {
             activeProviderKey = key;
             selectedModelId = modelId;
             break;
@@ -105,7 +105,7 @@ export class SkillOrchestrator {
       const { createAnthropic } = require('@ai-sdk/anthropic');
       return createAnthropic({ apiKey: conf.apiKey })(selectedModelId);
     }
-    
+
     if (activeProviderKey === 'gemini') {
       const { createGoogleGenerativeAI } = require('@ai-sdk/google');
       return createGoogleGenerativeAI({ apiKey: conf.apiKey })(selectedModelId);
@@ -166,8 +166,8 @@ export class SkillOrchestrator {
   // ──────────────────────────────────────────────
   private async buildSystemPrompt(ctx: SkillContext): Promise<string> {
     const onlineClis = this.rpcGateway.getOnlineUsers();
-    const promptPath = this.configService.get<string>('SYSTEM_PROMPT_PATH') || 'agent/prompts/system_prompt.md';
-    
+    const promptPath = this.configService.get<string>('SYSTEM_PROMPT_PATH') || 'agents/prompts/system_prompt.md';
+
     let basePrompt = `你是银行内网 AI 助手 Ocean。
 当前登录用户工号: ${ctx.userId}
 当前在线的本地 CLI 节点: ${onlineClis.join(', ') || '无'}
@@ -186,8 +186,8 @@ export class SkillOrchestrator {
 
     const catalogXml = await this.skillLoader.buildCatalogXml();
     let prompt = basePrompt
-        .replace('{{currentUserId}}', ctx.userId)
-        .replace('{{onlineClis}}', onlineClis.join(', ') || '无');
+      .replace('{{currentUserId}}', ctx.userId)
+      .replace('{{onlineClis}}', onlineClis.join(', ') || '无');
 
     // 注入用户自定义指令 (对标 Claude Custom Instructions)
     try {
@@ -200,7 +200,7 @@ export class SkillOrchestrator {
     } catch (err: any) {
       this.logger.error(`Failed to fetch user preferences: ${err.message}`);
     }
-        
+
     prompt += `\n\n以下 Skills 提供了特定任务的专项指令。当用户的请求与某个 Skill 的描述匹配时，请调用 activate_skill 工具加载该 Skill 的完整指令。\n\n${catalogXml}`;
 
     const guide = await this.skillLoader.loadAiguide(ctx.workspacePath);
@@ -352,17 +352,17 @@ export class SkillOrchestrator {
         }),
         execute: async ({ action, args }) => {
           const result = await this.rpcGateway.sendToCli(currentUserId, 'local_git', { action, args, sessionId });
-          
+
           const response: any = {
             status: 'Success',
             ...result,
-            ui: { 
-              uiType: 'code_block', 
-              props: { 
+            ui: {
+              uiType: 'code_block',
+              props: {
                 command: `git ${action} ${args || ''}`.trim(),
                 output: result.raw || (typeof result === 'string' ? result : JSON.stringify(result, null, 2)),
                 status: 'success'
-              } 
+              }
             },
           };
 
@@ -429,7 +429,7 @@ export class SkillOrchestrator {
     if (sessionId) {
       finalTools.local_file_edit = this.wrapWithApproval('local_file_edit', atomicTools.local_file_edit, sessionId, currentUserId);
       finalTools.local_bash = this.wrapWithApproval('local_bash', atomicTools.local_bash, sessionId, currentUserId);
-      
+
       const mcpTools = await this.mcpManager.getAITools();
       for (const [name, toolDef] of Object.entries(mcpTools)) {
         finalTools[name] = this.wrapWithApproval(name, toolDef, sessionId, currentUserId);
@@ -463,15 +463,15 @@ export class SkillOrchestrator {
     const isSearchMode = (ctx as any).search === true;
     const isKnowledgeMode = (ctx as any).knowledge === true;
 
-    return await this.tracingService.traceCall('streamResponse', { 
-      sessionId, 
+    return await this.tracingService.traceCall('streamResponse', {
+      sessionId,
       userId: ctx.userId,
       isSearch: isSearchMode,
       isKnowledge: isKnowledgeMode
     }, async (span) => {
       try {
         this.logger.log(`[Orchestrator] streamResponse session=${sessionId} messages=${messages?.length}`);
-        
+
         let newUserMsgId: string | undefined;
 
         if (sessionId && Array.isArray(messages)) {
@@ -507,15 +507,15 @@ export class SkillOrchestrator {
               const contextText = contextResults
                 .map(r => `[Document: ${r.title}]\n${r.content}`)
                 .join('\n\n');
-              
+
               const ragPrompt = `以下是来自 Ocean 知识库的相关背景资料，请结合这些信息回答用户问题：\n\n${contextText}`;
-              
+
               const lastIdx = sanitizedMessages.length - 1;
               if (lastIdx >= 0 && sanitizedMessages[lastIdx].role === 'user') {
                 sanitizedMessages[lastIdx].content = `${ragPrompt}\n\n用户问题：${sanitizedMessages[lastIdx].content}`;
                 // Also update parts if they exist
                 if (sanitizedMessages[lastIdx].parts) {
-                    sanitizedMessages[lastIdx].parts = [{ type: 'text', text: sanitizedMessages[lastIdx].content }];
+                  sanitizedMessages[lastIdx].parts = [{ type: 'text', text: sanitizedMessages[lastIdx].content }];
                 }
               }
               span.setAttribute('rag_context_injected', true);
@@ -538,11 +538,11 @@ export class SkillOrchestrator {
           tools,
           onStepFinish: (event) => {
             const { text, toolCalls, toolResults } = event;
-            
+
             // 1. 记录文本
-            if (text) { 
-              fullText += text; 
-              allParts.push({ type: 'text', text }); 
+            if (text) {
+              fullText += text;
+              allParts.push({ type: 'text', text });
             }
 
             // 2. 闭环审计逻辑：确保每一个 toolCall 都有对应的结果进入 allParts
@@ -551,12 +551,12 @@ export class SkillOrchestrator {
             // 先处理已经有真实结果的调用
             if (toolResults && Array.isArray(toolResults)) {
               for (const tr of toolResults) {
-                const part = { 
-                  type: 'tool-invocation', 
-                  toolCallId: tr.toolCallId, 
-                  toolName: tr.toolName, 
-                  args: tr.input, 
-                  result: tr.output 
+                const part = {
+                  type: 'tool-invocation',
+                  toolCallId: tr.toolCallId,
+                  toolName: tr.toolName,
+                  args: tr.input,
+                  result: tr.output
                 };
                 allParts.push(part);
                 handledCallIds.add(tr.toolCallId);
@@ -581,26 +581,26 @@ export class SkillOrchestrator {
           },
           onFinish: async ({ totalUsage }: any) => {
             if (totalUsage) {
-                span.setAttribute('total_tokens', totalUsage.totalTokens || 0);
-                span.setAttribute('prompt_tokens', totalUsage.inputTokens || 0);
-                span.setAttribute('completion_tokens', totalUsage.outputTokens || 0);
+              span.setAttribute('total_tokens', totalUsage.totalTokens || 0);
+              span.setAttribute('prompt_tokens', totalUsage.inputTokens || 0);
+              span.setAttribute('completion_tokens', totalUsage.outputTokens || 0);
             }
 
             // 修改持久化逻辑：只要有文本或者有工具调用记录 (allParts)，就必须保存
             if (sessionId && (fullText || allParts.length > 0)) {
               try {
-                const usage = totalUsage ? { 
-                  inputTokens: totalUsage.inputTokens ?? 0, 
-                  outputTokens: totalUsage.outputTokens ?? 0, 
-                  totalTokens: totalUsage.totalTokens ?? 0 
+                const usage = totalUsage ? {
+                  inputTokens: totalUsage.inputTokens ?? 0,
+                  outputTokens: totalUsage.outputTokens ?? 0,
+                  totalTokens: totalUsage.totalTokens ?? 0
                 } : undefined;
-                
-                await this.sessionService.addMessage(sessionId, { 
-                  role: 'assistant', 
+
+                await this.sessionService.addMessage(sessionId, {
+                  role: 'assistant',
                   content: fullText || '', // 允许内容为空，只要 parts 有数据
                   parentId: newUserMsgId, // 指向刚创建的 User 消息
-                  parts: allParts, 
-                  usage 
+                  parts: allParts,
+                  usage
                 });
                 this.logger.log(`[Orchestrator] Persisted assistant reply. Parts count: ${allParts.length}`);
               } catch (dbErr: any) {
@@ -657,14 +657,15 @@ export class SkillOrchestrator {
       const models = this.getAvailableModels();
       if (models.length === 0) return '';
 
-      const fastModelId = models.find(m => 
-        m.name.toLowerCase().includes('llama') || 
-        m.name.toLowerCase().includes('3b') || 
-        m.name.toLowerCase().includes('flash') || 
+      const fastModelId = models.find(m =>
+        m.name.toLowerCase().includes('llama') ||
+        m.name.toLowerCase().includes('3b') ||
+        m.name.toLowerCase().includes('flash') ||
         m.name.toLowerCase().includes('coder')
       )?.id || models[0].id;
 
-      const { text } = await generateText({        model: this.getModel(fastModelId),
+      const { text } = await generateText({
+        model: this.getModel(fastModelId),
         system: `You are a Ghost-Text generator for a professional AI workspace.
 Your ONLY goal is to continue or refine the user's input text to make it a better prompt.
 

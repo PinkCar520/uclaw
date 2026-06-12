@@ -14,9 +14,15 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@agent/*": ["agent/*"],
-      "@packages/*": ["packages/*"],
-      "@apps/*": ["apps/*"]
+      "@agents/*": [
+        "agents/*"
+      ],
+      "@packages/*": [
+        "packages/*"
+      ],
+      "@apps/*": [
+        "apps/*"
+      ]
     }
   }
 }

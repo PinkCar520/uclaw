@@ -40,7 +40,7 @@ interface ParsedSkill {
 export class SkillImportService {
   private readonly logger = new Logger(SkillImportService.name);
 
-  constructor(@Inject('PRISMA_CLIENT') private prisma: PrismaClient) {}
+  constructor(@Inject('PRISMA_CLIENT') private prisma: PrismaClient) { }
 
   /**
    * Main import dispatcher
@@ -63,7 +63,7 @@ export class SkillImportService {
   /**
    * Import from OpenClaw Hub (ClawHub)
    * Uses the official ClawHub API: GET /api/v1/skills/{slug}/file?path=SKILL.md
-   * Falls back to local agent/skills directory if network fails.
+   * Falls back to local agents/skills directory if network fails.
    */
   private async importFromOpenClawHub(dto: ImportSkillDto) {
     const skillId = dto.skillId;
@@ -80,7 +80,7 @@ export class SkillImportService {
     try {
       this.logger.log(`Fetching skill "${skillId}" from ClawHub: ${clawhubUrl}`);
       const response = await fetch(clawhubUrl);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(`Skill "${skillId}" not found on ClawHub`);
@@ -91,10 +91,10 @@ export class SkillImportService {
       content = await response.text();
       this.logger.log(`Successfully fetched "${skillId}" from ClawHub (${content.length} bytes)`);
     } catch (err: any) {
-      // Step 2: Fallback to local agent/skills directory
+      // Step 2: Fallback to local agents/skills directory
       this.logger.warn(`ClawHub fetch failed: ${err.message}. Trying local fallback...`);
-      
-      const localPath = path.join(process.cwd(), `agent/skills/${skillId}/SKILL.md`);
+
+      const localPath = path.join(process.cwd(), `agents/skills/${skillId}/SKILL.md`);
       if (!fs.existsSync(localPath)) {
         throw new Error(`Skill "${skillId}" not found on ClawHub or in local registry`);
       }
@@ -116,8 +116,8 @@ export class SkillImportService {
       throw new Error('skillPath is required for Claude Code import');
     }
 
-    const skillMdPath = dto.skillPath.endsWith('/SKILL.md') 
-      ? dto.skillPath 
+    const skillMdPath = dto.skillPath.endsWith('/SKILL.md')
+      ? dto.skillPath
       : path.join(dto.skillPath, 'SKILL.md');
 
     if (!fs.existsSync(skillMdPath)) {
@@ -126,7 +126,7 @@ export class SkillImportService {
 
     const content = fs.readFileSync(skillMdPath, 'utf-8');
     const parsed = this.parseSkillMd(content, 'claude-code');
-    
+
     return this.saveSkill(parsed);
   }
 
@@ -140,7 +140,7 @@ export class SkillImportService {
     }
 
     const tempDir = path.join(process.cwd(), `.tmp/skill-import-${Date.now()}`);
-    
+
     try {
       // Clone repository
       this.logger.log(`Cloning ${dto.url} to ${tempDir}`);
@@ -156,7 +156,7 @@ export class SkillImportService {
       const parsed = this.parseSkillMd(content, 'git');
       parsed.tags = parsed.tags || [];
       parsed.tags.push('git-import');
-      
+
       return this.saveSkill(parsed);
     } finally {
       // Cleanup
@@ -199,8 +199,8 @@ export class SkillImportService {
     return {
       name: String(fm.name),
       description: String(fm.description),
-      allowedTools: fm['allowed-tools'] 
-        ? String(fm['allowed-tools']).split(' ').filter(Boolean) 
+      allowedTools: fm['allowed-tools']
+        ? String(fm['allowed-tools']).split(' ').filter(Boolean)
         : undefined,
       requiresApproval: fm['requires-approval']
         ? String(fm['requires-approval']).split(' ').filter(Boolean)
@@ -221,7 +221,7 @@ export class SkillImportService {
     // Check for duplicate by slug
     const slug = this.toSlug(parsed.name);
     const existing = await this.prisma.skill.findUnique({ where: { slug } });
-    
+
     const manifestData = {
       allowedTools: parsed.allowedTools,
       requiresApproval: parsed.requiresApproval,
@@ -269,7 +269,7 @@ export class SkillImportService {
    */
   private findSkillMd(dir: string): string | null {
     if (!fs.existsSync(dir)) return null;
-    
+
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
@@ -331,9 +331,9 @@ export class SkillImportService {
     const name = (fm.name || '').toLowerCase();
     const comp = (fm.compatibility || '').toLowerCase();
     const target = (fm.metadata?.target_system || '').toLowerCase();
-    
+
     const combined = `${name} ${comp} ${target}`;
-    
+
     if (combined.includes('zentao') || combined.includes('bug') || combined.includes('prd')) {
       return 'pm';
     }
@@ -346,7 +346,7 @@ export class SkillImportService {
     if (combined.includes('slack') || combined.includes('mail') || combined.includes('chat')) {
       return 'communication';
     }
-    
+
     return null;
   }
 }

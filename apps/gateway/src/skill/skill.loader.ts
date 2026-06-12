@@ -109,10 +109,10 @@ export class SkillLoader {
       dirs.push(skillsDir);
       this.logger.log(`Scanning built-in skills from package: ${skillsDir}`);
     } catch (e) {
-      // Monorepo specific: search upwards from process.cwd() for agent/skills
+      // Monorepo specific: search upwards from process.cwd() for agents/skills
       let current = process.cwd();
       for (let i = 0; i < 4; i++) { // Max 4 levels up
-        const potential = path.resolve(current, 'agent/skills');
+        const potential = path.resolve(current, 'agents/skills');
         if (fs.existsSync(potential)) {
           dirs.push(potential);
           this.logger.debug(`Found built-in skills in monorepo layout: ${potential}`);
@@ -211,13 +211,13 @@ export class SkillLoader {
       description: String(description),
       allowedTools: fm['allowed-tools']
         ? String(fm['allowed-tools'])
-            .split(' ')
-            .filter(Boolean)
+          .split(' ')
+          .filter(Boolean)
         : undefined,
       requiresApproval: fm['requires-approval']
         ? String(fm['requires-approval'])
-            .split(' ')
-            .filter(Boolean)
+          .split(' ')
+          .filter(Boolean)
         : undefined,
       compatibility: fm['compatibility'] ? String(fm['compatibility']) : undefined,
       metadata: fm['metadata'] ? (fm['metadata'] as Record<string, string>) : undefined,
@@ -253,8 +253,8 @@ export class SkillLoader {
         const compatibility = s.compatibility ? `\\n    <compatibility>${escapeXml(s.compatibility)}</compatibility>` : '';
         const localesXml = s.locales
           ? `\\n    <locales>${Object.entries(s.locales)
-              .map(([lang, loc]) => `<locale lang="${lang}"><displayName>${escapeXml(loc.displayName || '')}</displayName><description>${escapeXml(loc.description || '')}</description></locale>`)
-              .join('\\n      ')}</locales>`
+            .map(([lang, loc]) => `<locale lang="${lang}"><displayName>${escapeXml(loc.displayName || '')}</displayName><description>${escapeXml(loc.description || '')}</description></locale>`)
+            .join('\\n      ')}</locales>`
           : '';
 
         return `  <skill>

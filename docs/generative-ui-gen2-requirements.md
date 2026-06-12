@@ -342,7 +342,7 @@ interface UIRendererProps {
 
 | 文件 | 改动 |
 |------|------|
-| `agent/mcp/mcp-zentao/src/server.ts` | `getBugInfo` 工具返回 `{ data: bugDetail, ui: { uiType: 'bug_card', props: {...} } }` |
+| `agents/mcp/mcp-zentao/src/server.ts` | `getBugInfo` 工具返回 `{ data: bugDetail, ui: { uiType: 'bug_card', props: {...} } }` |
 | 同上 | `searchBugs` 返回 `{ data: bugs, ui: { uiType: 'bug_list', props: { items: [...], title } } }` |
 | 同上 | `getBugStats` 返回 `{ data: stats, ui: { uiType: 'stats_card', props: { title, metrics } } }` |
 | 同上 | `resolveBug` 返回 `{ data: result, ui: { uiType: 'approval_card', props: {...} } }` |
@@ -351,7 +351,7 @@ interface UIRendererProps {
 
 | 项目 | 详情 |
 |------|------|
-| **文件** | `agent/mcp/mcp-jenkins/src/server.ts`（需启用 Jenkins MCP） |
+| **文件** | `agents/mcp/mcp-jenkins/src/server.ts`（需启用 Jenkins MCP） |
 | **工具** | `getPipelineStatus` — 查询 Jenkins 流水线状态 |
 | **输入** | `{ pipelineId: string }` |
 | **输出** | `{ data: pipeline, ui: { uiType: 'pipeline_card', props: {...} } }` |

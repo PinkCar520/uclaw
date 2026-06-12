@@ -23,10 +23,10 @@ export function EmptyState({
     <div className="flex flex-col w-full min-w-0 pb-4">
       {/* Center Logo & Title */}
       <div className="flex flex-col items-center justify-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="bg-gradient-to-br from-[#EC5B14] to-[#FF8C42] p-4 rounded-2xl shadow-[0_8px_24px_rgba(236,91,20,0.25)] mb-4 flex items-center justify-center">
-          <Sparkles className="w-8 h-8 text-white" />
+        <div className="w-20 h-20 mb-4 flex items-center justify-center">
+          <img src="/logo.png" alt="北冥 Ocean Logo" className="w-full h-full object-contain drop-shadow-md" />
         </div>
-        <h1 className="text-4xl font-display font-black text-[#1C1B1B] tracking-tight mb-2">Ocean</h1>
+        <h1 className="text-4xl font-display font-black text-[#1C1B1B] tracking-tight mb-2">北冥 Ocean</h1>
         <p className="text-[#716B67] font-medium text-lg">What can I help you with today?</p>
       </div>
 

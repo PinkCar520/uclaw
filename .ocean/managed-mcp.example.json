@@ -15,7 +15,7 @@
     "zentao": {
       "enabled": true,
       "command": "node",
-      "args": ["${GATEWAY_ROOT}/agent/mcp/mcp-zentao/dist/server.js"],
+      "args": ["${GATEWAY_ROOT}/agents/mcp/mcp-zentao/dist/server.js"],
       "env": {
         "ZENTAO_BASE_URL": "${ZENTAO_BASE_URL}",
         "ZENTAO_API_TOKEN": "${ZENTAO_API_TOKEN}"

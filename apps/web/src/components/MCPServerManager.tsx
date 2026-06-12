@@ -534,7 +534,7 @@ export function MCPServerManager({ token, hideHeader = false }: { token?: string
                         onChange={(e) => setFormData({ ...formData, args: e.target.value })}
                         className="w-full px-3 py-2 rounded-xl border border-[#E8E4E2] text-sm font-mono focus:ring-2 focus:ring-[#EC5B14]/20 focus:border-[#EC5B14] outline-none resize-none"
                         rows={2}
-                        placeholder='["../../../agent/mcp/mcp-zentao/dist/server.js"]'
+                        placeholder='["../../../agents/mcp/mcp-zentao/dist/server.js"]'
                       />
                     </div>
 

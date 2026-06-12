@@ -106,7 +106,7 @@ workspace-scope: ["dev-team", "qa-team"]
 | Claude Code Skill | `POST /api/skills/import` body: `{ source: "claude-code", skillPath: "/path/to/skill" }` |
 | Git 仓库 | `POST /api/skills/import` body: `{ source: "git", url: "https://..." }` |
 | 本地上传 | `POST /api/skills/import` multipart/form-data 上传 ZIP |
-| 内部自建 | 直接写入 `agent/skills/` 目录并注册 |
+| 内部自建 | 直接写入 `agents/skills/` 目录并注册 |
 
 ### 3.2 MCP Server 管理
 
@@ -128,7 +128,7 @@ workspace-scope: ["dev-team", "qa-team"]
   "category": "pm",
   "transport": "stdio",
   "command": "node",
-  "args": ["../../../agent/mcp/mcp-zentao/dist/server.js"],
+  "args": ["../../../agents/mcp/mcp-zentao/dist/server.js"],
   "env": {
     "ZENTAO_URL": "https://zentao.example.com",
     "ZENTAO_TOKEN": "${SECRET}"

@@ -18,7 +18,7 @@ export ZENTAO_API_TOKEN="${ZENTAO_API_TOKEN:-}"
 
 # 构建服务器
 echo "构建 $SERVER MCP Server..."
-cd "$(dirname "$0")/../agent/mcp/mcp-$SERVER"
+cd "$(dirname "$0")/../agents/mcp/mcp-$SERVER"
 pnpm run build
 
 echo ""

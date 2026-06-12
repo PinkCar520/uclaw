@@ -22,7 +22,7 @@
    - ✅ `listResourceTemplates()`: 获取资源模板列表
    - ✅ `readResource(uri, serverId?)`: 读取指定资源内容（带 5 分钟 TTL 缓存）
 
-2. **mcp-zentao 升级** (`agent/mcp/mcp-zentao/src/server.ts`)
+2. **mcp-zentao 升级** (`agents/mcp/mcp-zentao/src/server.ts`)
    - ✅ 资源: `zentao://bugs/{bugId}` - 缺陷详情
    - ✅ 资源: `zentao://products/{productId}/bugs` - 产品缺陷列表
    - ✅ 资源: `zentao://stories/{storyId}` - 需求详情
@@ -49,7 +49,7 @@
    - ✅ `listPrompts()`: 获取所有提示词模板列表
    - ✅ `getPrompt(name, args?, serverId?)`: 获取提示词内容（含变量填充）
 
-2. **mcp-zentao 升级** (`agent/mcp/mcp-zentao/src/server.ts`)
+2. **mcp-zentao 升级** (`agents/mcp/mcp-zentao/src/server.ts`)
    - ✅ 提示词: `bug-analysis-report` - 缺陷分析报告
    - ✅ 提示词: `story-review` - 需求评审助手
    - ✅ 提示词: `product-health-report` - 产品健康度报告
@@ -207,7 +207,7 @@ interface MCPServerFileConfig { mcpServers, enabledMcpjsonServers, disabledMcpjs
 
 ### 3. mcp-zentao 升级
 
-**文件:** `agent/mcp/mcp-zentao/src/server.ts`
+**文件:** `agents/mcp/mcp-zentao/src/server.ts`
 
 新增 Resources：
 - `zentao://bugs/{bugId}` - 缺陷详情
@@ -292,7 +292,7 @@ MCPServer 新增字段：
 
 2. **编译并测试 mcp-zentao**
    ```bash
-   cd agent/mcp/mcp-zentao
+   cd agents/mcp/mcp-zentao
    pnpm build
    ```
 

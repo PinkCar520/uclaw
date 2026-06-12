@@ -304,7 +304,7 @@ ls -la .ocean/settings.json
 **排查：**
 ```bash
 # 检查 Skill 文件是否存在
-cat agent/skills/fix-bug/SKILL.md
+cat agents/skills/fix-bug/SKILL.md
 
 # 检查 Gateway 日志中的 Skills 加载信息
 docker logs ocean-gateway 2>&1 | grep -i "skills"

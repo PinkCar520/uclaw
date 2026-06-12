@@ -115,7 +115,7 @@
 ### 阶段 4: MCP Server 生态 (P3) ✅
 
 #### 4.1 mcp-jenkins
-**文件：** `agent/mcp/mcp-jenkins/src/server.ts`
+**文件：** `agents/mcp/mcp-jenkins/src/server.ts`
 
 **工具（6 个）：**
 | 工具 | 功能 |
@@ -138,7 +138,7 @@
 ---
 
 #### 4.2 mcp-gitlab
-**文件：** `agent/mcp/mcp-gitlab/src/server.ts`
+**文件：** `agents/mcp/mcp-gitlab/src/server.ts`
 
 **工具（6 个）：**
 | 工具 | 功能 |
@@ -289,16 +289,16 @@
 
 ### MCP Servers（6 个文件）
 
-7. **`agent/mcp/mcp-zentao/src/server.ts`** (增强)
+7. **`agents/mcp/mcp-zentao/src/server.ts`** (增强)
    - 新增：4 个 Resources
    - 新增：3 个 Prompts
 
-8. **`agent/mcp/mcp-jenkins/`** ⭐ 新目录
+8. **`agents/mcp/mcp-jenkins/`** ⭐ 新目录
    - `package.json`
    - `tsconfig.json`
    - `src/server.ts` (6 Tools + 3 Resources + 1 Prompt)
 
-9. **`agent/mcp/mcp-gitlab/`** ⭐ 新目录
+9. **`agents/mcp/mcp-gitlab/`** ⭐ 新目录
    - `package.json`
    - `tsconfig.json`
    - `src/server.ts` (6 Tools + 3 Resources + 1 Prompt)
@@ -384,9 +384,9 @@
 pnpm install
 
 # 构建 MCP Servers
-cd agent/mcp/mcp-jenkins && pnpm build
-cd agent/mcp/mcp-gitlab && pnpm build
-cd agent/mcp/mcp-zentao && pnpm build
+cd agents/mcp/mcp-jenkins && pnpm build
+cd agents/mcp/mcp-gitlab && pnpm build
+cd agents/mcp/mcp-zentao && pnpm build
 ```
 
 ### 2. 数据库迁移
@@ -408,7 +408,7 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ocean?schema=public"
       "id": "zentao",
       "name": "ZenTao Bug Management",
       "command": "node",
-      "args": ["${GATEWAY_ROOT}/agent/mcp/mcp-zentao/dist/server.js"],
+      "args": ["${GATEWAY_ROOT}/agents/mcp/mcp-zentao/dist/server.js"],
       "env": {
         "ZENTAO_BASE_URL": "${ZENTAO_BASE_URL}",
         "ZENTAO_API_TOKEN": "${ZENTAO_API_TOKEN}"
@@ -420,7 +420,7 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ocean?schema=public"
       "id": "jenkins",
       "name": "Jenkins CI/CD",
       "command": "node",
-      "args": ["${GATEWAY_ROOT}/agent/mcp/mcp-jenkins/dist/server.js"],
+      "args": ["${GATEWAY_ROOT}/agents/mcp/mcp-jenkins/dist/server.js"],
       "env": {
         "JENKINS_BASE_URL": "${JENKINS_BASE_URL}",
         "JENKINS_TOKEN": "${JENKINS_TOKEN}"
@@ -432,7 +432,7 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ocean?schema=public"
       "id": "gitlab",
       "name": "GitLab Repository",
       "command": "node",
-      "args": ["${GATEWAY_ROOT}/agent/mcp/mcp-gitlab/dist/server.js"],
+      "args": ["${GATEWAY_ROOT}/agents/mcp/mcp-gitlab/dist/server.js"],
       "env": {
         "GITLAB_BASE_URL": "${GITLAB_BASE_URL}",
         "GITLAB_TOKEN": "${GITLAB_TOKEN}"

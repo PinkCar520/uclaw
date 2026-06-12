@@ -22,9 +22,9 @@
 ### Phase 1: SKILL.md 格式标准化 ✅
 
 **改进文件：**
-- `agent/skills/fix-bug/SKILL.md`
-- `agent/skills/write-prd/SKILL.md`
-- `agent/skills/jenkins/SKILL.md`
+- `agents/skills/fix-bug/SKILL.md`
+- `agents/skills/write-prd/SKILL.md`
+- `agents/skills/jenkins/SKILL.md`
 
 **变更内容：**
 1. 移除自定义 `protocol: AGP/1.0` 标记
@@ -154,9 +154,9 @@
 ### 修改的文件
 | 文件 | 变更类型 |
 |------|----------|
-| `agent/skills/fix-bug/SKILL.md` | 格式标准化 |
-| `agent/skills/write-prd/SKILL.md` | 格式标准化 |
-| `agent/skills/jenkins/SKILL.md` | 补充 frontmatter |
+| `agents/skills/fix-bug/SKILL.md` | 格式标准化 |
+| `agents/skills/write-prd/SKILL.md` | 格式标准化 |
+| `agents/skills/jenkins/SKILL.md` | 补充 frontmatter |
 | `apps/gateway/src/skill/skill.loader.ts` | 增强 catalog XML |
 | `apps/gateway/src/skill/skill.orchestrator.ts` | 集成 PermissionService |
 | `apps/gateway/src/skill/skill.module.ts` | 添加 PermissionModule |

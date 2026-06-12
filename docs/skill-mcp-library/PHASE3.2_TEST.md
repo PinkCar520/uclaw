@@ -27,13 +27,13 @@ curl -X POST http://localhost:3000/api/skills/import \
   -d '{"source":"openclaw-hub","skillId":"fix-bug","version":"1.2.0"}' | jq
 ```
 
-**原理**：调用 ClawHub 官方 API `GET https://clawhub.ai/api/v1/skills/{slug}/file?path=SKILL.md`，如果网络失败则回退到本地 `agent/skills/`。
+**原理**：调用 ClawHub 官方 API `GET https://clawhub.ai/api/v1/skills/{slug}/file?path=SKILL.md`，如果网络失败则回退到本地 `agents/skills/`。
 
 ### 1.2 导入本地 Skill (Claude Code 路径)
 ```bash
 curl -X POST http://localhost:3000/api/skills/import \
   -H "Content-Type: application/json" \
-  -d '{"source":"claude-code","skillPath":"/Users/caomeifengli/workspace/uwork/ocean/agent/skills/write-prd"}' | jq
+  -d '{"source":"claude-code","skillPath":"/Users/caomeifengli/workspace/uwork/ocean/agents/skills/write-prd"}' | jq
 ```
 
 ### 1.3 直接上传 SKILL.md 内容

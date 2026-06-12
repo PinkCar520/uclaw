@@ -333,7 +333,7 @@ function handleCommand(
 }
 
 function findSkillsDir(startDir: string): string | null {
-  const candidates = ['agent/skills', '.claude/skills', '.ocean/skills'];
+  const candidates = ['agents/skills', '.claude/skills', '.ocean/skills'];
   let current = startDir;
   while (true) {
     for (const candidate of candidates) {

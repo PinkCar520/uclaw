@@ -20,5 +20,5 @@ The Memory Layer provides long-term persistence for the Ocean agent, enabling it
 ## Roadmap
 
 - [ ] Implement `memory.service.ts` in Gateway.
-- [ ] Connect to a local Vector index in `/agent/memory/index/`.
+- [ ] Connect to a local Vector index in `/agents/memory/index/`.
 - [ ] Implement "Reflection Step" in `SkillOrchestrator` to update memory after task completion.

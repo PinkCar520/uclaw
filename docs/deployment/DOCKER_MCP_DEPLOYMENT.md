@@ -229,7 +229,7 @@ docker compose logs gateway | grep -i "mcp"
 docker compose exec gateway env | grep -E "JENKINS|GITLAB|ZENTAO"
 
 # 手动测试连接
-docker compose exec gateway node /app/agent/mcp/mcp-jenkins/dist/server.js
+docker compose exec gateway node /app/agents/mcp/mcp-jenkins/dist/server.js
 ```
 
 ### Jenkins/GitLab 无法访问

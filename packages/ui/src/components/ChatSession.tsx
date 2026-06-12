@@ -343,26 +343,26 @@ export function ChatSession({
 
   return (
       <div
-          className="flex-1 flex overflow-hidden h-full"
+          className="flex-1 flex overflow-hidden h-full relative"
           onDragOver={handleDragOver}
       >
+        {/* Right Sidebar Toggle Button — 始终吸附于整个视图最右侧顶部 */}
+        {(!previewAttachment && !activeCapsule) && (
+          <div className="absolute top-4 right-4 z-[9999] titlebar-no-drag">
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRightSidebarOpen(prev => !prev); }}
+              className="w-6 h-6 inline-flex items-center justify-center rounded-md hover:bg-[#1C1B1B]/10 text-[#716B67] hover:text-[#1C1B1B] transition-colors cursor-pointer titlebar-no-drag pointer-events-auto"
+              style={{ WebkitAppRegion: 'no-drag' } as any}
+              title={isRightSidebarOpen ? '收起侧边栏' : '展开侧边栏'}
+            >
+              {isRightSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRight className="w-4 h-4" />}
+            </button>
+          </div>
+        )}
         <div className={cn(
           "flex-1 flex flex-col relative overflow-hidden bg-white/40 transition-all duration-300",
           messages.length === 0 && !isLoadingHistory && "justify-center"
         )}>
-          {/* Right Sidebar Toggle Button */}
-          {(!previewAttachment && !activeCapsule) && (
-            <div className="absolute top-4 right-4 z-[9999] titlebar-no-drag">
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRightSidebarOpen(prev => !prev); }}
-                className="w-6 h-6 inline-flex items-center justify-center rounded-md hover:bg-[#1C1B1B]/10 text-[#716B67] hover:text-[#1C1B1B] transition-colors cursor-pointer titlebar-no-drag pointer-events-auto"
-                style={{ WebkitAppRegion: 'no-drag' } as any}
-                title={isRightSidebarOpen ? '收起侧边栏' : '展开侧边栏'}
-              >
-                {isRightSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRight className="w-4 h-4" />}
-              </button>
-            </div>
-          )}
           <AnimatePresence>
             {isDragging && (
                 <motion.div

@@ -23,8 +23,8 @@ export function EmptyState({
     <div className="flex flex-col w-full min-w-0 pb-4">
       {/* Center Logo & Title */}
       <div className="flex flex-col items-center justify-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="w-20 h-20 mb-4 flex items-center justify-center">
-          <img src="/logo.png" alt="北冥 Ocean Logo" className="w-full h-full object-contain drop-shadow-md" />
+        <div className="w-28 h-28 mb-4 flex items-center justify-center relative group transition-all duration-500 hover:-translate-y-1">
+          <img src="/logo.svg" alt="北冥 Ocean Logo" className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500" />
         </div>
         <h1 className="text-4xl font-display font-black text-[#1C1B1B] tracking-tight mb-2">北冥 Ocean</h1>
         <p className="text-[#716B67] font-medium text-lg">What can I help you with today?</p>

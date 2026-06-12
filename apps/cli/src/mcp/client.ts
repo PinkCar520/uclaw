@@ -25,13 +25,13 @@ export class McpClientManager {
   private clients = new Map<string, Client>();
   private config: McpConfigFile | null = null;
 
-  constructor(private cliConfig: CliConfig) {}
+  constructor(private cliConfig: CliConfig) { }
 
   /**
    * Load MCP config from config file
    */
   async loadConfig(configPath?: string) {
-    const oceanRoot = findUclawRoot(process.cwd());
+    const oceanRoot = findRoot(process.cwd());
     const pathsToTry = [
       configPath,
       path.join(process.cwd(), '.mcp.json'),
@@ -71,7 +71,7 @@ export class McpClientManager {
     }
 
     const servers = this.config!.mcpServers.filter(s => s.enabled !== false);
-    
+
     for (const server of servers) {
       try {
         await this.connectServer(server);
@@ -85,7 +85,7 @@ export class McpClientManager {
    * Connect to a single MCP server
    */
   private async connectServer(server: McpServerEntry) {
-    const resolvedArgs = server.args.map(arg => 
+    const resolvedArgs = server.args.map(arg =>
       replaceEnvVars(arg, process.env)
     );
 
@@ -107,7 +107,7 @@ export class McpClientManager {
 
     await client.connect(transport);
     this.clients.set(server.id, client);
-    
+
     const tools = await client.listTools();
     console.log(`[MCP] Connected to ${server.name}: ${tools.tools.length} tools`);
   }
@@ -117,7 +117,7 @@ export class McpClientManager {
    */
   async getAllTools() {
     const tools: Array<{ name: string; description: string; server: string }> = [];
-    
+
     for (const [serverId, client] of this.clients) {
       try {
         const result = await client.listTools();
@@ -199,7 +199,7 @@ function replaceEnvVars(str: string, env: NodeJS.ProcessEnv): string {
 /**
  * Find the Ocean project root by walking up the directory tree
  */
-function findUclawRoot(startDir: string): string | null {
+function findRoot(startDir: string): string | null {
   let current = startDir;
   while (true) {
     if (fs.existsSync(path.join(current, 'pnpm-workspace.yaml')) && fs.existsSync(path.join(current, 'agent'))) {
